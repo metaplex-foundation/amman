@@ -2,8 +2,11 @@
   "name": "@metaplex-foundation/amman",
   "version": "0.0.0",
   "description": "Borsh compatible De/Serializer",
-  "main": "dist/src/bors.js",
-  "types": "dist/src/amman.d.ts",
+  "main": "dist/amman.js",
+  "types": "dist/amman.d.ts",
+  "bin": {
+    "amman": "dist/cli/amman.js"
+  },
   "scripts": {
     "check:publish-ready": "yarn build",
     "preversion": "yarn check:publish-ready",
@@ -27,11 +30,14 @@
     "dist/src/*"
   ],
   "dependencies": {
-    "debug": "^4.3.3"
+    "@solana/web3.js": "^1.31.0",
+    "debug": "^4.3.3",
+    "wait-on": "^6.0.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/node": "^16.11.12",
+    "@types/wait-on": "^5.3.1",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "spok": "^1.4.2",
