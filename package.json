@@ -27,7 +27,7 @@
     "dist": "./dist/src"
   },
   "files": [
-    "dist/src/*"
+    "dist/**/*"
   ],
   "keywords": [
     "solana",
