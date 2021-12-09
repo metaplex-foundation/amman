@@ -1,7 +1,7 @@
 {
   "name": "@metaplex-foundation/amman",
   "version": "0.0.0",
-  "description": "Borsh compatible De/Serializer",
+  "description": "A modern mandatory toolbelt to help test solana SDK libraries and apps on a locally running validator.",
   "main": "dist/amman.js",
   "types": "dist/amman.d.ts",
   "bin": {
@@ -10,8 +10,7 @@
   "scripts": {
     "check:publish-ready": "yarn build",
     "preversion": "yarn check:publish-ready",
-    "postversion": "git add package.json && git commit -m \"chore: update to v$npm_package_version\" && git tag $npm_package_version",
-    "prepublish": "yarn check:publish-ready",
+    "prepublishOnly": "yarn check:publish-ready",
     "postpublish": "git push origin && git push origin --tags",
     "build": "rimraf dist && tsc -p tsconfig.json",
     "test": "tape dist/test/*.test.js",
@@ -30,6 +29,17 @@
   "files": [
     "dist/src/*"
   ],
+  "keywords": [
+    "solana",
+    "blockchain",
+    "test",
+    "tools",
+    "utilities"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "dependencies": {
     "@solana/web3.js": "^1.31.0",
     "debug": "^4.3.3",
