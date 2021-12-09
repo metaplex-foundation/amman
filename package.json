@@ -17,7 +17,8 @@
     "test": "tape dist/test/*.test.js",
     "lint": "prettier -c ./src/",
     "lint:fix": "prettier --format ./src",
-    "doc": "typedoc src/*.ts --readme README.md"
+    "doc": "typedoc src/*.ts --readme README.md",
+    "doctoc": "doctoc README.md"
   },
   "repository": "git@github.com:metaplex-foundation/amman.git",
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
@@ -32,12 +33,15 @@
   "dependencies": {
     "@solana/web3.js": "^1.31.0",
     "debug": "^4.3.3",
-    "wait-on": "^6.0.0"
+    "wait-on": "^6.0.0",
+    "yargs": "^17.3.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/node": "^16.11.12",
     "@types/wait-on": "^5.3.1",
+    "@types/yargs": "^17.0.7",
+    "doctoc": "^2.1.0",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "spok": "^1.4.2",
