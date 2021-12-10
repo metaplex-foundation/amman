@@ -14,7 +14,7 @@ export async function handleValidatorCommand(args: ValidatorCommandArgs) {
     if (typeof configPath === 'string') {
       logInfo('Loading config from %s', configPath)
     }
-    if (typeof config.validator == 'undefined') {
+    if (typeof config.validator === 'undefined') {
       console.error(`This config \n${JSON.stringify(config)}\n is missing a 'validator' property`)
       process.exit(1)
     }
