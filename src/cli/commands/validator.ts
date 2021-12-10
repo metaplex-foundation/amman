@@ -52,7 +52,7 @@ async function tryLoadLocalConfigRc() {
     return { config, configPath }
   } else {
     console.error(
-      '\n  No config provided nor an `.anmanrc.js` file found in current directory, using default config, run with `--help` for more info\n'
+      '\n  No config provided nor an `.ammanrc.js` file found in current directory, using default config, run with `--help` for more info\n'
     )
     return { config: { validator: {} }, configPath: null }
   }
