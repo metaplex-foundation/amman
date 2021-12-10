@@ -23,16 +23,32 @@ function transactionSummary(tx: ConfirmedTransaction): TransactionSummary {
   return { logMessages, fee, slot, blockTime, err }
 }
 
+/**
+ * A {@link TransactionHandler} backed by a payer {@link Keypair}.
+ * @category transactions
+ */
 export class PayerTransactionHandler implements TransactionHandler {
+  /**
+   * Creates a {@link PayerTransactionHandler}.
+   *
+   * @param connection to use to handle transactions
+   * @param payer to use to sign transactions
+   */
   constructor(
     private readonly connection: Connection,
     private readonly payer: Keypair
   ) {}
 
+  /**
+   * Public key of the payer
+   */
   get publicKey() {
     return this.payer.publicKey
   }
 
+  /**
+   * Sends and confirms the transaction {@link TransactionHandler['sendAndConfirmTransaction']}.
+   */
   async sendAndConfirmTransaction(
     transaction: Transaction,
     signers: Array<Signer>,

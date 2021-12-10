@@ -1,6 +1,10 @@
 import { Keypair, PublicKey } from '@solana/web3.js'
 import fs from 'fs'
 
+/**
+ * Represents anything that can be used to extract the base58 representation
+ * of a public key.
+ */
 export type KeyLike = string | PublicKey | Keypair
 function publicKeyString(key: KeyLike) {
   if (typeof key === 'string') {
@@ -16,23 +20,30 @@ function publicKeyString(key: KeyLike) {
 }
 
 /**
- * Adds the key with the provided label to the known keys map.
- * This improves output of assertions and more.
+ * Manages address labels in order to improve logging and provide them to tools
+ * like the solana explorer.
  *
- * When the `ADDRESS_LABEL_PATH` env var is provided this writes a map of keypair:label entries
- * to the provided path in JSON format.
- * These can then be picked up by tools like the solana explorer in order to
- * render more meaningful labels of accounts.
+ * @category diagnostics
  */
 export class AddressLabels {
+  /**
+   * Creates an instance of {@link AddressLabels}.
+   *
+   * @param knownLabels labels known ahead of time, i.e. program ids.
+   * @param logLabel if provided to added labels are logged using this function
+   * @param persistLabelsPath  path to which labels are persisted so other tools can pick them up
+   *  WARN: this will most likely be replaced soon with either a URL to post labels to or
+   *  something else that integrates with the (yet to come) amman address label server
+   */
   constructor(
     private readonly knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
-    // WARN: this will most likely be replaced soon with either a URL to post labels to or
-    // something else that integrates with the (yet to come) amman address server
     private readonly persistLabelsPath?: string
   ) {}
 
+  /**
+   * Adds the provided label for the provided key.
+   */
   addLabel = (label: string, key: KeyLike) => {
     const keyString = publicKeyString(key)
     this.logLabel(`🔑 ${label}: ${keyString}`)
@@ -47,6 +58,10 @@ export class AddressLabels {
     )
   }
 
+  /**
+   * Returns a function that allows comparing the provided key with another and
+   * can be used for assertion tools like {@link spok | https://github.com/thlorenz/spok }.
+   */
   isKeyOf = (key: KeyLike) => {
     const keyString = publicKeyString(key)
     const label = this.knownLabels[keyString]

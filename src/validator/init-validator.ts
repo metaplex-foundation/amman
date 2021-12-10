@@ -7,6 +7,9 @@ import { ValidatorConfig } from './types'
 
 const PIPE_VALIDATOR = process.env.PIPE_VALIDATOR != null
 
+/**
+ * @private
+ */
 export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   killRunningValidators: true,
   programs: [],
@@ -18,6 +21,9 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   verifyFees: false,
 }
 
+/**
+ * @private
+ */
 export async function initValidator(configArg: Partial<ValidatorConfig>) {
   const {
     killRunningValidators,

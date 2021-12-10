@@ -1,0 +1,8 @@
+{
+  "entryPoints": ["src/amman.ts"],
+  "exclude": "\"src/{cli,validator}/*\"",
+  "excludePrivate": true,
+  "categorizeByGroup": false,
+  "readme": "none",
+  "emit": "both"
+}

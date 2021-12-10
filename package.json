@@ -16,7 +16,7 @@
     "test": "tape dist/test/*.test.js",
     "lint": "prettier -c ./src/",
     "lint:fix": "prettier --format ./src",
-    "doc": "typedoc src/*.ts --readme README.md",
+    "doc": "rimraf ./docs && typedoc",
     "doctoc": "doctoc README.md"
   },
   "repository": "git@github.com:metaplex-foundation/amman.git",

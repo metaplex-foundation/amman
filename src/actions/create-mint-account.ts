@@ -17,8 +17,20 @@ type CreateMintParams = {
   freezeAuthority?: PublicKey
 }
 
+/**
+ * Transaction that is used to create a mint.
+ *
+ * @category actions
+ */
 export class CreateMint extends Transaction {
-  constructor(options: TransactionCtorFields, params: CreateMintParams) {
+  /**
+   * Constructs a {@link CreateMint} transaction.
+   * @private
+   */
+  private constructor(
+    options: TransactionCtorFields,
+    params: CreateMintParams
+  ) {
     const { feePayer } = options
     assert(feePayer != null, 'need to provide non-null feePayer')
 
@@ -47,23 +59,25 @@ export class CreateMint extends Transaction {
       )
     )
   }
-}
-export async function createMintAccount(
-  connection: Connection,
-  payer: PublicKey
-) {
-  const mint = Keypair.generate()
 
-  const mintRent = await connection.getMinimumBalanceForRentExemption(
-    MintLayout.span,
-    'confirmed'
-  )
-  const createMintTx = new CreateMint(
-    { feePayer: payer },
-    {
-      newAccountPubkey: mint.publicKey,
-      lamports: mintRent,
-    }
-  )
-  return { mint, createMintTx }
+  /**
+   * Exposed via {@link Actions} API.
+   * @private
+   */
+  static async createMintAccount(connection: Connection, payer: PublicKey) {
+    const mint = Keypair.generate()
+
+    const mintRent = await connection.getMinimumBalanceForRentExemption(
+      MintLayout.span,
+      'confirmed'
+    )
+    const createMintTx = new CreateMint(
+      { feePayer: payer },
+      {
+        newAccountPubkey: mint.publicKey,
+        lamports: mintRent,
+      }
+    )
+    return { mint, createMintTx }
+  }
 }
