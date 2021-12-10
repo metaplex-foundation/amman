@@ -7,12 +7,18 @@ running validator.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
+- [API](#api)
 - [CLI](#cli)
   - [Commands: validator](#commands-validator)
     - [Sample Validator Config](#sample-validator-config)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## API
+
+Aside from providing a CLI for various tasks, amman also provides commonly used actions,
+transactions, asserts and more via an API. Please find the [API docs here](https://metaplex-foundation.github.io/amman/docs/).
 
 ## CLI
 
