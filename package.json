@@ -17,6 +17,7 @@
     "lint": "prettier -c ./src/",
     "lint:fix": "prettier --format ./src",
     "doc": "rimraf ./docs && typedoc",
+    "doc:update": "./sh/update-docs",
     "doctoc": "doctoc README.md"
   },
   "repository": "git@github.com:metaplex-foundation/amman.git",
