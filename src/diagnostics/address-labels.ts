@@ -28,10 +28,12 @@ export class AddressLabels {
   constructor(
     private readonly knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
+    // WARN: this will most likely be replaced soon with either a URL to post labels to or
+    // something else that integrates with the (yet to come) amman address server
     private readonly persistLabelsPath?: string
   ) {}
 
-  addLabel(label: string, key: KeyLike) {
+  addLabel = (label: string, key: KeyLike) => {
     const keyString = publicKeyString(key)
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
@@ -45,7 +47,7 @@ export class AddressLabels {
     )
   }
 
-  isKeyOf(key: KeyLike) {
+  isKeyOf = (key: KeyLike) => {
     const keyString = publicKeyString(key)
     const label = this.knownLabels[keyString]
     const fn = (otherKey: KeyLike) => {
