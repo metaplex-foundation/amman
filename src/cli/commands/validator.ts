@@ -11,16 +11,18 @@ export async function handleValidatorCommand(args: ValidatorCommandArgs) {
   let config, configPath
   try {
     ;({ config, configPath } = await resolveConfig(args))
-    if (configPath != null) {
+    if (typeof configPath === 'string') {
       logInfo('Loading config from %s', configPath)
     }
-    if (config.validator == null) {
-      console.error(`This config ${config} is missing a 'validator' property`)
+    if (typeof config.validator == 'undefined') {
+      console.error(`This config \n${JSON.stringify(config)}\n is missing a 'validator' property`)
       process.exit(1)
     }
+    if (typeof config.programs !== 'undefined') {
     logInfo(
-      `Running validator with ${config.validator.programs.length} custom program(s) preloaded`
+      `Running validator with ${Object.keys(config.programs).length} custom program(s) preloaded`
     )
+    }
     logDebug(config.validator)
     await initValidator(config.validator)
     return { needHelp: false }
