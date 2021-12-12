@@ -54,8 +54,8 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
   if (resetLedger) args.push('-r')
 
   if (programs.length > 0) {
-    args.push('--bpf-program')
     for (const { programId, deployPath } of programs) {
+      args.push('--bpf-program')
       args.push(programId)
       args.push(deployPath)
     }
