@@ -38,7 +38,7 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
 
   if (killRunningValidators) {
     try {
-      exec('pkill solana-test-validator')
+      exec('pkill -f solana-test-validator')
       logInfo('Killed currently running solana-test-validator')
       await sleep(1000)
     } catch (err) {}
