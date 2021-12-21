@@ -19,6 +19,9 @@ function publicKeyString(key: KeyLike) {
   return key.toString()
 }
 
+export type AddLabel = (label: string, key: KeyLike) => void
+export type GenKeypair = (label?: string) => [PublicKey, Keypair]
+
 /**
  * Manages address labels in order to improve logging and provide them to tools
  * like the solana explorer.
@@ -44,7 +47,7 @@ export class AddressLabels {
   /**
    * Adds the provided label for the provided key.
    */
-  addLabel = (label: string, key: KeyLike) => {
+  addLabel: AddLabel = (label, key) => {
     const keyString = publicKeyString(key)
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
@@ -56,6 +59,20 @@ export class AddressLabels {
       JSON.stringify(this.knownLabels, null, 2),
       'utf8'
     )
+  }
+
+  /**
+   * Generates a keypair and returns its public key and the keypair itself as a Tuple.
+   *
+   * @param label if provided the key will be added to existing labels
+   * @return [publicKey, keypair ]
+   */
+  genKeypair: GenKeypair = (label) => {
+    const kp = Keypair.generate()
+    if (label != null) {
+      this.addLabel(label, kp)
+    }
+    return [kp.publicKey, kp]
   }
 
   /**
