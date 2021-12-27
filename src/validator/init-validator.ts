@@ -5,8 +5,6 @@ import { solanaConfig } from './prepare-config'
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { ValidatorConfig } from './types'
 
-const PIPE_VALIDATOR = process.env.PIPE_VALIDATOR != null
-
 /**
  * @private
  */
@@ -50,7 +48,7 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
     commitment,
   })
 
-  const args = ['-C', configPath, '--ledger', ledgerDir]
+  const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
 
   if (programs.length > 0) {
@@ -69,16 +67,13 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
 
   const child = spawn('solana-test-validator', args, {
     detached: true,
-    stdio: PIPE_VALIDATOR ? 'inherit' : 'ignore',
+    stdio: 'inherit',
   })
   child.unref()
 
   logInfo(
     'Spawning new solana-test-validator with programs predeployed and ledger at %s',
     ledgerDir
-  )
-  logInfo(
-    'Rerun with `PIPE_VALIDATOR=1` to triage eventual validator startup issues'
   )
 
   await ensureValidatorIsUp(jsonRpcUrl, verifyFees)
