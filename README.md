@@ -59,7 +59,7 @@ Below is an example validator config with all values set to the defaults except 
 program.
 
 ```js
-import { LOCALHOST, tmpLedgerDir } from 'amman'
+import { LOCALHOST, tmpLedgerDir } from '@metaplex-foundation/amman'
 
 module.exports = {
   validator: {
