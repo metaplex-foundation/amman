@@ -13,7 +13,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   programs: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
-  commitment: 'confirmed',
+  commitment: 'singleGossip',
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
   verifyFees: false,
