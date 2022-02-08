@@ -20,6 +20,7 @@ function publicKeyString(key: KeyLike) {
 }
 
 export type AddLabel = (label: string, key: KeyLike) => void
+export type AddLabels = (labels: Record<string, KeyLike>) => void
 export type GenKeypair = (label?: string) => [PublicKey, Keypair]
 
 /**
@@ -59,6 +60,15 @@ export class AddressLabels {
       JSON.stringify(this.knownLabels, null, 2),
       'utf8'
     )
+  }
+
+  /**
+   * Adds all specified labels for respective public key
+   */
+  addLabels: AddLabels = (labels) => {
+    for (const [label, publicKey] of Object.entries(labels)) {
+      this.addLabel(label, publicKey)
+    }
   }
 
   /**
