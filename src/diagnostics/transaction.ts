@@ -1,5 +1,6 @@
 import { Connection, TransactionSignature, PublicKey } from '@solana/web3.js'
 import { strict as assert } from 'assert'
+import BN from 'bn.js'
 
 export async function tokenBalanceFor(
   connection: Connection,
@@ -25,7 +26,7 @@ export async function tokenBalancesOfTransaction(
   const byOwner = new Map()
   for (const { mint, owner, uiTokenAmount } of preTokenBalances ?? []) {
     byOwner.set(owner, {
-      [mint]: { amountPre: parseInt(uiTokenAmount.amount) },
+      [mint]: { amountPre: new BN(uiTokenAmount.amount) },
     })
   }
   for (const { mint, owner, uiTokenAmount } of postTokenBalances ?? []) {
@@ -39,7 +40,7 @@ export async function tokenBalancesOfTransaction(
       currentMint != null,
       'should have pre token balance for mint for each post token balance'
     )
-    currentMint.amountPost = parseInt(uiTokenAmount.amount)
+    currentMint.amountPost = new BN(uiTokenAmount.amount)
   }
 
   return byOwner
