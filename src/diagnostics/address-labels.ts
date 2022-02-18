@@ -6,6 +6,15 @@ import fs from 'fs'
  * of a public key.
  */
 export type KeyLike = string | PublicKey | Keypair
+
+function isKeyLike(val: any): val is KeyLike {
+  if (val == null) return false
+  return (
+    typeof val === 'string' ||
+    typeof (val as PublicKey).toBase58 === 'function' ||
+    (val as Keypair).publicKey != null
+  )
+}
 function publicKeyString(key: KeyLike) {
   if (typeof key === 'string') {
     return key
@@ -13,7 +22,7 @@ function publicKeyString(key: KeyLike) {
   if (typeof (key as PublicKey).toBase58 === 'function') {
     return (key as PublicKey).toBase58()
   }
-  if (typeof (key as Keypair).publicKey !== null) {
+  if (typeof (key as Keypair).publicKey != null) {
     return (key as Keypair).publicKey.toBase58()
   }
   return key.toString()
@@ -73,15 +82,12 @@ export class AddressLabels {
   }
 
   /**
-   * Adds labels for all {@link PublicKey}s it finds on the provided object
+   * Adds labels for all {@link KeyLike}s it finds on the provided object
    */
   findAndAddLabels: FindAndAddLabels = (obj) => {
-    for (const [key, val] of Object.entries(obj)) {
-      if (
-        typeof key === 'string' &&
-        typeof (val as PublicKey).toBase58 === 'function'
-      ) {
-        this.addLabel(key, val as PublicKey)
+    for (const [label, key] of Object.entries(obj)) {
+      if (typeof label === 'string' && isKeyLike(key)) {
+        this.addLabel(label, key)
       }
     }
   }
@@ -95,6 +101,22 @@ export class AddressLabels {
     return pairs.map((x) => {
       const keyString = x.publicKey.toBase58()
       return { label: this.knownLabels[keyString] ?? '', key: keyString }
+    })
+  }
+
+  /**
+   * Resolves the {@link PublicKey}s for the signers/keypairs it finds on the provided object.
+   *
+   * @return resolvedKeys which are labels for known public keys or the public key
+   */
+  findAndResolveKeypairs(obj: any) {
+    const pairs: [string, KeyLike][] = Object.entries(obj).filter(
+      ([key, val]) => typeof key === 'string' && isKeyLike(val)
+    ) as [string, KeyLike][]
+
+    return pairs.map(([key, val]) => {
+      const keyString = publicKeyString(val)
+      return { label: this.knownLabels[keyString] ?? key, key: keyString }
     })
   }
 
