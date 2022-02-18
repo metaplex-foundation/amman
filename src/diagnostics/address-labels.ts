@@ -1,4 +1,4 @@
-import { Keypair, PublicKey } from '@solana/web3.js'
+import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import fs from 'fs'
 
 /**
@@ -21,6 +21,7 @@ function publicKeyString(key: KeyLike) {
 
 export type AddLabel = (label: string, key: KeyLike) => void
 export type AddLabels = (labels: Record<string, KeyLike>) => void
+export type FindAndAddLabels = (labels: any) => void
 export type GenKeypair = (label?: string) => [PublicKey, Keypair]
 
 /**
@@ -69,6 +70,32 @@ export class AddressLabels {
     for (const [label, publicKey] of Object.entries(labels)) {
       this.addLabel(label, publicKey)
     }
+  }
+
+  /**
+   * Adds labels for all {@link PublicKey}s it finds on the provided object
+   */
+  findAndAddLabels: FindAndAddLabels = (obj) => {
+    for (const [key, val] of Object.entries(obj)) {
+      if (
+        typeof key === 'string' &&
+        typeof (val as PublicKey).toBase58 === 'function'
+      ) {
+        this.addLabel(key, val as PublicKey)
+      }
+    }
+  }
+
+  /**
+   * Resolves the {@link PublicKey}s for the given signers/keypairs.
+   *
+   * @return resolvedKeys which are labels for known public keys or the public key
+   */
+  resolveKeypairs(pairs: (Signer | Keypair)[]) {
+    return pairs.map((x) => {
+      const keyString = x.publicKey.toBase58()
+      return { label: this.knownLabels[keyString] ?? '', key: keyString }
+    })
   }
 
   /**
