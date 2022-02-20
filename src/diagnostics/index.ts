@@ -1,2 +1,2 @@
 export * from './address-labels'
-export * from './transaction'
+export * from './token-balances'
