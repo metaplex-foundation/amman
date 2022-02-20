@@ -105,10 +105,11 @@ export class AddressLabels {
   }
 
   /**
-   * Resolves a known label for the provided address
+   * Resolves a known label for the provided key or address
    * @returns label for the address or `undefined` if not found
    */
-  resolveAddress(address: string): string | undefined {
+  resolve(keyOrAddress: KeyLike | string): string | undefined {
+    const address = publicKeyString(keyOrAddress)
     return this.knownLabels[address]
   }
 
