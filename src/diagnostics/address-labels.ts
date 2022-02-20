@@ -105,6 +105,14 @@ export class AddressLabels {
   }
 
   /**
+   * Resolves a known label for the provided address
+   * @returns label for the address or `undefined` if not found
+   */
+  resolveAddress(address: string): string | undefined {
+    return this.knownLabels[address]
+  }
+
+  /**
    * Resolves the {@link PublicKey}s for the signers/keypairs it finds on the provided object.
    *
    * @return resolvedKeys which are labels for known public keys or the public key
