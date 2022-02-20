@@ -7,6 +7,7 @@ import {
 import BN from 'bn.js'
 import table from 'text-table'
 import { AddressLabels } from './address-labels'
+import { resolveTokenRegistry } from './token-registry'
 
 /**
  * Interface to query token balances of a particular transaction.
@@ -57,7 +58,10 @@ export class TokenBalances {
   ): Promise<
     Map<
       string,
-      Record<string, { amountPre: BN | number; amountPost: BN | number }>
+      Record<
+        string,
+        { amountPre: BN | number; amountPost: BN | number; rawMint: string }
+      >
     >
   > {
     const parsed = await this.connection.getParsedTransaction(this.signature)
@@ -73,23 +77,31 @@ export class TokenBalances {
     }
 
     const byAccount = new Map()
-    for (let { mint, uiTokenAmount, accountIndex } of preTokenBalances ?? []) {
+    for (let {
+      mint: rawMint,
+      uiTokenAmount,
+      accountIndex,
+    } of preTokenBalances ?? []) {
       const account = this.resolveAccount(accounts, accountIndex, rawAddresses)
       if (account == null) continue
 
-      if (!rawAddresses) {
-        mint = this.addressLabels?.resolve(mint) ?? mint
-      }
+      const mint = rawAddresses
+        ? rawMint
+        : this.addressLabels?.resolve(rawMint) ?? rawMint
 
       byAccount.set(account, {
-        [mint]: { amountPre: new BN(uiTokenAmount.amount) },
+        [mint]: { amountPre: new BN(uiTokenAmount.amount), rawMint },
       })
     }
-    for (let { mint, uiTokenAmount, accountIndex } of postTokenBalances ?? []) {
+    for (let {
+      mint: rawMint,
+      uiTokenAmount,
+      accountIndex,
+    } of postTokenBalances ?? []) {
       const account = this.resolveAccount(accounts, accountIndex, rawAddresses)
-      if (!rawAddresses) {
-        mint = this.addressLabels?.resolve(mint) ?? mint
-      }
+      const mint = rawAddresses
+        ? rawMint
+        : this.addressLabels?.resolve(rawMint) ?? rawMint
 
       if (account == null) continue
       if (!byAccount.has(account)) {
@@ -103,7 +115,7 @@ export class TokenBalances {
         // The account has not been minted the mint to before and thus it has no
         // pre balance. We denote this as `0` pre balance which is what the
         // solana explorer does as well.
-        currentMint = current[mint] = { amountPre: new BN(0) }
+        currentMint = current[mint] = { amountPre: new BN(0), rawMint }
       }
       currentMint.amountPost = new BN(uiTokenAmount.amount)
     }
@@ -118,6 +130,7 @@ export class TokenBalances {
     log: Console['log'] & { enabled?: boolean } = console.log
   ): Promise<TokenBalances> {
     if (typeof log?.enabled !== 'undefined' && !log?.enabled) return this
+    const tokenRegistry = await resolveTokenRegistry()
 
     const balances = await this.byAccountMap()
     const rows: any[] = [
@@ -126,11 +139,13 @@ export class TokenBalances {
     ]
 
     for (const [account, mints] of balances) {
-      for (const [mintAddress, { amountPre, amountPost }] of Object.entries(
-        mints
-      )) {
+      for (const [
+        mintAddress,
+        { amountPre, amountPost, rawMint },
+      ] of Object.entries(mints)) {
         const delta = new BN(amountPost).sub(new BN(amountPre))
-        const row = [account, mintAddress, delta, `${amountPost} tokens`]
+        const unit = tokenRegistry.get(rawMint)?.name ?? 'tokens'
+        const row = [account, mintAddress, delta, `${amountPost} ${unit}`]
         rows.push(row)
       }
     }
