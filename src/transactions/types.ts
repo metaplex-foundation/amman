@@ -1,5 +1,4 @@
 import {
-  ConfirmedTransaction,
   Connection,
   PublicKey,
   RpcResponseAndContext,
@@ -8,6 +7,7 @@ import {
   Signer,
   Transaction,
   TransactionError,
+  TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
 
@@ -49,7 +49,7 @@ export type TransactionSummary = {
 export type ConfirmedTransactionDetails = {
   txSignature: string
   txRpcResponse: RpcResponseAndContext<SignatureResult>
-  txConfirmed: ConfirmedTransaction
+  txConfirmed: TransactionResponse
   txSummary: TransactionSummary
 }
 
