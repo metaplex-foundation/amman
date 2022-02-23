@@ -13,7 +13,7 @@ then
   git checkout gh-pages && git reset master --hard  && \
   yarn doc && git add ./docs &&                        \
   git commit -m "docs: updating to latest API" &&      \
-  git push origin gh-pages &&                          \
+  git push origin gh-pages -f &&                       \
   git checkout master
 else
     echo "Please commit any changes before updating docs."
