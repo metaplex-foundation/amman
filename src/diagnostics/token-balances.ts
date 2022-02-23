@@ -11,6 +11,8 @@ import { resolveTokenRegistry } from './token-registry'
 
 /**
  * Interface to query token balances of a particular transaction.
+ *
+ * @category diagnostics
  */
 export class TokenBalances {
   private constructor(

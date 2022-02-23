@@ -4,6 +4,7 @@ import fs from 'fs'
 /**
  * Represents anything that can be used to extract the base58 representation
  * of a public key.
+ * @private
  */
 export type KeyLike = string | PublicKey | Keypair
 
@@ -28,8 +29,11 @@ function publicKeyString(key: KeyLike) {
   return key.toString()
 }
 
+/** @private */
 export type AddLabel = (label: string, key: KeyLike) => void
+/** @private */
 export type AddLabels = (labels: any) => void
+/** @private */
 export type GenKeypair = (label?: string) => [PublicKey, Keypair]
 
 /**

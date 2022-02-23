@@ -5,7 +5,7 @@ import { TransactionSummary } from '../transactions'
  * The minimum methods that the first argument passed to assert functions like
  * {@link assertConfirmedTransaction} needs to have.
  *
- * @cateogory asserts
+ * @category asserts
  */
 export type Assert = {
   equal(actual: any, expected: any, msg?: string): void
@@ -18,7 +18,7 @@ export type Assert = {
  * @param t
  * @param tx the confirmed transaction to verify
  * @param args specify what details should be verified
- * @cateogory asserts
+ * @category asserts
  */
 export function assertConfirmedTransaction(
   t: Assert,
@@ -38,7 +38,7 @@ export function assertConfirmedTransaction(
  * @param t
  * @param summary transaction summary to verify
  * @param args specify what details should be verified
- * @cateogory asserts
+ * @category asserts
  */
 export function assertTransactionSummary(
   t: Assert,
@@ -71,7 +71,7 @@ export function assertTransactionSummary(
  * @param t
  * @param err error to verify
  * @param msgRxs list of {@link RegExp} which will be matched on the error _message_ or `err.logs`.
- * @cateogory asserts
+ * @category asserts
  */
 export function assertError(
   t: Assert,

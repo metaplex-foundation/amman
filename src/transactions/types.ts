@@ -11,6 +11,7 @@ import {
   TransactionSignature,
 } from '@solana/web3.js'
 
+/** @private */
 export type SendTransaction = (
   connection: Connection,
   transaction: Transaction,
@@ -25,6 +26,7 @@ export type SendTransaction = (
  * @property fee charged for the transaction execution
  * @property slot same as {@link ConfirmedTransaction['slot']
  * @property err obtained from the {@link ConfirmedTransaction['meta']} property
+ * @category transactions
  */
 export type TransactionSummary = {
   logMessages: string[]
@@ -51,7 +53,7 @@ export type ConfirmedTransactionDetails = {
   txSummary: TransactionSummary
 }
 
-/*
+/**
  * Interface to transaction handlers that can either be backed directly by a
  * payer or can use a wallet.
  *
