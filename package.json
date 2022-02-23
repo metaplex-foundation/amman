@@ -43,15 +43,18 @@
   },
   "dependencies": {
     "@solana/spl-token": "^0.1.8",
+    "@solana/spl-token-registry": "^0.2.2405",
     "@solana/web3.js": "^1.35.0",
     "bn.js": "^5.2.0",
     "debug": "^4.3.3",
+    "text-table": "^0.2.0",
     "wait-on": "^6.0.0",
     "yargs": "^17.3.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/node": "^16.11.12",
+    "@types/text-table": "^0.2.2",
     "@types/wait-on": "^5.3.1",
     "@types/yargs": "^17.0.7",
     "doctoc": "^2.1.0",

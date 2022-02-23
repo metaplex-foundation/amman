@@ -4,6 +4,7 @@ import fs from 'fs'
 /**
  * Represents anything that can be used to extract the base58 representation
  * of a public key.
+ * @private
  */
 export type KeyLike = string | PublicKey | Keypair
 
@@ -28,9 +29,11 @@ function publicKeyString(key: KeyLike) {
   return key.toString()
 }
 
+/** @private */
 export type AddLabel = (label: string, key: KeyLike) => void
-export type AddLabels = (labels: Record<string, KeyLike>) => void
-export type FindAndAddLabels = (labels: any) => void
+/** @private */
+export type AddLabels = (labels: any) => void
+/** @private */
 export type GenKeypair = (label?: string) => [PublicKey, Keypair]
 
 /**
@@ -73,18 +76,9 @@ export class AddressLabels {
   }
 
   /**
-   * Adds all specified labels for respective public key
-   */
-  addLabels: AddLabels = (labels) => {
-    for (const [label, publicKey] of Object.entries(labels)) {
-      this.addLabel(label, publicKey)
-    }
-  }
-
-  /**
    * Adds labels for all {@link KeyLike}s it finds on the provided object
    */
-  findAndAddLabels: FindAndAddLabels = (obj) => {
+  addLabels: AddLabels = (obj) => {
     for (const [label, key] of Object.entries(obj)) {
       if (typeof label === 'string' && isKeyLike(key)) {
         this.addLabel(label, key)
@@ -97,27 +91,24 @@ export class AddressLabels {
    *
    * @return resolvedKeys which are labels for known public keys or the public key
    */
-  resolveKeypairs(pairs: (Signer | Keypair)[]) {
-    return pairs.map((x) => {
-      const keyString = x.publicKey.toBase58()
-      return { label: this.knownLabels[keyString] ?? '', key: keyString }
-    })
+  resolveKeypairs(pairs: (Signer | Keypair)[] | Object) {
+    if (Array.isArray(pairs)) {
+      return pairs.map((x) => {
+        const keyString = x.publicKey.toBase58()
+        return { label: this.knownLabels[keyString] ?? '', key: keyString }
+      })
+    } else {
+      return this._findAndResolveKeypairs(pairs)
+    }
   }
 
   /**
-   * Resolves the {@link PublicKey}s for the signers/keypairs it finds on the provided object.
-   *
-   * @return resolvedKeys which are labels for known public keys or the public key
+   * Resolves a known label for the provided key or address
+   * @returns label for the address or `undefined` if not found
    */
-  findAndResolveKeypairs(obj: any) {
-    const pairs: [string, KeyLike][] = Object.entries(obj).filter(
-      ([key, val]) => typeof key === 'string' && isKeyLike(val)
-    ) as [string, KeyLike][]
-
-    return pairs.map(([key, val]) => {
-      const keyString = publicKeyString(val)
-      return { label: this.knownLabels[keyString] ?? key, key: keyString }
-    })
+  resolve(keyOrAddress: KeyLike | string): string | undefined {
+    const address = publicKeyString(keyOrAddress)
+    return this.knownLabels[address]
   }
 
   /**
@@ -149,5 +140,21 @@ export class AddressLabels {
       fn.$spec = `isKeyOf('${label}')`
     }
     return fn
+  }
+
+  /**
+   * Resolves the {@link PublicKey}s for the signers/keypairs it finds on the provided object.
+   *
+   * @return resolvedKeys which are labels for known public keys or the public key
+   */
+  private _findAndResolveKeypairs(obj: any) {
+    const pairs: [string, KeyLike][] = Object.entries(obj).filter(
+      ([key, val]) => typeof key === 'string' && isKeyLike(val)
+    ) as [string, KeyLike][]
+
+    return pairs.map(([key, val]) => {
+      const keyString = publicKeyString(val)
+      return { label: this.knownLabels[keyString] ?? key, key: keyString }
+    })
   }
 }
