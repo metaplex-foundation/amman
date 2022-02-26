@@ -54,5 +54,6 @@ export async function airdrop(
   sol = 1
 ) {
   const sig = await connection.requestAirdrop(publicKey, sol * LAMPORTS_PER_SOL)
-  return connection.confirmTransaction(sig)
+  const signatureResult = await connection.confirmTransaction(sig)
+  return { signature: sig, signatureResult }
 }

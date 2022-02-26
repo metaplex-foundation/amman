@@ -1,11 +1,11 @@
 import { strict as assert } from 'assert'
 import {
-  ConfirmedTransaction,
   Connection,
   Keypair,
   SendOptions,
   Signer,
   Transaction,
+  TransactionResponse,
 } from '@solana/web3.js'
 import { defaultSendOptions } from '.'
 import {
@@ -14,7 +14,7 @@ import {
   TransactionSummary,
 } from './types'
 
-function transactionSummary(tx: ConfirmedTransaction): TransactionSummary {
+function transactionSummary(tx: TransactionResponse): TransactionSummary {
   const logMessages = tx.meta?.logMessages ?? []
   const fee = tx.meta?.fee
   const slot = tx.slot
@@ -55,7 +55,7 @@ export class PayerTransactionHandler implements TransactionHandler {
     options?: SendOptions
   ): Promise<ConfirmedTransactionDetails> {
     transaction.recentBlockhash = (
-      await this.connection.getRecentBlockhash()
+      await this.connection.getLatestBlockhash()
     ).blockhash
 
     const txSignature = await this.connection.sendTransaction(
@@ -64,9 +64,7 @@ export class PayerTransactionHandler implements TransactionHandler {
       options ?? defaultSendOptions
     )
     const txRpcResponse = await this.connection.confirmTransaction(txSignature)
-    const txConfirmed = await this.connection.getConfirmedTransaction(
-      txSignature
-    )
+    const txConfirmed = await this.connection.getTransaction(txSignature)
 
     assert(txConfirmed != null, 'confirmed transaction should not be null')
 

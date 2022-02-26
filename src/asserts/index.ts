@@ -1,4 +1,4 @@
-import { ConfirmedTransaction } from '@solana/web3.js'
+import { TransactionResponse } from '@solana/web3.js'
 import { TransactionSummary } from '../transactions'
 
 /**
@@ -22,7 +22,7 @@ export type Assert = {
  */
 export function assertConfirmedTransaction(
   t: Assert,
-  tx: ConfirmedTransaction,
+  tx: TransactionResponse,
   args: { fee?: number } = {}
 ) {
   t.equal(tx.meta?.err, null, 'confirmed transaction has no error')
