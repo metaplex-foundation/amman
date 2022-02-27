@@ -1,5 +1,5 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
-import fs from 'fs'
+import { AmmanClient } from '../relay'
 
 /**
  * Represents anything that can be used to extract the base58 representation
@@ -48,15 +48,14 @@ export class AddressLabels {
    *
    * @param knownLabels labels known ahead of time, i.e. program ids.
    * @param logLabel if provided to added labels are logged using this function
-   * @param persistLabelsPath  path to which labels are persisted so other tools can pick them up
-   *  WARN: this will most likely be replaced soon with either a URL to post labels to or
-   *  something else that integrates with the (yet to come) amman address label server
    */
   constructor(
     private readonly knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
-    private readonly persistLabelsPath?: string
-  ) {}
+    private readonly ammanClient: AmmanClient = AmmanClient.getInstance()
+  ) {
+    this.ammanClient.addAddressLabels(knownLabels)
+  }
 
   /**
    * Adds the provided label for the provided key.
@@ -67,12 +66,7 @@ export class AddressLabels {
 
     this.knownLabels[keyString] = label
 
-    if (this.persistLabelsPath == null) return
-    fs.writeFileSync(
-      this.persistLabelsPath,
-      JSON.stringify(this.knownLabels, null, 2),
-      'utf8'
-    )
+    this.ammanClient.addAddressLabels({ [keyString]: label })
   }
 
   /**

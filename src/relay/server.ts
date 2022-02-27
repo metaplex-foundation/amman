@@ -1,9 +1,14 @@
 import { createServer, Server as HttpServer } from 'http'
 import { Server, Socket } from 'socket.io'
 import { logDebug, logInfo, logTrace } from '../utils'
-import { AMMAN_RELAY_PORT, MSG_UPDATE_ADDRESS_LABELS } from './consts'
+import {
+  AMMAN_RELAY_PORT,
+  MSG_GET_KNOWN_ADDRESS_LABELS,
+  MSG_UPDATE_ADDRESS_LABELS,
+} from './consts'
 
 class RelayServer {
+  private readonly allKnownLabels: Record<string, string> = {}
   constructor(readonly io: Server) {
     this.hookConnectionEvents()
   }
@@ -20,13 +25,24 @@ class RelayServer {
   }
 
   hookMessages(socket: Socket) {
-    socket.on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
-      if (logTrace.enabled) {
-        const labelCount = Object.keys(labels).length
-        logTrace(`Got ${labelCount} labels, broadcasting ...`)
-      }
-      socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
-    })
+    socket
+      .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
+        if (logTrace.enabled) {
+          const labelCount = Object.keys(labels).length
+          logTrace(`Got ${labelCount} labels, broadcasting ...`)
+        }
+        for (const [key, val] of Object.entries(labels)) {
+          this.allKnownLabels[key] = val
+        }
+        socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
+      })
+      .on(MSG_GET_KNOWN_ADDRESS_LABELS, () => {
+        if (logTrace.enabled) {
+          const labelCount = Object.keys(this.allKnownLabels).length
+          logTrace(`Sending ${labelCount} known labels to requesting client.`)
+        }
+        socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
+      })
   }
 }
 
