@@ -54,6 +54,12 @@ export class AddressLabels {
     private readonly logLabel: (msg: string) => void = (_) => {},
     private readonly ammanClient: AmmanClient = AmmanClient.getInstance()
   ) {
+    if (typeof ammanClient === 'string') {
+      console.error(
+        'ADDRESS_LABLES_PATH is deprecated, you do not need to pass it anymore'
+      )
+      ammanClient = AmmanClient.getInstance()
+    }
     this.ammanClient.addAddressLabels(knownLabels)
   }
 
