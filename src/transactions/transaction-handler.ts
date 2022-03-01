@@ -13,6 +13,7 @@ import {
   TransactionHandler,
   TransactionSummary,
 } from './types'
+import { AddressLabels } from '../diagnostics'
 
 function transactionSummary(tx: TransactionResponse): TransactionSummary {
   const logMessages = tx.meta?.logMessages ?? []
@@ -52,17 +53,25 @@ export class PayerTransactionHandler implements TransactionHandler {
   async sendAndConfirmTransaction(
     transaction: Transaction,
     signers: Array<Signer>,
-    options?: SendOptions
+    optionsOrLabel?: SendOptions | string,
+    label?: string
   ): Promise<ConfirmedTransactionDetails> {
     transaction.recentBlockhash = (
       await this.connection.getLatestBlockhash()
     ).blockhash
 
+    const optionsIsLabel = typeof optionsOrLabel === 'string'
+    const options = optionsIsLabel ? undefined : optionsOrLabel
+    const addressLabel = optionsIsLabel ? optionsOrLabel : label
     const txSignature = await this.connection.sendTransaction(
       transaction,
       [this.payer, ...signers],
       options ?? defaultSendOptions
     )
+    if (addressLabel != null) {
+      AddressLabels.instance.addLabel(addressLabel, txSignature)
+    }
+
     const txRpcResponse = await this.connection.confirmTransaction(txSignature)
     const txConfirmed = await this.connection.getTransaction(txSignature)
 

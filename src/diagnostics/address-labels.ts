@@ -1,5 +1,6 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import { AmmanClient } from '../relay'
+import { strict as assert } from 'assert'
 
 /**
  * Represents anything that can be used to extract the base58 representation
@@ -49,7 +50,7 @@ export class AddressLabels {
    * @param knownLabels labels known ahead of time, i.e. program ids.
    * @param logLabel if provided to added labels are logged using this function
    */
-  constructor(
+  private constructor(
     private readonly knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
     private readonly ammanClient: AmmanClient = AmmanClient.getInstance()
@@ -156,5 +157,33 @@ export class AddressLabels {
       const keyString = publicKeyString(val)
       return { label: this.knownLabels[keyString] ?? key, key: keyString }
     })
+  }
+
+  // -----------------
+  // Instance
+  // -----------------
+  private static _instance: AddressLabels | undefined
+  static setInstance(
+    knownLabels: Record<string, string>,
+    logLabel?: (msg: string) => void,
+    ammanClient?: AmmanClient
+  ) {
+    if (AddressLabels._instance != null) {
+      console.error('Can only set AddressLabels instance once')
+      return AddressLabels._instance
+    }
+    AddressLabels._instance = new AddressLabels(
+      knownLabels,
+      logLabel,
+      ammanClient
+    )
+    return AddressLabels._instance
+  }
+  static get instance() {
+    assert(
+      AddressLabels._instance != null,
+      'need to AddressLabels.setInstance first'
+    )
+    return AddressLabels._instance!
   }
 }
