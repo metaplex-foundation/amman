@@ -6,6 +6,7 @@ import {
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
 } from './consts'
+import { killRunningServer } from './server.kill'
 
 class RelayServer {
   private readonly allKnownLabels: Record<string, string> = {}
@@ -58,11 +59,14 @@ export class Relay {
     return { app: server, io, relayServer }
   }
 
-  static startServer(): Promise<{
+  static async startServer(killRunning: boolean = true): Promise<{
     app: HttpServer
     io: Server
     relayServer: RelayServer
   }> {
+    if (killRunning) {
+      await killRunningServer(AMMAN_RELAY_PORT)
+    }
     const { app, io, relayServer } = this.createApp()
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
