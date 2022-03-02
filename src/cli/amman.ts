@@ -19,9 +19,17 @@ const commands = yargs(hideBin(process.argv))
   })
   .command(
     'relay',
-    'Launches a server that relays messages to the amman-explorer'
+    'Launches a server that relays messages to the amman-explorer',
+    (args) => {
+      return args.option('ignoreRunning', {
+        alias: 'i',
+        desc: 'If provided does not kill a relay that is already running on the relay port',
+        type: 'boolean',
+        default: false,
+        demandOption: false,
+      })
+    }
   )
-
 async function main() {
   const args = commands.parseSync()
 
@@ -35,7 +43,7 @@ async function main() {
       commands.showHelp()
     }
   } else if (args._[0] === 'relay') {
-    handleRelayCommand()
+    handleRelayCommand(args.ignoreRunning)
   } else {
     commands.showHelp()
   }

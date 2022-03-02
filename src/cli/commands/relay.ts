@@ -1,5 +1,9 @@
 import { Relay } from '../../relay/server'
 
-export function handleRelayCommand() {
-  Relay.startServer()
+export type RelayCommandArgs = {
+  killRunningRelay: boolean
+}
+
+export function handleRelayCommand(ignoreRunning: boolean) {
+  Relay.startServer(!ignoreRunning)
 }
