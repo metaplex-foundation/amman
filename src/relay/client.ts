@@ -5,7 +5,7 @@ import { AMMAN_RELAY_PORT, MSG_UPDATE_ADDRESS_LABELS } from './consts'
 export class AmmanClient {
   readonly socket: Socket
   constructor(readonly url: string = `http://localhost:${AMMAN_RELAY_PORT}`) {
-    this.socket = io(url)
+    this.socket = io(url, { autoUnref: true })
   }
   connect() {
     if (this.socket.connected) return this
