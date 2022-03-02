@@ -20,7 +20,11 @@ export async function killRunningServer(port: number) {
       logDebug(`Sent 'SIGTERM' to ${pid}`)
       await sleep(2000)
     } catch (err) {
-      logError(err)
+      if (logError.enabled) {
+        logError(err)
+      } else {
+        console.error(err)
+      }
     }
   }
 }

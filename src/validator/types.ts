@@ -43,4 +43,5 @@ export type ValidatorConfig = {
   ledgerDir: string
   resetLedger: boolean
   verifyFees: boolean
+  launchExplorerRelay: boolean
 }

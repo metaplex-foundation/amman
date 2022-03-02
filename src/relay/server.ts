@@ -1,4 +1,5 @@
 import { createServer, Server as HttpServer } from 'http'
+import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { logDebug, logInfo, logTrace } from '../utils'
 import {
@@ -70,7 +71,13 @@ export class Relay {
     const { app, io, relayServer } = this.createApp()
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
-        logInfo('Server listening on %s', app.address())
+        const addr = app.address() as AddressInfo
+        const msg = `Amman Relay listening on ${addr.address}:${addr.port}`
+        if (logInfo.enabled) {
+          logInfo(msg)
+        } else {
+          console.log(msg)
+        }
         resolve({ app, io, relayServer })
       })
     })

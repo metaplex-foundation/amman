@@ -1,9 +1,18 @@
-import { LOCALHOST, logInfo, logTrace, sleep, tmpLedgerDir } from '../utils'
+import {
+  LOCALHOST,
+  logError,
+  logInfo,
+  logTrace,
+  sleep,
+  tmpLedgerDir,
+} from '../utils'
 
 import { execSync as exec, spawn } from 'child_process'
 import { solanaConfig } from './prepare-config'
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { ValidatorConfig } from './types'
+import { Relay } from '../relay/server'
+import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 
 /**
  * @private
@@ -17,12 +26,16 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
   verifyFees: false,
+  launchExplorerRelay: true,
 }
 
 /**
  * @private
  */
-export async function initValidator(configArg: Partial<ValidatorConfig>) {
+export async function initValidator(
+  validatorConfig: Partial<ValidatorConfig>,
+  relayConfig: Partial<RelayConfig>
+) {
   const {
     killRunningValidators,
     programs,
@@ -32,7 +45,12 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
     ledgerDir,
     resetLedger,
     verifyFees,
-  }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...configArg }
+    launchExplorerRelay,
+  }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
+  const { killRunningRelay }: RelayConfig = {
+    ...DEFAULT_RELAY_CONFIG,
+    ...relayConfig,
+  }
 
   if (killRunningValidators) {
     try {
@@ -75,6 +93,24 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
     'Spawning new solana-test-validator with programs predeployed and ledger at %s',
     ledgerDir
   )
+
+  // Launch relay server in parallel
+  if (launchExplorerRelay) {
+    Relay.startServer(killRunningRelay)
+      .catch((err) => {
+        const msg = 'Failed to launch Relay'
+        if (logError.enabled) {
+          logError(msg)
+          logError(err)
+        } else {
+          console.error(msg)
+          console.error(err)
+        }
+      })
+      .then(() => {
+        logInfo('Successfully launched Relay')
+      })
+  }
 
   await ensureValidatorIsUp(jsonRpcUrl, verifyFees)
   await cleanupConfig()
