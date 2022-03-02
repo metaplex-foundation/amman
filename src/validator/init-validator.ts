@@ -19,6 +19,7 @@ import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
  */
 export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   killRunningValidators: true,
+  launchExplorerRelay: process.env.CI == null,
   programs: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
@@ -26,7 +27,6 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
   verifyFees: false,
-  launchExplorerRelay: true,
 }
 
 /**
