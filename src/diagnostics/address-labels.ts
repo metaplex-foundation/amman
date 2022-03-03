@@ -117,6 +117,7 @@ export class AddressLabels {
    *
    * @param label if provided the key will be added to existing labels
    * @return [publicKey, keypair ]
+   * @private
    */
   genKeypair: GenKeypair = (label) => {
     const kp = Keypair.generate()

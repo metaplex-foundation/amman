@@ -1,4 +1,4 @@
-import { AddressLabels } from './diagnostics/address-labels'
+import { AddressLabels, GenKeypair } from './diagnostics/address-labels'
 import {
   AmmanClient,
   ConnectedAmmanClient,
@@ -26,6 +26,17 @@ import {
 export class Amman {
   private constructor(readonly addresses: AddressLabels) {}
   private static _instance: Amman | undefined
+
+  /**
+   * Generates a keypair and returns its public key and the keypair itself as a Tuple.
+   *
+   * @param label if provided the key will be added to existing labels
+   * @return [publicKey, keypair ]
+   */
+  genKeypair: GenKeypair = (label?: string) => {
+    return this.addresses.genKeypair(label)
+  }
+
   static instance(
     args: {
       knownLabels?: Record<string, string>
