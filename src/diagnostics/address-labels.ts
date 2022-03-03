@@ -1,5 +1,5 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
-import { AmmanClient } from '../relay'
+import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
 
 /**
@@ -53,13 +53,13 @@ export class AddressLabels {
   private constructor(
     private readonly knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
-    private readonly ammanClient: AmmanClient = AmmanClient.getInstance()
+    private readonly ammanClient: AmmanClient = ConnectedAmmanClient.getInstance()
   ) {
     if (typeof ammanClient === 'string') {
       console.error(
         'ADDRESS_LABLES_PATH is deprecated, you do not need to pass it anymore'
       )
-      ammanClient = AmmanClient.getInstance()
+      ammanClient = ConnectedAmmanClient.getInstance()
     }
     this.ammanClient.addAddressLabels(knownLabels)
   }

@@ -13,7 +13,7 @@ import {
   TransactionHandler,
   TransactionSummary,
 } from './types'
-import { AddressLabels } from '../diagnostics'
+import { AddressLabels } from '../diagnostics/address-labels'
 
 function transactionSummary(tx: TransactionResponse): TransactionSummary {
   const logMessages = tx.meta?.logMessages ?? []

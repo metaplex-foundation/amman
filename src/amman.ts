@@ -1,5 +1,5 @@
 export { airdrop, tmpLedgerDir, LOCALHOST } from './utils'
+export * from './api'
 export * from './asserts'
 export * from './diagnostics'
-export * from './relay'
 export * from './transactions'

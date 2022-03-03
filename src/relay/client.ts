@@ -2,12 +2,18 @@ import io, { Socket } from 'socket.io-client'
 import { logDebug, logTrace } from '../utils'
 import { AMMAN_RELAY_PORT, MSG_UPDATE_ADDRESS_LABELS } from './consts'
 
-export class AmmanClient {
-  readonly socket: Socket
+/** @private */
+export type AmmanClient = {
+  addAddressLabels(labels: Record<string, string>): void
+}
+
+/** @private */
+export class ConnectedAmmanClient implements AmmanClient {
+  private readonly socket: Socket
   constructor(readonly url: string = `http://localhost:${AMMAN_RELAY_PORT}`) {
     this.socket = io(url, { autoUnref: true })
   }
-  connect() {
+  private connect() {
     if (this.socket.connected) return this
     this.socket.connect()
     logDebug('AmmanClient connected')
@@ -22,10 +28,16 @@ export class AmmanClient {
     this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
   }
 
-  private static _instance: AmmanClient | undefined
+  private static _instance: ConnectedAmmanClient | undefined
   static getInstance(url?: string) {
-    if (AmmanClient._instance != null) return AmmanClient._instance
-    AmmanClient._instance = new AmmanClient(url).connect()
-    return AmmanClient._instance
+    if (ConnectedAmmanClient._instance != null)
+      return ConnectedAmmanClient._instance
+    ConnectedAmmanClient._instance = new ConnectedAmmanClient(url).connect()
+    return ConnectedAmmanClient._instance
   }
+}
+
+/** @private */
+export class DisconnectedAmmanClient implements AmmanClient {
+  addAddressLabels(_labels: Record<string, string>): void {}
 }
