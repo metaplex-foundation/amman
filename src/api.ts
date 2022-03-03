@@ -37,6 +37,16 @@ export class Amman {
     return this.addresses.genKeypair(label)
   }
 
+  /**
+   * Creates an instance of {@link Amman}.
+   *
+   * @param args
+   * @param args.knownLabels label keys that do not change, i.e. `{ [PROGRM_ID]:  'My Program' }`
+   * @param args.logLabel used to log labels that are added to {@link Amman.addresses}
+   * @param args.connectClient used to determine if to connect an amman client
+   * if no {@link args.ammanClient} is provided; defaults to connect unless running in a CI environment
+   * @param args.ammanClient allows to override the client used to connect to the amman validator
+   */
   static instance(
     args: {
       knownLabels?: Record<string, string>
@@ -45,7 +55,7 @@ export class Amman {
       connectClient?: boolean
     } = {}
   ) {
-    const { connectClient = true } = args
+    const { connectClient = process.env.CI == null } = args
     const {
       knownLabels = {},
       logLabel = (_) => {},
