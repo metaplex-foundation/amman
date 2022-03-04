@@ -42,7 +42,8 @@ export class Amman {
    *
    * @param args
    * @param args.knownLabels label keys that do not change, i.e. `{ [PROGRM_ID]:  'My Program' }`
-   * @param args.logLabel used to log labels that are added to {@link Amman.addresses}
+   * @param args.log used to log labels that are added to {@link
+   * Amman.addresses} and information about other events
    * @param args.connectClient used to determine if to connect an amman client
    * if no {@link args.ammanClient} is provided; defaults to connect unless running in a CI environment
    * @param args.ammanClient allows to override the client used to connect to the amman validator
@@ -50,7 +51,7 @@ export class Amman {
   static instance(
     args: {
       knownLabels?: Record<string, string>
-      logLabel?: (msg: string) => void
+      log?: (msg: string) => void
       ammanClient?: AmmanClient
       connectClient?: boolean
     } = {}
@@ -58,7 +59,7 @@ export class Amman {
     const { connectClient = process.env.CI == null } = args
     const {
       knownLabels = {},
-      logLabel = (_) => {},
+      log = (_) => {},
       ammanClient = connectClient
         ? ConnectedAmmanClient.getInstance()
         : new DisconnectedAmmanClient(),
@@ -69,7 +70,7 @@ export class Amman {
     }
     const addAddressLabels = AddressLabels.setInstance(
       knownLabels ?? {},
-      logLabel,
+      log,
       ammanClient
     )
     Amman._instance = new Amman(addAddressLabels)
