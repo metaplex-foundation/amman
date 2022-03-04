@@ -22,9 +22,16 @@ import {
  *   logLabel: console.log,
  * })
  * ```
+ *
  */
 export class Amman {
-  private constructor(readonly addresses: AddressLabels) {}
+  private constructor(
+    /**
+     * Exposes the {@link AddressLabels} API to add and query labels for
+     * addresses of accounts and transactions.
+     */
+    readonly addr: AddressLabels
+  ) {}
   private static _instance: Amman | undefined
 
   /**
@@ -34,7 +41,7 @@ export class Amman {
    * @return [publicKey, keypair ]
    */
   genKeypair: GenKeypair = (label?: string) => {
-    return this.addresses.genKeypair(label)
+    return this.addr.genKeypair(label)
   }
 
   /**
