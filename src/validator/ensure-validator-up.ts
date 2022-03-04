@@ -1,13 +1,21 @@
 import {
   Connection,
   Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
   SystemProgram,
   Transaction,
 } from '@solana/web3.js'
-import { airdrop, logDebug } from '../utils'
+import { logDebug } from '../utils'
 import waitOn from 'wait-on'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function airdrop(connection: Connection, publicKey: PublicKey, sol = 1) {
+  const sig = await connection.requestAirdrop(publicKey, sol * LAMPORTS_PER_SOL)
+  const signatureResult = await connection.confirmTransaction(sig)
+  return { signature: sig, signatureResult }
+}
 
 /*
  * Right after a local test validator is started up it doesn't seem to charge

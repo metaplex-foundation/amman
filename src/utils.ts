@@ -2,7 +2,6 @@ import debug from 'debug'
 import { tmpdir } from 'os'
 import path from 'path'
 import crypto from 'crypto'
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 
 /**
  * URL at which a locally running solana test validator listens on by default
@@ -37,23 +36,4 @@ export const sleep = (ms: number) =>
  */
 export function createHash(s: Buffer) {
   return crypto.createHash('sha256').update(s).digest('hex')
-}
-
-/**
- * Drops the specified amount of tokens to the provided public key.
- *
- * @param connection to solana JSON RPC node
- * @param publicKey to drop sols to
- * @param sol amount of sols to drop
- *
- * @category utils
- */
-export async function airdrop(
-  connection: Connection,
-  publicKey: PublicKey,
-  sol = 1
-) {
-  const sig = await connection.requestAirdrop(publicKey, sol * LAMPORTS_PER_SOL)
-  const signatureResult = await connection.confirmTransaction(sig)
-  return { signature: sig, signatureResult }
 }

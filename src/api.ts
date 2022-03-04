@@ -1,3 +1,4 @@
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { AddressLabels, GenKeypair } from './diagnostics/address-labels'
 import {
   AmmanClient,
@@ -42,6 +43,28 @@ export class Amman {
    */
   genKeypair: GenKeypair = (label?: string) => {
     return this.addr.genKeypair(label)
+  }
+
+  /**
+   * Drops the specified amount of tokens to the provided public key.
+   *
+   * @param connection to solana JSON RPC node
+   * @param publicKey to drop sols to
+   * @param sol amount of sols to drop
+   *
+   * @category utils
+   */
+  async airdrop(connection: Connection, publicKey: PublicKey, sol = 1) {
+    const sig = await connection.requestAirdrop(
+      publicKey,
+      sol * LAMPORTS_PER_SOL
+    )
+    const receiverLabel = this.addr.resolve(publicKey)
+    const receiver = receiverLabel == null ? '' : ` -> ${receiverLabel}`
+    this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
+
+    const signatureResult = await connection.confirmTransaction(sig)
+    return { signature: sig, signatureResult }
   }
 
   /**
