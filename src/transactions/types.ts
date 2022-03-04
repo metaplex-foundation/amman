@@ -70,11 +70,13 @@ export type TransactionHandler = {
    *
    * @param transaction to send
    * @param signers with which the transaction should be signed
-   * @param options used to send the transaction
+   * @param optionsOrLabel either options used to send the transaction or the {@link label}
+   * @param label of the transaction in order to identify it in logs and the amman-explorer
    */
   sendAndConfirmTransaction(
     transaction: Transaction,
     signers: Array<Signer>,
-    options?: SendOptions
+    optionsOrLabel?: SendOptions | string,
+    label?: string
   ): Promise<ConfirmedTransactionDetails>
 }
