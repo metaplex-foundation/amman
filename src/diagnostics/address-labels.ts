@@ -51,7 +51,7 @@ export class AddressLabels {
    * @param logLabel if provided to added labels are logged using this function
    */
   private constructor(
-    private readonly knownLabels: Record<string, string>,
+    private knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
     private readonly ammanClient: AmmanClient = ConnectedAmmanClient.getInstance()
   ) {
@@ -62,6 +62,14 @@ export class AddressLabels {
       ammanClient = ConnectedAmmanClient.getInstance()
     }
     this.ammanClient.addAddressLabels(knownLabels)
+  }
+
+  /**
+   * Clears all address labels collected so far and instructs the {@link
+   * ammanClient} to do the same.
+   */
+  clear() {
+    this.knownLabels = {}
   }
 
   /**

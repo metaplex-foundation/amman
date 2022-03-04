@@ -1,9 +1,16 @@
 import io, { Socket } from 'socket.io-client'
 import { logDebug, logTrace } from '../utils'
-import { AMMAN_RELAY_PORT, MSG_UPDATE_ADDRESS_LABELS } from './consts'
+import {
+  AMMAN_RELAY_PORT,
+  MSG_CLEAR_ADDRESS_LABELS,
+  MSG_CLEAR_TRANSACTIONS,
+  MSG_UPDATE_ADDRESS_LABELS,
+} from './consts'
 
 /** @private */
 export type AmmanClient = {
+  clearAddressLabels(): void
+  clearTransactions(): void
   addAddressLabels(labels: Record<string, string>): void
 }
 
@@ -18,6 +25,14 @@ export class ConnectedAmmanClient implements AmmanClient {
     this.socket.connect()
     logDebug('AmmanClient connected')
     return this
+  }
+
+  clearAddressLabels() {
+    this.socket.emit(MSG_CLEAR_ADDRESS_LABELS)
+  }
+
+  clearTransactions() {
+    this.socket.emit(MSG_CLEAR_TRANSACTIONS)
   }
 
   addAddressLabels(labels: Record<string, string>) {
@@ -39,5 +54,7 @@ export class ConnectedAmmanClient implements AmmanClient {
 
 /** @private */
 export class DisconnectedAmmanClient implements AmmanClient {
+  clearAddressLabels(): void {}
+  clearTransactions(): void {}
   addAddressLabels(_labels: Record<string, string>): void {}
 }
