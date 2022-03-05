@@ -1,10 +1,16 @@
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from '@solana/web3.js'
 import { AddressLabels, GenKeypair } from './diagnostics/address-labels'
 import {
   AmmanClient,
   ConnectedAmmanClient,
   DisconnectedAmmanClient,
 } from './relay'
+import { PayerTransactionHandler } from './transactions/transaction-handler'
 
 /**
  * Creates an Amman instance which is used to interact with address labels and
@@ -65,6 +71,14 @@ export class Amman {
 
     const signatureResult = await connection.confirmTransaction(sig)
     return { signature: sig, signatureResult }
+  }
+
+  /**
+   * Provides a {@link TransactionHandler} which uses the {@link payer} to sign transactions.
+   */
+  payerTransactionHandler(connection: Connection, payer: Keypair) {
+    this.addr.addLabelIfUnknown('payer', payer.publicKey)
+    return new PayerTransactionHandler(connection, payer)
   }
 
   /**

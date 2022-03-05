@@ -96,6 +96,17 @@ export class AddressLabels {
   }
 
   /**
+   * Adds the provided label for the provided key unless a label for that key
+   * was added previously.
+   */
+  addLabelIfUnknown: AddLabel = (label, key) => {
+    const keyString = publicKeyString(key)
+    if (this.knownLabels[keyString] == null) {
+      this.addLabel(label, keyString)
+    }
+  }
+
+  /**
    * Resolves the {@link PublicKey}s for the given signers/keypairs.
    *
    * @return resolvedKeys which are labels for known public keys or the public key
