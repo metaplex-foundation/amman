@@ -26,6 +26,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   commitment: 'singleGossip',
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
+  limitLedgerSize: 1e4,
   verifyFees: false,
 }
 
@@ -44,6 +45,7 @@ export async function initValidator(
     commitment,
     ledgerDir,
     resetLedger,
+    limitLedgerSize,
     verifyFees,
     launchExplorerRelay,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
@@ -76,6 +78,7 @@ export async function initValidator(
       args.push(deployPath)
     }
   }
+  args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
 
   const cmd = `solana-test-validator ${args.join(' \\\n  ')}`
   if (logTrace.enabled) {

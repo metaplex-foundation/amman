@@ -31,8 +31,10 @@ export type Program = {
  * @property websocketUrl for the RPC websocket
  *
  * @property ledgerDir where the solana test validator writes the ledger
- *
  * @property resetLedger if `true` the ledger is reset to genesis at startup
+ * @property limitLedgerSize <SHRED_COUNT> keep this amount of shreds in root slots. [default: 10,000]
+ *   - controls how much of the ledger you store {@link https://github.com/agjell/sol-tutorials/blob/master/solana-validator-faq.md#6b-how-big-is-the-ledger-how-much-storage-space-do-i-need-for-my-validator}
+ *   - increase this in order keep to keep transactions around longer for later inspection
  *
  * @property verifyFees if `true` the validator is not considered fully started
  * up until it charges transaction fees
@@ -46,5 +48,6 @@ export type ValidatorConfig = {
   commitment: Commitment
   ledgerDir: string
   resetLedger: boolean
+  limitLedgerSize: number
   verifyFees: boolean
 }
