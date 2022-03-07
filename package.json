@@ -42,6 +42,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
+    "@metaplex-foundation/cusper": "^0.0.2",
     "@solana/spl-token": "^0.1.8",
     "@solana/spl-token-registry": "^0.2.2405",
     "@solana/web3.js": "^1.35.0",

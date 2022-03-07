@@ -14,14 +14,20 @@ import {
   TransactionSummary,
 } from './types'
 import { AddressLabels } from '../diagnostics/address-labels'
+import type { ErrorResolver } from '@metaplex-foundation/cusper'
 
-function transactionSummary(tx: TransactionResponse): TransactionSummary {
+function transactionSummary(
+  tx: TransactionResponse,
+  errorResolver?: ErrorResolver
+): TransactionSummary {
   const logMessages = tx.meta?.logMessages ?? []
   const fee = tx.meta?.fee
   const slot = tx.slot
   const blockTime = tx.blockTime ?? 0
-  const err = tx.meta?.err
-  return { logMessages, fee, slot, blockTime, err }
+  const transactionError = tx.meta?.err
+  const err =
+    errorResolver?.errorFromProgramLogs(logMessages, true) ?? undefined
+  return { logMessages, fee, slot, blockTime, transactionError, err }
 }
 
 /**
@@ -34,10 +40,12 @@ export class PayerTransactionHandler implements TransactionHandler {
    *
    * @param connection to use to handle transactions
    * @param payer to use to sign transactions
+   * @param errorResolver used to resolve a known error from the program logs
    */
   constructor(
     private readonly connection: Connection,
-    private readonly payer: Keypair
+    private readonly payer: Keypair,
+    private readonly errorResolver?: ErrorResolver
   ) {}
 
   /**
@@ -77,7 +85,7 @@ export class PayerTransactionHandler implements TransactionHandler {
 
     assert(txConfirmed != null, 'confirmed transaction should not be null')
 
-    const txSummary = transactionSummary(txConfirmed)
+    const txSummary = transactionSummary(txConfirmed, this.errorResolver)
     return { txSignature, txRpcResponse, txConfirmed, txSummary }
   }
 }

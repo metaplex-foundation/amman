@@ -45,7 +45,11 @@ export function assertTransactionSummary(
   summary: TransactionSummary,
   args: { fee?: number; msgRx?: RegExp[] } = {}
 ) {
-  t.equal(summary.err, null, 'transaction summary has no error')
+  t.equal(
+    summary.transactionError,
+    null,
+    'transaction summary has no transaction error'
+  )
   if (args.fee != null) {
     t.equal(summary.fee, args.fee, 'transaction summary fee matches')
   }

@@ -1,3 +1,5 @@
+import type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
+export type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
 import {
   Connection,
   PublicKey,
@@ -10,6 +12,9 @@ import {
   TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
+
+/** @private */
+export type ErrorFromProgramLogs = (logs: string[]) => MaybeErrorWithCode
 
 /** @private */
 export type SendTransaction = (
@@ -25,7 +30,7 @@ export type SendTransaction = (
  * @property logMessages obtained from the {@link ConfirmedTransaction['meta']} property
  * @property fee charged for the transaction execution
  * @property slot same as {@link ConfirmedTransaction['slot']
- * @property err obtained from the {@link ConfirmedTransaction['meta']} property
+ * @property transactionError obtained from the {@link ConfirmedTransaction['meta']} property
  * @category transactions
  */
 export type TransactionSummary = {
@@ -33,7 +38,8 @@ export type TransactionSummary = {
   fee: number | undefined
   slot: number
   blockTime: number
-  err: TransactionError | null | undefined
+  transactionError: TransactionError | null | undefined
+  err: MaybeErrorWithCode
 }
 
 /**

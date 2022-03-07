@@ -1,3 +1,4 @@
+import type { ErrorResolver } from '@metaplex-foundation/cusper'
 import {
   Connection,
   Keypair,
@@ -37,7 +38,8 @@ export class Amman {
      * Exposes the {@link AddressLabels} API to add and query labels for
      * addresses of accounts and transactions.
      */
-    readonly addr: AddressLabels
+    readonly addr: AddressLabels,
+    readonly errorResolver?: ErrorResolver
   ) {}
   private static _instance: Amman | undefined
 
@@ -78,7 +80,7 @@ export class Amman {
    */
   payerTransactionHandler(connection: Connection, payer: Keypair) {
     this.addr.addLabelIfUnknown('payer', payer.publicKey)
-    return new PayerTransactionHandler(connection, payer)
+    return new PayerTransactionHandler(connection, payer, this.errorResolver)
   }
 
   /**
@@ -91,6 +93,8 @@ export class Amman {
    * @param args.connectClient used to determine if to connect an amman client
    * if no {@link args.ammanClient} is provided; defaults to connect unless running in a CI environment
    * @param args.ammanClient allows to override the client used to connect to the amman validator
+   * @param args.errorResolver used to resolve a known errors
+   * from the program logs, see {@link https://github.com/metaplex-foundation/cusper}
    */
   static instance(
     args: {
@@ -98,6 +102,7 @@ export class Amman {
       log?: (msg: string) => void
       ammanClient?: AmmanClient
       connectClient?: boolean
+      errorResolver?: ErrorResolver
     } = {}
   ) {
     const { connectClient = process.env.CI == null } = args
@@ -118,7 +123,7 @@ export class Amman {
       log,
       ammanClient
     )
-    Amman._instance = new Amman(addAddressLabels)
+    Amman._instance = new Amman(addAddressLabels, args.errorResolver)
     return Amman._instance
   }
 }
