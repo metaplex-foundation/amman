@@ -30,6 +30,12 @@ function transactionSummary(
   return { logMessages, fee, slot, blockTime, transactionError, err }
 }
 
+export type TransactionLabelMapper = (label: string) => string
+const FAIL = '❌'
+function defaultTransactionLabelMapper(label: string) {
+  return label.replace(/^(Fail|Fails|Failure|Err|Error|Bug):?/i, FAIL)
+}
+
 /**
  * A {@link TransactionHandler} backed by a payer {@link Keypair}.
  * @category transactions
@@ -45,7 +51,8 @@ export class PayerTransactionHandler implements TransactionHandler {
   constructor(
     private readonly connection: Connection,
     private readonly payer: Keypair,
-    private readonly errorResolver?: ErrorResolver
+    private readonly errorResolver?: ErrorResolver,
+    private readonly transactionLabelMapper: TransactionLabelMapper = defaultTransactionLabelMapper
   ) {}
 
   /**
@@ -77,7 +84,10 @@ export class PayerTransactionHandler implements TransactionHandler {
       options ?? defaultSendOptions
     )
     if (addressLabel != null) {
-      AddressLabels.instance.addLabel(addressLabel, txSignature)
+      AddressLabels.instance.addLabel(
+        this.transactionLabelMapper(addressLabel),
+        txSignature
+      )
     }
 
     const txRpcResponse = await this.connection.confirmTransaction(txSignature)

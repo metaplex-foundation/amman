@@ -11,7 +11,10 @@ import {
   ConnectedAmmanClient,
   DisconnectedAmmanClient,
 } from './relay'
-import { PayerTransactionHandler } from './transactions/transaction-handler'
+import {
+  PayerTransactionHandler,
+  TransactionLabelMapper,
+} from './transactions/transaction-handler'
 
 /**
  * Creates an Amman instance which is used to interact with address labels and
@@ -95,6 +98,8 @@ export class Amman {
    * @param args.ammanClient allows to override the client used to connect to the amman validator
    * @param args.errorResolver used to resolve a known errors
    * from the program logs, see {@link https://github.com/metaplex-foundation/cusper}
+   * @param args.transactionLabelMapper function to replace key strings in a
+   * label to enhance it, i.e. with an icon
    */
   static instance(
     args: {
@@ -103,6 +108,7 @@ export class Amman {
       ammanClient?: AmmanClient
       connectClient?: boolean
       errorResolver?: ErrorResolver
+      transactionLabelMapper?: TransactionLabelMapper
     } = {}
   ) {
     const { connectClient = process.env.CI == null } = args
