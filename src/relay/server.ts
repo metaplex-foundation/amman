@@ -2,13 +2,13 @@ import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
-import { AmmanAccountProvider } from '../types'
+import { AmmanAccount, AmmanAccountProvider } from '../types'
 import { logDebug, logInfo, logTrace } from '../utils'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
-  MSG_REQUEST_ACCOUNT_INFO,
+  MSG_WATCH_ACCOUNT_INFO,
   MSG_UPDATE_ACCOUNT_INFO,
 } from './consts'
 import { killRunningServer } from './server.kill'
@@ -49,17 +49,24 @@ class RelayServer {
         }
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
       })
-      .on(MSG_REQUEST_ACCOUNT_INFO, async (accountAddress: string) => {
-        const account = await this.accountProvider.account(accountAddress)
-        if (account != null) {
-          if (logTrace.enabled) {
-            logTrace(`Sending account ${JSON.stringify(account, null, 2)}`)
+      .on(MSG_WATCH_ACCOUNT_INFO, async (accountAddress: string) => {
+        this.accountProvider.watchAccount(
+          accountAddress,
+          (account: AmmanAccount) => {
+            if (socket.disconnected) return
+            if (logTrace.enabled) {
+              logTrace(
+                `Sending account ${JSON.stringify(account)} to ${
+                  socket.conn.remoteAddress
+                }`
+              )
+            }
+            socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
+              accountAddress,
+              accountInfo: { pretty: account.pretty() },
+            })
           }
-          socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
-            accountAddress,
-            accountInfo: account,
-          })
-        }
+        )
       })
   }
 }

@@ -1,7 +1,12 @@
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
-import { AmmanAccountProvider, AmmanDetectingAccountProvider } from '../types'
+import {
+  AmmanAccount,
+  AmmanAccountProvider,
+  AmmanDetectingAccountProvider,
+} from '../types'
 import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
 
+export type HandleWatchedAccountChanged = (account: AmmanAccount) => void
 function isAmmanAccountProvider(x: any): x is AmmanAccountProvider {
   const provider = x as AmmanAccountProvider
   return (
@@ -71,13 +76,42 @@ export class AccountProvider {
     }
   }
 
-  async account(accountAddress: string) {
-    logTrace(`Resolving account ${accountAddress}`)
+  async watchAccount(
+    accountAddress: string,
+    onChanged: HandleWatchedAccountChanged
+  ) {
+    let publicKey: PublicKey
+    try {
+      publicKey = new PublicKey(accountAddress)
+    } catch (err) {
+      logError(
+        `Invalid account address ${accountAddress}. Unable to create PublicKey`
+      )
+      logError(err)
+      return
+    }
+    {
+      const account = await this._syncAccountInfo(publicKey)
+      if (account != null) {
+        onChanged(account)
+      }
+    }
+
+    this.connection.onAccountChange(
+      publicKey,
+      async (accountInfo: AccountInfo<Buffer>) => {
+        const account = await this._resolveAccount(accountInfo)
+        if (account != null) {
+          onChanged(account)
+        }
+      }
+    )
+  }
+
+  private async _syncAccountInfo(publicKey: PublicKey) {
+    logTrace(`Resolving account ${publicKey.toBase58()}`)
     let accountInfo: AccountInfo<Buffer> | null
     try {
-      const publicKey = new PublicKey(accountAddress)
-      // TODO(thlorenz): Watch account
-      // this.connection.onAccountChange(publicKey, )
       accountInfo = await this.connection.getAccountInfo(
         publicKey,
         'singleGossip'
@@ -87,10 +121,13 @@ export class AccountProvider {
       return
     }
     if (accountInfo == null) return
+    return this._resolveAccount(accountInfo)
+  }
+
+  private async _resolveAccount(accountInfo: AccountInfo<Buffer>) {
     const provider = this.findProvider(accountInfo.data)
     if (provider == null) return
     const [account] = provider.fromAccountInfo(accountInfo)
-    const pretty = account.pretty()
-    return { pretty }
+    return account
   }
 }
