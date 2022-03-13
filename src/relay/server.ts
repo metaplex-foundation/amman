@@ -52,18 +52,19 @@ class RelayServer {
       .on(MSG_WATCH_ACCOUNT_INFO, async (accountAddress: string) => {
         this.accountProvider.watchAccount(
           accountAddress,
-          (account: AmmanAccount) => {
+          (account: AmmanAccount, rendered?: string) => {
             if (socket.disconnected) return
+            const pretty = account.pretty()
             if (logTrace.enabled) {
               logTrace(
-                `Sending account ${JSON.stringify(account)} to ${
+                `Sending account ${JSON.stringify({ pretty, rendered })} to ${
                   socket.conn.remoteAddress
                 }`
               )
             }
             socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
               accountAddress,
-              accountInfo: { pretty: account.pretty() },
+              accountInfo: { pretty, rendered },
             })
           }
         )

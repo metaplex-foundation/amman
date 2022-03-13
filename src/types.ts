@@ -18,8 +18,19 @@ export type AmmanAccountProvider = {
     offset?: number
   ): [AmmanAccount, number]
   canDeserialize?(buf: Buffer, offset?: number): boolean
+  render?(account: AmmanAccount): string
 }
 
 export type AmmanDetectingAccountProvider = AmmanAccountProvider & {
   canDeserialize(buf: Buffer, offset?: number): boolean
+}
+
+export type AmmanRenderingAccountProvider = AmmanAccountProvider & {
+  render(account: AmmanAccount): string
+}
+
+export function isAmmanRenderingAccountProvider(
+  x: AmmanAccountProvider
+): x is AmmanRenderingAccountProvider {
+  return typeof (x as AmmanRenderingAccountProvider).render === 'function'
 }

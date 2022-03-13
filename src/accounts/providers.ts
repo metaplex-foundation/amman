@@ -3,10 +3,14 @@ import {
   AmmanAccount,
   AmmanAccountProvider,
   AmmanDetectingAccountProvider,
+  isAmmanRenderingAccountProvider,
 } from '../types'
-import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
+import { LOCALHOST, logError, logTrace } from '../utils'
 
-export type HandleWatchedAccountChanged = (account: AmmanAccount) => void
+export type HandleWatchedAccountChanged = (
+  account: AmmanAccount,
+  rendered?: string
+) => void
 function isAmmanAccountProvider(x: any): x is AmmanAccountProvider {
   const provider = x as AmmanAccountProvider
   return (
@@ -32,7 +36,6 @@ export class AccountProvider {
 
   static fromRecord(record: Record<string, any>) {
     const providers = Object.values(record).filter(isAmmanAccountProvider)
-    logDebug({ providers })
     return new AccountProvider(providers)
   }
 
@@ -91,18 +94,18 @@ export class AccountProvider {
       return
     }
     {
-      const account = await this._syncAccountInfo(publicKey)
-      if (account != null) {
-        onChanged(account)
+      const res = await this._syncAccountInfo(publicKey)
+      if (res != null) {
+        onChanged(res.account, res.rendered)
       }
     }
 
     this.connection.onAccountChange(
       publicKey,
       async (accountInfo: AccountInfo<Buffer>) => {
-        const account = await this._resolveAccount(accountInfo)
-        if (account != null) {
-          onChanged(account)
+        const res = await this._resolveAccount(accountInfo)
+        if (res != null) {
+          onChanged(res.account, res.rendered)
         }
       }
     )
@@ -125,9 +128,14 @@ export class AccountProvider {
   }
 
   private async _resolveAccount(accountInfo: AccountInfo<Buffer>) {
+    if (accountInfo.lamports === 0 || accountInfo.executable) return
+
     const provider = this.findProvider(accountInfo.data)
     if (provider == null) return
     const [account] = provider.fromAccountInfo(accountInfo)
-    return account
+    const rendered = isAmmanRenderingAccountProvider(provider)
+      ? provider.render(account)
+      : undefined
+    return { account, rendered }
   }
 }
