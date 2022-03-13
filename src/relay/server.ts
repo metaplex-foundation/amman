@@ -1,17 +1,21 @@
 import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
+import { AccountProvider } from '../accounts/providers'
+import { AmmanAccountProvider } from '../types'
 import { logDebug, logInfo, logTrace } from '../utils'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
+  MSG_REQUEST_ACCOUNT_INFO,
+  MSG_UPDATE_ACCOUNT_INFO,
 } from './consts'
 import { killRunningServer } from './server.kill'
 
 class RelayServer {
   private readonly allKnownLabels: Record<string, string> = {}
-  constructor(readonly io: Server) {
+  constructor(readonly io: Server, readonly accountProvider: AccountProvider) {
     this.hookConnectionEvents()
   }
 
@@ -45,22 +49,37 @@ class RelayServer {
         }
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
       })
+      .on(MSG_REQUEST_ACCOUNT_INFO, async (accountAddress: string) => {
+        const account = await this.accountProvider.account(accountAddress)
+        if (account != null) {
+          if (logTrace.enabled) {
+            logTrace(`Sending account ${JSON.stringify(account, null, 2)}`)
+          }
+          socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
+            accountAddress,
+            accountInfo: account,
+          })
+        }
+      })
   }
 }
 
 export class Relay {
-  private static createApp() {
+  private static createApp(accountProvider: AccountProvider) {
     const server = createServer()
     const io = new Server(server, {
       cors: {
         origin: '*',
       },
     })
-    const relayServer = new RelayServer(io)
+    const relayServer = new RelayServer(io, accountProvider)
     return { app: server, io, relayServer }
   }
 
-  static async startServer(killRunning: boolean = true): Promise<{
+  static async startServer(
+    accountProviders: Record<string, AmmanAccountProvider>,
+    killRunning: boolean = true
+  ): Promise<{
     app: HttpServer
     io: Server
     relayServer: RelayServer
@@ -68,7 +87,8 @@ export class Relay {
     if (killRunning) {
       await killRunningServer(AMMAN_RELAY_PORT)
     }
-    const { app, io, relayServer } = this.createApp()
+    const accountProvider = AccountProvider.fromRecord(accountProviders)
+    const { app, io, relayServer } = this.createApp(accountProvider)
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
         const addr = app.address() as AddressInfo

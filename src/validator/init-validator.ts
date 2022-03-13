@@ -49,7 +49,7 @@ export async function initValidator(
     verifyFees,
     launchExplorerRelay,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
-  const { killRunningRelay }: RelayConfig = {
+  const { killRunningRelay, accountProviders }: RelayConfig = {
     ...DEFAULT_RELAY_CONFIG,
     ...relayConfig,
   }
@@ -99,7 +99,7 @@ export async function initValidator(
 
   // Launch relay server in parallel
   if (launchExplorerRelay) {
-    Relay.startServer(killRunningRelay)
+    Relay.startServer(accountProviders, killRunningRelay)
       .catch((err) => {
         const msg = 'Failed to launch Relay'
         if (logError.enabled) {

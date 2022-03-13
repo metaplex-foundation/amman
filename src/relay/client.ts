@@ -17,7 +17,7 @@ export type AmmanClient = {
 /** @private */
 export class ConnectedAmmanClient implements AmmanClient {
   private readonly socket: Socket
-  constructor(readonly url: string = `http://localhost:${AMMAN_RELAY_PORT}`) {
+  private constructor(readonly url: string) {
     this.socket = io(url, { autoUnref: true })
   }
   private connect() {
@@ -47,7 +47,9 @@ export class ConnectedAmmanClient implements AmmanClient {
   static getInstance(url?: string) {
     if (ConnectedAmmanClient._instance != null)
       return ConnectedAmmanClient._instance
-    ConnectedAmmanClient._instance = new ConnectedAmmanClient(url).connect()
+    ConnectedAmmanClient._instance = new ConnectedAmmanClient(
+      url ?? `http://localhost:${AMMAN_RELAY_PORT}`
+    ).connect()
     return ConnectedAmmanClient._instance
   }
 }

@@ -43,7 +43,7 @@ async function main() {
       commands.showHelp()
     }
   } else if (args._[0] === 'relay') {
-    handleRelayCommand(args.ignoreRunning)
+    handleRelayCommand({}, args.ignoreRunning)
   } else {
     commands.showHelp()
   }
