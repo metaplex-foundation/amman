@@ -2,7 +2,11 @@ import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
-import { AmmanAccount, AmmanAccountProvider } from '../types'
+import {
+  AmmanAccount,
+  AmmanAccountProvider,
+  AmmanAccountRendererMap,
+} from '../types'
 import { logDebug, logInfo, logTrace } from '../utils'
 import {
   AMMAN_RELAY_PORT,
@@ -86,6 +90,7 @@ export class Relay {
 
   static async startServer(
     accountProviders: Record<string, AmmanAccountProvider>,
+    accountRenderers: AmmanAccountRendererMap,
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -95,7 +100,10 @@ export class Relay {
     if (killRunning) {
       await killRunningServer(AMMAN_RELAY_PORT)
     }
-    const accountProvider = AccountProvider.fromRecord(accountProviders)
+    const accountProvider = AccountProvider.fromRecord(
+      accountProviders,
+      accountRenderers
+    )
     const { app, io, relayServer } = this.createApp(accountProvider)
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {

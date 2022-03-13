@@ -2,8 +2,8 @@ import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import {
   AmmanAccount,
   AmmanAccountProvider,
+  AmmanAccountRendererMap,
   AmmanDetectingAccountProvider,
-  isAmmanRenderingAccountProvider,
 } from '../types'
 import { LOCALHOST, logError, logTrace } from '../utils'
 
@@ -30,13 +30,19 @@ function isAmmanDetectingAccountProvider(
 export class AccountProvider {
   readonly byByteSize: Map<number, AmmanAccountProvider[]> = new Map()
   readonly connection: Connection = new Connection(LOCALHOST, 'singleGossip')
-  constructor(providers: AmmanAccountProvider[]) {
+  constructor(
+    providers: AmmanAccountProvider[],
+    readonly renderers: AmmanAccountRendererMap
+  ) {
     this._mapProviders(providers)
   }
 
-  static fromRecord(record: Record<string, any>) {
+  static fromRecord(
+    record: Record<string, any>,
+    renderers: AmmanAccountRendererMap
+  ) {
     const providers = Object.values(record).filter(isAmmanAccountProvider)
-    return new AccountProvider(providers)
+    return new AccountProvider(providers, renderers)
   }
 
   private _mapProviders(providers: AmmanAccountProvider[]) {
@@ -133,9 +139,8 @@ export class AccountProvider {
     const provider = this.findProvider(accountInfo.data)
     if (provider == null) return
     const [account] = provider.fromAccountInfo(accountInfo)
-    const rendered = isAmmanRenderingAccountProvider(provider)
-      ? provider.render(account)
-      : undefined
+    const render = this.renderers.get(provider)
+    const rendered = render != null ? render(account) : undefined
     return { account, rendered }
   }
 }
