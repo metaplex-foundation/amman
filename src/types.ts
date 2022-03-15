@@ -12,17 +12,12 @@ export type AmmanAccount = {
 }
 
 export type AmmanAccountProvider = {
-  byteSize: number
+  byteSize: number | ((args: any) => void)
   fromAccountInfo(
     accountInfo: AccountInfo<Buffer>,
     offset?: number
   ): [AmmanAccount, number]
-  canDeserialize?(buf: Buffer, offset?: number): boolean
 }
 
 export type AmmanRenderAccount = (account: any) => string
 export type AmmanAccountRendererMap = Map<any, AmmanRenderAccount>
-
-export type AmmanDetectingAccountProvider = AmmanAccountProvider & {
-  canDeserialize(buf: Buffer, offset?: number): boolean
-}
