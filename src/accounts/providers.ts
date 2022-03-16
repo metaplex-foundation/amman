@@ -101,7 +101,10 @@ export class AccountProvider {
     this.connection.onAccountChange(
       publicKey,
       async (accountInfo: AccountInfo<Buffer>) => {
-        const res = await this._getProviderAndResolveAccount(accountInfo)
+        const res = await this._getProviderAndResolveAccount(
+          accountInfo,
+          publicKey
+        )
         if (res != null) {
           onChanged(res.account, res.rendered)
         }
@@ -121,39 +124,65 @@ export class AccountProvider {
       logError(err)
       return
     }
-    if (accountInfo == null) return
-    return this._getProviderAndResolveAccount(accountInfo)
+    if (accountInfo == null) {
+      logTrace('Unable to find account info for', publicKey.toBase58())
+      return
+    }
+    return this._getProviderAndResolveAccount(accountInfo, publicKey)
   }
 
   private async _getProviderAndResolveAccount(
-    accountInfo: AccountInfo<Buffer>
+    accountInfo: AccountInfo<Buffer>,
+    publicKey: PublicKey
   ) {
-    if (accountInfo.lamports === 0 || accountInfo.executable) return
+    if (
+      accountInfo.lamports === 0 ||
+      accountInfo.executable ||
+      accountInfo.data.byteLength === 0
+    ) {
+      return
+    }
 
-    const res = this._resolveFromProviderMatching(accountInfo)
-    if (res != null) return res
+    const res = this._resolveFromProviderMatching(accountInfo, publicKey)
+    if (res != null) {
+      logTrace(res)
+      return res
+    }
 
     // No matching provider found, let's try the ones for non-fixed accounts
-    return this._tryResolveAccountFromMatchingProvider(
+    return this._tryResolveAccountFromProviders(
       this.nonfixedProviders,
       accountInfo
     )
   }
 
-  _resolveFromProviderMatching(accountInfo: AccountInfo<Buffer>) {
+  _resolveFromProviderMatching(
+    accountInfo: AccountInfo<Buffer>,
+    publicKey: PublicKey
+  ) {
     const providers = this.byByteSize.get(accountInfo.data.byteLength)
-    if (providers == null) return
-    this._tryResolveAccountFromMatchingProvider(providers, accountInfo)
+    if (providers == null) {
+      logTrace('Unable to find a provider for %s', publicKey.toBase58())
+      logTrace({
+        size: accountInfo.data.byteLength,
+        allProviders: this.byByteSize,
+      })
+      return
+    }
+    logTrace('Found providers for %s, %O', publicKey.toBase58(), providers)
+    return this._tryResolveAccountFromProviders(providers, accountInfo)
   }
 
-  private _tryResolveAccountFromMatchingProvider(
+  private _tryResolveAccountFromProviders(
     providers: AmmanAccountProvider[],
     accountInfo: AccountInfo<Buffer>
   ) {
     for (const provider of providers) {
       try {
         return this._resolveAccount(provider, accountInfo)
-      } catch (_) {}
+      } catch (err) {
+        logTrace(err)
+      }
     }
   }
 
