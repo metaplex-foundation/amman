@@ -119,11 +119,7 @@ export class Relay {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
         const addr = app.address() as AddressInfo
         const msg = `Amman Relay listening on ${addr.address}:${addr.port}`
-        if (logInfo.enabled) {
-          logInfo(msg)
-        } else {
-          console.log(msg)
-        }
+        logInfo(msg)
         resolve({ app, io, relayServer })
       })
     })

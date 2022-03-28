@@ -103,13 +103,8 @@ export async function initValidator(
     Relay.startServer(accountProviders, accountRenderers, killRunningRelay)
       .catch((err) => {
         const msg = 'Failed to launch Relay'
-        if (logError.enabled) {
-          logError(msg)
-          logError(err)
-        } else {
-          console.error(msg)
-          console.error(err)
-        }
+        logError(msg)
+        logError(err)
       })
       .then(() => {
         logInfo('Successfully launched Relay')
