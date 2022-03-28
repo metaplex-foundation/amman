@@ -6,6 +6,7 @@ import {
 } from '../types'
 import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
 
+/** @private */
 export type HandleWatchedAccountChanged = (
   account: AmmanAccount,
   rendered?: string

@@ -2,6 +2,7 @@
 import portPids from 'port-pid'
 import { logDebug, logError, logInfo, sleep } from '../utils'
 
+/** private */
 export async function killRunningServer(port: number) {
   const loggedInfoFor = new Set()
   while (true) {

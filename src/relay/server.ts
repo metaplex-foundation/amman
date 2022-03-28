@@ -17,6 +17,12 @@ import {
 } from './consts'
 import { killRunningServer } from './server.kill'
 
+/**
+ * A simple socket.io server which communicates to the Amman Explorere as well as accepting connections
+ * from other clients, i.e. via an {@link AmmanClient} which tests can use to communicate via the amman API.
+ *
+ * @private
+ */
 class RelayServer {
   private readonly allKnownLabels: Record<string, string> = {}
   constructor(readonly io: Server, readonly accountProvider: AccountProvider) {
@@ -76,6 +82,10 @@ class RelayServer {
   }
 }
 
+/**
+ * Sets up the Amman Relay which uses the given account provider to resolve account data.
+ * @private
+ * */
 export class Relay {
   private static createApp(accountProvider: AccountProvider) {
     const server = createServer()
