@@ -2,6 +2,7 @@ import fs from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
 import { strict as assert } from 'assert'
+import { R_OK } from 'constants'
 
 /**
  * Gets the path to a temporary directory in which to store the test
@@ -23,6 +24,19 @@ export function canAccessSync(p: string) {
     fs.accessSync(p)
     return true
   } catch (_) {
+    return false
+  }
+}
+
+/**
+ * Ensures that a file or directory is readable to the current user.
+ * @private
+ */
+export async function canRead(p: string): Promise<boolean> {
+  try {
+    await fs.promises.access(p, R_OK)
+    return true
+  } catch (e) {
     return false
   }
 }
