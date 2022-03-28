@@ -11,6 +11,7 @@ let tokenRegistry: TokenInfoMap | undefined = undefined
 /**
  * Resolves the token registry using _static_ stragegy for speed over up-to-dateness.
  * @category diagnostics
+ * @private
  */
 export async function resolveTokenRegistry() {
   if (tokenRegistry == null) {

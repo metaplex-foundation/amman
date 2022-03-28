@@ -2,13 +2,14 @@ import path from 'path'
 import { promises as fs } from 'fs'
 import { logDebug, logInfo } from '../../utils'
 import { initValidator } from '../../validator'
+import { AmmanConfig } from '../../types'
 
 export type ValidatorCommandArgs = {
   config?: string
 }
 
 export async function handleValidatorCommand(args: ValidatorCommandArgs) {
-  let config, configPath
+  let config: AmmanConfig, configPath
   try {
     ;({ config, configPath } = await resolveConfig(args))
     if (configPath != null) {
@@ -22,12 +23,12 @@ export async function handleValidatorCommand(args: ValidatorCommandArgs) {
       `Running validator with ${config.validator.programs.length} custom program(s) preloaded`
     )
     logDebug(config.validator)
-    await initValidator(config.validator)
+    await initValidator(config.validator, config.relay)
     return { needHelp: false }
   } catch (err: any) {
     console.error(err)
     console.error(
-      `Having trouble loading amman config from ${config} which resolved to ${configPath}`
+      `Having trouble loading amman config from ${args.config} which resolved to ${configPath}`
     )
     return { needHelp: true }
   }

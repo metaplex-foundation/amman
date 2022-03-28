@@ -1,6 +1,7 @@
-export * from './validator'
-
-export { airdrop, tmpLedgerDir, LOCALHOST } from './utils'
+export { tmpLedgerDir, LOCALHOST } from './utils'
+export * from './api'
 export * from './asserts'
 export * from './diagnostics'
+export * from './relay/consts'
 export * from './transactions'
+export * from './types'

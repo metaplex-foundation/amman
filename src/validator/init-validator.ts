@@ -1,28 +1,42 @@
-import { LOCALHOST, logInfo, logTrace, sleep, tmpLedgerDir } from '../utils'
+import {
+  LOCALHOST,
+  logError,
+  logInfo,
+  logTrace,
+  sleep,
+  tmpLedgerDir,
+} from '../utils'
 
 import { execSync as exec, spawn } from 'child_process'
 import { solanaConfig } from './prepare-config'
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { ValidatorConfig } from './types'
+import { Relay } from '../relay/server'
+import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 
 /**
  * @private
  */
 export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   killRunningValidators: true,
+  launchExplorerRelay: process.env.CI == null,
   programs: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
   commitment: 'singleGossip',
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
+  limitLedgerSize: 1e4,
   verifyFees: false,
 }
 
 /**
  * @private
  */
-export async function initValidator(configArg: Partial<ValidatorConfig>) {
+export async function initValidator(
+  validatorConfig: Partial<ValidatorConfig>,
+  relayConfig: Partial<RelayConfig>
+) {
   const {
     killRunningValidators,
     programs,
@@ -31,8 +45,15 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
     commitment,
     ledgerDir,
     resetLedger,
+    limitLedgerSize,
     verifyFees,
-  }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...configArg }
+    launchExplorerRelay,
+  }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
+  const { killRunningRelay, accountProviders, accountRenderers }: RelayConfig =
+    {
+      ...DEFAULT_RELAY_CONFIG,
+      ...relayConfig,
+    }
 
   if (killRunningValidators) {
     try {
@@ -58,6 +79,7 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
       args.push(deployPath)
     }
   }
+  args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
 
   const cmd = `solana-test-validator ${args.join(' \\\n  ')}`
   if (logTrace.enabled) {
@@ -75,6 +97,24 @@ export async function initValidator(configArg: Partial<ValidatorConfig>) {
     'Spawning new solana-test-validator with programs predeployed and ledger at %s',
     ledgerDir
   )
+
+  // Launch relay server in parallel
+  if (launchExplorerRelay) {
+    Relay.startServer(accountProviders, accountRenderers, killRunningRelay)
+      .catch((err) => {
+        const msg = 'Failed to launch Relay'
+        if (logError.enabled) {
+          logError(msg)
+          logError(err)
+        } else {
+          console.error(msg)
+          console.error(err)
+        }
+      })
+      .then(() => {
+        logInfo('Successfully launched Relay')
+      })
+  }
 
   await ensureValidatorIsUp(jsonRpcUrl, verifyFees)
   await cleanupConfig()

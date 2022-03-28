@@ -27,6 +27,8 @@ amman [command]
 
 Commands:
   amman validator [config]  Launches a solana-test-validator
+  amman relay               Launches a server that relays messages to the
+                            amman-explorer
 
 Options:
   --help     Show help                                                 [boolean]
@@ -53,10 +55,14 @@ properties:
 - resetLedger: if true the ledger is reset to genesis at startup
 - verifyFees: if true the validator is not considered fully started up until it charges transaction fees
 
-#### Sample Validator Config
+#### Sample Validator/Relay Config
 
 Below is an example validator config with all values set to the defaults except for an added
 program.
+
+A _amman-explorer relay_ is launched automatically with the validator unless it is running in a
+_CI_ environment and if a relay is already running on the known _relay port_, it is killed
+first.
 
 ```js
 import { LOCALHOST, tmpLedgerDir } from '@metaplex-foundation/amman'
@@ -64,15 +70,19 @@ import { LOCALHOST, tmpLedgerDir } from '@metaplex-foundation/amman'
 module.exports = {
   validator: {
     killRunningValidators: true,
+    launchExplorerRelay: process.env.CI == null,
     programs: [
       { programId: programIds.metadata, deployPath: localDeployPath('mpl_token_metadata') },
     ],
     jsonRpcUrl: LOCALHOST,
     websocketUrl: '',
-    commitment: 'confirmed',
+    commitment: 'singleGossip',
     ledgerDir: tmpLedgerDir(),
     resetLedger: true,
     verifyFees: false,
+  },
+  relay: {
+    killlRunningRelay: true,
   }
 }
 ```

@@ -1,5 +1,9 @@
 import { TransactionResponse } from '@solana/web3.js'
-import { TransactionSummary } from '../transactions'
+import {
+  ConfirmedTransactionDetails,
+  MaybeErrorWithCode,
+  TransactionSummary,
+} from '../transactions'
 
 /**
  * The minimum methods that the first argument passed to assert functions like
@@ -10,6 +14,8 @@ import { TransactionSummary } from '../transactions'
 export type Assert = {
   equal(actual: any, expected: any, msg?: string): void
   ok(value: any, msg?: string): void
+  fail(msg?: string): void
+  match(actual: string, expected: RegExp, msg?: string): void
 }
 
 /**
@@ -45,7 +51,11 @@ export function assertTransactionSummary(
   summary: TransactionSummary,
   args: { fee?: number; msgRx?: RegExp[] } = {}
 ) {
-  t.equal(summary.err, null, 'transaction summary has no error')
+  t.equal(
+    summary.transactionError,
+    null,
+    'transaction summary has no transaction error'
+  )
   if (args.fee != null) {
     t.equal(summary.fee, args.fee, 'transaction summary fee matches')
   }
@@ -93,4 +103,48 @@ export function assertError(
 
     t.ok(hasMatch, `match '${msgRx.toString()}' in error message`)
   }
+}
+
+/**
+ * Asserts that the provided error matches the expected one by verifying the
+ * error type and optionally the error message.
+ *
+ * @param t
+ * @param err error to verify
+ * @param ty the type of the error to expect
+ * @param msgRx a {@link RegExp} that the error message is expected to match
+ */
+export function assertMatchesError<Err extends Function>(
+  t: Assert,
+  err: MaybeErrorWithCode,
+  ty: Err,
+  msgRx?: RegExp
+) {
+  if (err == null) {
+    t.fail(`Expected an error of type ${ty}`)
+    return
+  }
+  t.ok(err instanceof ty, ty.name)
+  if (msgRx != null) {
+    t.match(err.message, msgRx)
+  }
+}
+
+/**
+ * Asserts that the provided {@link ConfirmedTransactionDetails} has an error
+ * that matches the expected one by verifying the error type and optionally the
+ * error message.
+ *
+ * @param t
+ * @param res result of executing a transaction
+ * @param ty the type of the error to expect
+ * @param msgRx a {@link RegExp} that the error message is expected to match
+ */
+export function assertHasError<Err extends Function>(
+  t: Assert,
+  res: ConfirmedTransactionDetails,
+  ty: Err,
+  msgRx?: RegExp
+) {
+  return assertMatchesError(t, res.txSummary.err, ty, msgRx)
 }

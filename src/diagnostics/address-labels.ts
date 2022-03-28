@@ -1,5 +1,7 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
-import fs from 'fs'
+import { AmmanClient, ConnectedAmmanClient } from '../relay'
+import { strict as assert } from 'assert'
+import { isValidAddress } from '../utils'
 
 /**
  * Represents anything that can be used to extract the base58 representation
@@ -48,31 +50,41 @@ export class AddressLabels {
    *
    * @param knownLabels labels known ahead of time, i.e. program ids.
    * @param logLabel if provided to added labels are logged using this function
-   * @param persistLabelsPath  path to which labels are persisted so other tools can pick them up
-   *  WARN: this will most likely be replaced soon with either a URL to post labels to or
-   *  something else that integrates with the (yet to come) amman address label server
    */
-  constructor(
-    private readonly knownLabels: Record<string, string>,
+  private constructor(
+    private knownLabels: Record<string, string>,
     private readonly logLabel: (msg: string) => void = (_) => {},
-    private readonly persistLabelsPath?: string
-  ) {}
+    private readonly ammanClient: AmmanClient = ConnectedAmmanClient.getInstance()
+  ) {
+    if (typeof ammanClient === 'string') {
+      console.error(
+        'ADDRESS_LABLES_PATH is deprecated, you do not need to pass it anymore'
+      )
+      ammanClient = ConnectedAmmanClient.getInstance()
+    }
+    this.ammanClient.addAddressLabels(knownLabels)
+  }
+
+  /**
+   * Clears all address labels collected so far and instructs the {@link
+   * ammanClient} to do the same.
+   */
+  clear() {
+    this.knownLabels = {}
+  }
 
   /**
    * Adds the provided label for the provided key.
    */
   addLabel: AddLabel = (label, key) => {
     const keyString = publicKeyString(key)
+    if (!isValidAddress(keyString)) return
+
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
     this.knownLabels[keyString] = label
 
-    if (this.persistLabelsPath == null) return
-    fs.writeFileSync(
-      this.persistLabelsPath,
-      JSON.stringify(this.knownLabels, null, 2),
-      'utf8'
-    )
+    this.ammanClient.addAddressLabels({ [keyString]: label })
   }
 
   /**
@@ -83,6 +95,17 @@ export class AddressLabels {
       if (typeof label === 'string' && isKeyLike(key)) {
         this.addLabel(label, key)
       }
+    }
+  }
+
+  /**
+   * Adds the provided label for the provided key unless a label for that key
+   * was added previously.
+   */
+  addLabelIfUnknown: AddLabel = (label, key) => {
+    const keyString = publicKeyString(key)
+    if (this.knownLabels[keyString] == null) {
+      this.addLabel(label, keyString)
     }
   }
 
@@ -116,6 +139,7 @@ export class AddressLabels {
    *
    * @param label if provided the key will be added to existing labels
    * @return [publicKey, keypair ]
+   * @private
    */
   genKeypair: GenKeypair = (label) => {
     const kp = Keypair.generate()
@@ -156,5 +180,33 @@ export class AddressLabels {
       const keyString = publicKeyString(val)
       return { label: this.knownLabels[keyString] ?? key, key: keyString }
     })
+  }
+
+  // -----------------
+  // Instance
+  // -----------------
+  private static _instance: AddressLabels | undefined
+  static setInstance(
+    knownLabels: Record<string, string>,
+    logLabel?: (msg: string) => void,
+    ammanClient?: AmmanClient
+  ) {
+    if (AddressLabels._instance != null) {
+      console.error('Can only set AddressLabels instance once')
+      return AddressLabels._instance
+    }
+    AddressLabels._instance = new AddressLabels(
+      knownLabels,
+      logLabel,
+      ammanClient
+    )
+    return AddressLabels._instance
+  }
+  static get instance() {
+    assert(
+      AddressLabels._instance != null,
+      'need to AddressLabels.setInstance first'
+    )
+    return AddressLabels._instance!
   }
 }
