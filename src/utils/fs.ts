@@ -45,9 +45,6 @@ export function ensureDirSync(dir: string) {
 }
 
 /** @private */
-export function assertValidDirName(dir: string, msg?: string) {
-  assert(
-    !/^[a-zA-Z0-9_\-]+$/.test(dir),
-    `Invalid directory name: ${dir}. ${msg ?? ''}`
-  )
+export function assertValidPathSegmentWithoutSpaces(p: string, msg?: string) {
+  assert(/^[a-zA-Z0-9_-]+$/.test(p), `Invalid path segment: ${p}. ${msg ?? ''}`)
 }

@@ -12,6 +12,10 @@ import {
   DisconnectedAmmanClient,
 } from './relay'
 import {
+  AmmanMockStorageDriver,
+  AmmanMockStorageDriverOptions,
+} from './storage'
+import {
   PayerTransactionHandler,
   TransactionLabelMapper,
 } from './transactions/transaction-handler'
@@ -85,6 +89,20 @@ export class Amman {
     this.addr.addLabelIfUnknown('payer', payer.publicKey)
     return new PayerTransactionHandler(connection, payer, this.errorResolver)
   }
+
+  /**
+   * Provides a {@link AmmanMockStorageDriver} which stores uploaded data on
+   * the filesystem inside a tmp directory.
+   * The {@link MockStorageServer} initialized with the same {@link storageId}
+   * serves the files from there.
+   *
+   * @category storage
+   */
+  createMockStorageDriver = (
+    storageId: string,
+    uploadRoot: string,
+    options?: AmmanMockStorageDriverOptions
+  ) => AmmanMockStorageDriver.create(storageId, uploadRoot, options)
 
   /**
    * Creates an instance of {@link Amman}.
