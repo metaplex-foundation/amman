@@ -74,8 +74,8 @@ export class AmmanMockStorageDriver extends StorageDriver {
     return (metaplex: Metaplex) =>
       new AmmanMockStorageDriver(
         metaplex,
-        uploadRoot,
         storageId,
+        uploadRoot,
         new BN(costPerByte),
         logInfo,
         logDebug
@@ -90,7 +90,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
     // Copy into storage
     const fullSrc = path.join(this.uploadRoot, file.fileName)
     const fullDst = path.join(this.storageDir, file.fileName)
-    await fs.cp(fullSrc, fullDst)
+    await fs.copyFile(fullSrc, fullDst)
 
     const uri = `${this.baseUrl}${file.uniqueName}`
     this.cache[uri] = file
