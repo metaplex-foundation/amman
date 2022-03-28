@@ -35,7 +35,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
  */
 export async function initValidator(
   validatorConfig: Partial<ValidatorConfig>,
-  relayConfig: Partial<RelayConfig>
+  relayConfig: Partial<RelayConfig> = {}
 ) {
   const {
     killRunningValidators,
