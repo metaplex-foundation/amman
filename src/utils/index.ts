@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 
 export * from './fs'
+export * from './http'
 export * from './log'
 
 /**

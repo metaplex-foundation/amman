@@ -7,7 +7,7 @@ import {
   AmmanAccountProvider,
   AmmanAccountRendererMap,
 } from '../types'
-import { logDebug, logInfo, logTrace } from '../utils'
+import { killRunningServer, logDebug, logInfo, logTrace } from '../utils'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
@@ -15,7 +15,6 @@ import {
   MSG_WATCH_ACCOUNT_INFO,
   MSG_UPDATE_ACCOUNT_INFO,
 } from './consts'
-import { killRunningServer } from './server.kill'
 
 /**
  * A simple socket.io server which communicates to the Amman Explorere as well as accepting connections

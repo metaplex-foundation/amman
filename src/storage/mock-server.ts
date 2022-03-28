@@ -25,7 +25,7 @@ export class MockStorageServer {
     }
   }
 
-  start() {
+  start(): Promise<Server> {
     this.server = http
       .createServer(async (req, res) => {
         res.writeHead(200, { 'content-type': this.contentType })
@@ -42,7 +42,17 @@ export class MockStorageServer {
           fs.createReadStream(resource).pipe(res)
         }
       })
-      .listen(AMMAN_STORAGE_PORT)
+      .unref()
+
+    const promise: Promise<Server> = new Promise((resolve, reject) => {
+      this.server!.on('error', reject).on('listening', () =>
+        resolve(this.server!)
+      )
+    })
+
+    this.server.listen(AMMAN_STORAGE_PORT)
+
+    return promise
   }
 
   stop() {

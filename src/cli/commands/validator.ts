@@ -23,7 +23,7 @@ export async function handleValidatorCommand(args: ValidatorCommandArgs) {
       `Running validator with ${config.validator.programs.length} custom program(s) preloaded`
     )
     logDebug(config.validator)
-    await initValidator(config.validator, config.relay)
+    await initValidator(config.validator, config.relay, config.storage)
     return { needHelp: false }
   } catch (err: any) {
     console.error(err)

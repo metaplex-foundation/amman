@@ -1,5 +1,6 @@
 // @ts-ignore (no declaration file)
 import portPids from 'port-pid'
+import http from 'http'
 import { logDebug, logError, logInfo, sleep } from '../utils'
 
 /** private */
@@ -24,4 +25,11 @@ export async function killRunningServer(port: number) {
       logError(err)
     }
   }
+}
+
+export function resolveServerAddress(server: http.Server) {
+  const address = server.address()!
+  return typeof address === 'string'
+    ? address
+    : `${address.address}:${address.port}`
 }
