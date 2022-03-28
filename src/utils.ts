@@ -37,3 +37,11 @@ export const sleep = (ms: number) =>
 export function createHash(s: Buffer) {
   return crypto.createHash('sha256').update(s).digest('hex')
 }
+
+/**
+ * Checks if a string is valid base58 via a Regex.
+ * @private
+ */
+export function isValidAddress(address: string) {
+  return /^[0-9a-zA-Z]+$/.test(address)
+}

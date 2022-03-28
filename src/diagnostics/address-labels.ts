@@ -1,6 +1,7 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
+import { isValidAddress } from '../utils'
 
 /**
  * Represents anything that can be used to extract the base58 representation
@@ -77,6 +78,8 @@ export class AddressLabels {
    */
   addLabel: AddLabel = (label, key) => {
     const keyString = publicKeyString(key)
+    if (!isValidAddress(keyString)) return
+
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
     this.knownLabels[keyString] = label
