@@ -29,17 +29,19 @@ export class MockStorageServer {
   start(): Promise<Server> {
     this.server = http
       .createServer(async (req, res) => {
-        res.writeHead(200, { 'content-type': this.contentType })
         logTrace(`MockStorageServer: handling ${req.url}`)
-        const url = new URL(req.url!)
 
-        const resource = path.join(this.storageDir, url.pathname)
+        const resource = path.join(AMMAN_STORAGE_ROOT, req.url!.slice(1))
         if (!(await canRead(resource))) {
           logError(`MockStorageServer: failed to find ${resource}`)
           res.writeHead(404).end()
         } else {
           logDebug(`MockStorageServer: serving ${resource}`)
-          res.writeHead(200)
+          res.writeHead(200, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
+            'Access-Control-Max-Age': 2592000, // 30 days
+          })
           fs.createReadStream(resource).pipe(res)
         }
       })
