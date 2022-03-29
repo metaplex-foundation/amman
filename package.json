@@ -20,6 +20,9 @@
     "doc:update": "./sh/update-docs",
     "doctoc": "doctoc README.md"
   },
+  "browser": {
+    "./dist/storage/index.js": "./dist/storage/index.browser.js"
+  },
   "repository": "git@github.com:metaplex-foundation/amman.git",
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
   "license": "Apache-2.0",

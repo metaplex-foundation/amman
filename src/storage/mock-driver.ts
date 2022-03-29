@@ -1,19 +1,18 @@
 import {
-  MetaplexFile,
-  Metaplex,
   StorageDriver,
+  Metaplex,
+  MetaplexFile,
 } from '@lorisleiva/js-next-alpha'
 
 import { strict as assert } from 'assert'
 import BN from 'bn.js'
 import path from 'path'
+import { logInfo as ammanLogInfo, logDebug as ammanLogDebug } from '../utils'
 import {
   assertValidPathSegmentWithoutSpaces,
   canAccessSync,
   ensureDirSync,
-  logInfo as ammanLogInfo,
-  logDebug as ammanLogDebug,
-} from '../utils'
+} from '../utils/fs'
 import { AMMAN_STORAGE_ROOT, AMMAN_STORAGE_URI } from './consts'
 import { promises as fs } from 'fs'
 
@@ -87,6 +86,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
   }
 
   public async upload(file: MetaplexFile): Promise<string> {
+    this.logDebug(file)
     // Copy into storage
     const fullSrc = path.join(this.uploadRoot, file.fileName)
     const fullDst = path.join(this.storageDir, file.fileName)
