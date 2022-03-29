@@ -120,7 +120,7 @@ export async function initValidator(
   }
 
   // Launch Storage server in parallel as well
-  if (storageConfig != null) {
+  if (storageConfig != null && storageConfig.enabled) {
     killRunningServer(AMMAN_STORAGE_PORT)
       .then(() =>
         MockStorageServer.createInstance(storageConfig).then((storage) =>

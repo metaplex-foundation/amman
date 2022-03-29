@@ -16,6 +16,7 @@ export type ContentType = typeof ContentTypes[number]
  * @category config
  */
 export type StorageConfig = {
+  enabled: boolean
   storageId: string
   clearOnStart: boolean
 }
@@ -26,5 +27,6 @@ export type StorageConfig = {
  * @category config
  */
 export const DefaultStorageConfig: Omit<StorageConfig, 'storageId'> = {
+  enabled: process.env.CI == null,
   clearOnStart: true,
 }
