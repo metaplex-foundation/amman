@@ -29,6 +29,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
 
   readonly baseUrl: string
   readonly storageDir: string
+  pendingImageUri: string | null = null
 
   constructor(
     metaplex: Metaplex,
@@ -51,7 +52,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
       `uploadRoot '${uploadRoot}' must be accessible, but is not`
     )
 
-    this.baseUrl = `${AMMAN_STORAGE_URI}/${storageId}`
+    this.baseUrl = `${AMMAN_STORAGE_URI}/${storageId}/`
     this.logInfo(`Amman Storage Driver with '${storageId}' initialized`)
     this.logDebug({
       uploadRoot,
@@ -87,12 +88,33 @@ export class AmmanMockStorageDriver extends StorageDriver {
 
   public async upload(file: MetaplexFile): Promise<string> {
     this.logDebug(file)
-    // Copy into storage
-    const fullSrc = path.join(this.uploadRoot, file.fileName)
-    const fullDst = path.join(this.storageDir, file.fileName)
-    await fs.copyFile(fullSrc, fullDst)
+    const resourceUri = file.uniqueName
+    const uri = `${this.baseUrl}${resourceUri}`
 
-    const uri = `${this.baseUrl}${file.uniqueName}`
+    const fullDst = path.join(this.storageDir, resourceUri)
+
+    // JSON files include inline metadata instead of referencing an image to upload
+    if (file.contentType === 'application/json') {
+      assert(
+        this.pendingImageUri != null,
+        'need to upload image before uploading JSON metadata'
+      )
+      const metadata = {
+        ...JSON.parse(file.toString()),
+        image: this.pendingImageUri,
+      }
+      await fs.writeFile(fullDst, JSON.stringify(metadata))
+      this.pendingImageUri = null
+    } else {
+      // Copy from upload dir into storage
+      const fullSrc = path.join(this.uploadRoot, file.fileName)
+      await fs.copyFile(fullSrc, fullDst)
+      this.pendingImageUri = uri
+    }
+    this.logDebug(
+      `Uploaded ${file.displayName}:${file.uniqueName} to ${fullDst}`
+    )
+
     this.cache[uri] = file
 
     return uri
