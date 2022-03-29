@@ -2,6 +2,7 @@ import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
 import { isValidAddress } from '../utils'
+import { mapLabel } from './address-label-mapper'
 
 /**
  * Represents anything that can be used to extract the base58 representation
@@ -32,9 +33,9 @@ function publicKeyString(key: KeyLike) {
 }
 
 /** @private */
-export type AddLabel = (label: string, key: KeyLike) => void
+export type AddLabel = (label: string, key: KeyLike) => AddressLabels
 /** @private */
-export type AddLabels = (labels: any) => void
+export type AddLabels = (labels: any) => AddressLabels
 /** @private */
 export type GenKeypair = (label?: string) => [PublicKey, Keypair]
 
@@ -78,24 +79,28 @@ export class AddressLabels {
    */
   addLabel: AddLabel = (label, key) => {
     const keyString = publicKeyString(key)
-    if (!isValidAddress(keyString)) return
+    if (!isValidAddress(keyString)) return this
 
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
     this.knownLabels[keyString] = label
 
-    this.ammanClient.addAddressLabels({ [keyString]: label })
+    this.ammanClient.addAddressLabels({ [keyString]: mapLabel(label) })
+    return this
   }
 
   /**
    * Adds labels for all {@link KeyLike}s it finds on the provided object
    */
   addLabels: AddLabels = (obj) => {
-    for (const [label, key] of Object.entries(obj)) {
-      if (typeof label === 'string' && isKeyLike(key)) {
-        this.addLabel(label, key)
+    if (obj != null) {
+      for (const [label, key] of Object.entries(obj)) {
+        if (typeof label === 'string' && isKeyLike(key)) {
+          this.addLabel(label, key)
+        }
       }
     }
+    return this
   }
 
   /**
@@ -107,6 +112,7 @@ export class AddressLabels {
     if (this.knownLabels[keyString] == null) {
       this.addLabel(label, keyString)
     }
+    return this
   }
 
   /**
