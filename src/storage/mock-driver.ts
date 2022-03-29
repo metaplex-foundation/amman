@@ -29,7 +29,6 @@ export class AmmanMockStorageDriver extends StorageDriver {
 
   readonly baseUrl: string
   readonly storageDir: string
-  pendingImageUri: string | null = null
 
   constructor(
     metaplex: Metaplex,
@@ -52,7 +51,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
       `uploadRoot '${uploadRoot}' must be accessible, but is not`
     )
 
-    this.baseUrl = `${AMMAN_STORAGE_URI}/${storageId}/`
+    this.baseUrl = AmmanMockStorageDriver.getStorageUri(storageId)
     this.logInfo(`Amman Storage Driver with '${storageId}' initialized`)
     this.logDebug({
       uploadRoot,
@@ -82,6 +81,9 @@ export class AmmanMockStorageDriver extends StorageDriver {
       )
   }
 
+  static readonly getStorageUri = (storageId: string) =>
+    `${AMMAN_STORAGE_URI}/${storageId}`
+
   public async getPrice(file: MetaplexFile): Promise<BN> {
     return new BN(file.buffer.byteLength).mul(this.costPerByte)
   }
@@ -89,27 +91,17 @@ export class AmmanMockStorageDriver extends StorageDriver {
   public async upload(file: MetaplexFile): Promise<string> {
     this.logDebug(file)
     const resourceUri = file.uniqueName
-    const uri = `${this.baseUrl}${resourceUri}`
+    const uri = `${this.baseUrl}/${resourceUri}`
 
     const fullDst = path.join(this.storageDir, resourceUri)
 
     // JSON files include inline metadata instead of referencing an image to upload
     if (file.contentType === 'application/json') {
-      assert(
-        this.pendingImageUri != null,
-        'need to upload image before uploading JSON metadata'
-      )
-      const metadata = {
-        ...JSON.parse(file.toString()),
-        image: this.pendingImageUri,
-      }
-      await fs.writeFile(fullDst, JSON.stringify(metadata))
-      this.pendingImageUri = null
+      await fs.writeFile(fullDst, file.toBuffer())
     } else {
       // Copy from upload dir into storage
       const fullSrc = path.join(this.uploadRoot, file.fileName)
       await fs.copyFile(fullSrc, fullDst)
-      this.pendingImageUri = uri
     }
     this.logDebug(
       `Uploaded ${file.displayName}:${file.uniqueName} to ${fullDst}`
