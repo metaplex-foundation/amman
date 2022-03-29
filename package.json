@@ -59,6 +59,7 @@
     "yargs": "^17.3.0"
   },
   "devDependencies": {
+    "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/node": "^16.11.12",
     "@types/text-table": "^0.2.2",
