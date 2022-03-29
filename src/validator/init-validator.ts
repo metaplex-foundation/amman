@@ -123,10 +123,9 @@ export async function initValidator(
   if (storageConfig != null) {
     killRunningServer(AMMAN_STORAGE_PORT)
       .then(() =>
-        MockStorageServer.createInstance(
-          storageConfig.storageId,
-          storageConfig.contentType
-        ).start()
+        MockStorageServer.createInstance(storageConfig).then((storage) =>
+          storage.start()
+        )
       )
       .then((server: http.Server) => {
         logInfo(

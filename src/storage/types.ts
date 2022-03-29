@@ -10,7 +10,21 @@ export const ContentTypes = [
 
 export type ContentType = typeof ContentTypes[number]
 
+/**
+ * Configures the Amman Mock Storage
+ *
+ * @category config
+ */
 export type StorageConfig = {
   storageId: string
-  contentType?: ContentType
+  clearOnStart: boolean
+}
+
+/**
+ * The Default Amman Storage Configuration
+ *
+ * @category config
+ */
+export const DefaultStorageConfig: Omit<StorageConfig, 'storageId'> = {
+  clearOnStart: true,
 }

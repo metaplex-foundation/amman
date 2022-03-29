@@ -1,26 +1,31 @@
 import fs from 'fs'
 import http, { Server } from 'http'
 import path from 'path'
-import { AMMAN_STORAGE_PORT, AMMAN_STORAGE_ROOT } from '.'
+import { AMMAN_STORAGE_PORT, AMMAN_STORAGE_ROOT, StorageConfig } from '.'
 import { logDebug, logError, logTrace } from '../utils'
-import { canRead, ensureDirSync } from '../utils/fs'
+import { canRead, ensureDirCleaned, ensureDirSync } from '../utils/fs'
+import { DefaultStorageConfig } from './types'
 
 export class MockStorageServer {
-  readonly storageDir: string
   server?: Server
 
-  constructor(readonly storageId: string, readonly contentType = 'image/png') {
-    this.storageDir = path.join(AMMAN_STORAGE_ROOT, storageId)
+  constructor(readonly storageDir: string) {
     ensureDirSync(this.storageDir)
   }
 
   static _instance: MockStorageServer | undefined
-  static createInstance(storageId: string, contentType?: string) {
+  static async createInstance(storageConfig: StorageConfig) {
     if (MockStorageServer._instance == null) {
-      return (MockStorageServer._instance = new MockStorageServer(
-        storageId,
-        contentType
-      ))
+      const { storageId, clearOnStart } = {
+        ...DefaultStorageConfig,
+        ...storageConfig,
+      }
+      const storageDir = path.join(AMMAN_STORAGE_ROOT, storageId)
+      if (clearOnStart) {
+        await ensureDirCleaned(storageDir)
+        logDebug(`MockStorageServer cleared ${storageDir}`)
+      }
+      return (MockStorageServer._instance = new MockStorageServer(storageDir))
     } else {
       throw new Error('MockStorageServer instance can only be created once')
     }
