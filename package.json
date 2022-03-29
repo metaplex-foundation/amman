@@ -21,7 +21,7 @@
     "doctoc": "doctoc README.md"
   },
   "browser": {
-    "./dist/storage/index.js": "./dist/storage/index.browser.js"
+    "./dist/amman.js": "./dist/amman.browser.js"
   },
   "repository": "git@github.com:metaplex-foundation/amman.git",
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
