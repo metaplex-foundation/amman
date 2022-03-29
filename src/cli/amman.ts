@@ -10,7 +10,8 @@ import {
 } from './commands'
 import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
-import { logInfo, killRunningServer } from '../utils'
+import { logInfo } from '../utils'
+import { killRunningServer } from '../utils/http'
 
 const commands = yargs(hideBin(process.argv))
   .command('validator [config]', 'Launches a solana-test-validator', (args) => {

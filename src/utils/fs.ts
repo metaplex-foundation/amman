@@ -1,19 +1,6 @@
 import fs from 'fs'
-import { tmpdir } from 'os'
-import path from 'path'
 import { strict as assert } from 'assert'
 import { R_OK } from 'constants'
-
-/**
- * Gets the path to a temporary directory in which to store the test
- * validator ledger.
- *
- * @param testLabel label used to name that directory
- * @category utils
- */
-export function tmpLedgerDir(testLabel = 'amman-ledger') {
-  return path.join(tmpdir(), testLabel)
-}
 
 /**
  * Ensures that a file or directory is accessible to the current user.

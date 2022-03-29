@@ -1,7 +1,7 @@
 import crypto from 'crypto'
+import { tmpdir } from 'os'
+import path from 'path'
 
-export * from './fs'
-export * from './http'
 export * from './log'
 
 /**
@@ -29,4 +29,15 @@ export function createHash(s: Buffer) {
  */
 export function isValidAddress(address: string) {
   return /^[0-9a-zA-Z]+$/.test(address)
+}
+
+/**
+ * Gets the path to a temporary directory in which to store the test
+ * validator ledger.
+ *
+ * @param testLabel label used to name that directory
+ * @category utils
+ */
+export function tmpLedgerDir(testLabel = 'amman-ledger') {
+  return path.join(tmpdir(), testLabel)
 }

@@ -7,7 +7,8 @@ import {
   AmmanAccountProvider,
   AmmanAccountRendererMap,
 } from '../types'
-import { killRunningServer, logDebug, logInfo, logTrace } from '../utils'
+import { logDebug, logInfo, logTrace } from '../utils'
+import { killRunningServer } from '../utils/http'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,

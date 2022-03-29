@@ -1,13 +1,12 @@
 import {
-  killRunningServer,
   LOCALHOST,
   logError,
   logInfo,
   logTrace,
-  resolveServerAddress,
   sleep,
   tmpLedgerDir,
 } from '../utils'
+import { killRunningServer, resolveServerAddress } from '../utils/http'
 
 import http from 'http'
 import { execSync as exec, spawn } from 'child_process'

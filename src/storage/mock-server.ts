@@ -2,7 +2,8 @@ import fs from 'fs'
 import http, { Server } from 'http'
 import path from 'path'
 import { AMMAN_STORAGE_PORT, AMMAN_STORAGE_ROOT } from '.'
-import { canRead, ensureDirSync, logDebug, logError, logTrace } from '../utils'
+import { logDebug, logError, logTrace } from '../utils'
+import { canRead, ensureDirSync } from '../utils/fs'
 
 export class MockStorageServer {
   readonly storageDir: string
