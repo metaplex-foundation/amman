@@ -138,7 +138,6 @@ export class Amman {
         : new DisconnectedAmmanClient(),
     } = args
     if (Amman._instance != null) {
-      console.error('Can only create Amman instance once')
       return Amman._instance
     }
     ammanClient.clearAddressLabels()
