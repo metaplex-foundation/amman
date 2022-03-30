@@ -7,7 +7,11 @@ import {
 import { strict as assert } from 'assert'
 import BN from 'bn.js'
 import path from 'path'
-import { logInfo as ammanLogInfo, logDebug as ammanLogDebug } from '../utils'
+import {
+  logInfo as ammanLogInfo,
+  logDebug as ammanLogDebug,
+  logTrace as ammanLogTrace,
+} from '../utils'
 import {
   assertValidPathSegmentWithoutSpaces,
   canAccessSync,
@@ -22,6 +26,7 @@ export type AmmanMockStorageDriverOptions = {
   costPerByte?: BN | number
   logInfo?: (...data: any[]) => void
   logDebug?: (...data: any[]) => void
+  logTrace?: (...data: any[]) => void
 }
 
 export class AmmanMockStorageDriver extends StorageDriver {
@@ -36,7 +41,8 @@ export class AmmanMockStorageDriver extends StorageDriver {
     readonly uploadRoot: string,
     readonly costPerByte: BN,
     readonly logInfo: (...data: any[]) => void,
-    readonly logDebug: (...data: any[]) => void
+    readonly logDebug: (...data: any[]) => void,
+    readonly logTrace: (...data: any[]) => void
   ) {
     super(metaplex)
     assertValidPathSegmentWithoutSpaces(
@@ -69,6 +75,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
       costPerByte = DEFAULT_COST_PER_BYTE,
       logInfo = ammanLogInfo,
       logDebug = ammanLogDebug,
+      logTrace = ammanLogTrace,
     } = options
     return (metaplex: Metaplex) =>
       new AmmanMockStorageDriver(
@@ -77,7 +84,8 @@ export class AmmanMockStorageDriver extends StorageDriver {
         uploadRoot,
         new BN(costPerByte),
         logInfo,
-        logDebug
+        logDebug,
+        logTrace
       )
   }
 
@@ -89,7 +97,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
   }
 
   public async upload(file: MetaplexFile): Promise<string> {
-    this.logDebug(file)
+    this.logTrace(file)
     const resourceUri = file.uniqueName
     const uri = `${this.baseUrl}/${resourceUri}`
 
