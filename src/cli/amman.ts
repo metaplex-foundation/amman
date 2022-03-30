@@ -6,8 +6,10 @@ import { strict as assert } from 'assert'
 import {
   airdropHelp,
   handleAirdropCommand,
+  handleLabelCommand,
   handleRelayCommand,
   handleValidatorCommand,
+  labelHelp,
   ValidatorCommandArgs,
   validatorHelp,
 } from './commands'
@@ -62,6 +64,9 @@ const commands = yargs(hideBin(process.argv))
         default: 'singleGossip',
       })
       .help('help', airdropHelp())
+  )
+  .command('label', 'Adds PublicKey labels to amman', (args) =>
+    args.help('help', labelHelp())
   )
 
 async function main() {
@@ -130,6 +135,17 @@ async function main() {
       })
       break
     }
+    case 'label':
+      const labels = cs.slice(1)
+      assert(labels.length > 0, 'At least one label is required')
+      for (const label of labels) {
+        assert(
+          typeof label == 'string',
+          `All labels must be of type string 'label:publicKey' and ${label} is not`
+        )
+      }
+      await handleLabelCommand(labels as string[])
+      break
     default:
       commands.showHelp()
   }

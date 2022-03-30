@@ -15,6 +15,7 @@ import {
   MSG_UPDATE_ADDRESS_LABELS,
   MSG_WATCH_ACCOUNT_INFO,
   MSG_UPDATE_ACCOUNT_INFO,
+  ACK_UPDATE_ADDRESS_LABELS,
 } from './consts'
 
 /**
@@ -51,6 +52,7 @@ class RelayServer {
           this.allKnownLabels[key] = val
         }
         socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
+        socket.emit(ACK_UPDATE_ADDRESS_LABELS)
       })
       .on(MSG_GET_KNOWN_ADDRESS_LABELS, () => {
         if (logTrace.enabled) {

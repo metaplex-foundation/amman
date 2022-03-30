@@ -31,10 +31,12 @@ export async function handleAirdropCommand(
   }
 
   const connection = new Connection(LOCALHOST, commitment)
-  const amman = Amman.instance()
-  amman.addr.addLabel('payer', keystring)
+  const amman = Amman.instance({
+    ammanClientOpts: { autoUnref: false, ack: true },
+  })
+  // amman.addr.addLabel('payer', keystring)
 
-  logInfo(`Airdropping ${amount} Sol to payer from '${keystring}'`)
+  logInfo(`Airdropping ${amount} Sol to account '${keystring}'`)
   return amman.airdrop(connection, new PublicKey(keystring), amount)
 }
 
@@ -46,8 +48,6 @@ Airdrops provided Sol to the provided public key.
     amman airdrop <amount> <public key or path to keypair file>
 
   Options:
-    --payer=<keypair file>
-      The relative path to the Keypair file of the payer
     --commitment=${commitments.join('|')} [default: singleGossip]
       The commitment to use for Airdrop transaction
 

@@ -8,6 +8,8 @@ import {
 import { AddressLabels, GenKeypair } from './diagnostics/address-labels'
 import {
   AmmanClient,
+  AmmanClientOpts,
+  AMMAN_RELAY_URI,
   ConnectedAmmanClient,
   DisconnectedAmmanClient,
 } from './relay'
@@ -19,6 +21,7 @@ import {
   PayerTransactionHandler,
   TransactionLabelMapper,
 } from './transactions/transaction-handler'
+import { logDebug } from './utils/log'
 
 /**
  * Creates an Amman instance which is used to interact with address labels and
@@ -46,6 +49,7 @@ export class Amman {
      * addresses of accounts and transactions.
      */
     readonly addr: AddressLabels,
+    readonly ammanClient: AmmanClient,
     readonly errorResolver?: ErrorResolver
   ) {}
   private static _instance: Amman | undefined
@@ -105,6 +109,14 @@ export class Amman {
   ) => AmmanMockStorageDriver.create(storageId, uploadRoot, options)
 
   /**
+   * Disconnects the amman relay client and allows the app to shut down.
+   * Only needed if you set `{ autoUnref: false }` for the amman client opts.
+   */
+  disconnect() {
+    this.ammanClient.disconnect()
+    logDebug('AmmanClient disconnected')
+  }
+  /**
    * Creates an instance of {@link Amman}.
    *
    * @param args
@@ -114,6 +126,7 @@ export class Amman {
    * @param args.connectClient used to determine if to connect an amman client
    * if no {@link args.ammanClient} is provided; defaults to connect unless running in a CI environment
    * @param args.ammanClient allows to override the client used to connect to the amman validator
+   * @param args.ammanClientOpts allows to specify options for the amman relay client instead
    * @param args.errorResolver used to resolve a known errors
    * from the program logs, see {@link https://github.com/metaplex-foundation/cusper}
    * @param args.transactionLabelMapper function to replace key strings in a
@@ -125,16 +138,17 @@ export class Amman {
       log?: (msg: string) => void
       ammanClient?: AmmanClient
       connectClient?: boolean
+      ammanClientOpts?: AmmanClientOpts
       errorResolver?: ErrorResolver
       transactionLabelMapper?: TransactionLabelMapper
     } = {}
   ) {
-    const { connectClient = process.env.CI == null } = args
+    const { connectClient = process.env.CI == null, ammanClientOpts } = args
     const {
       knownLabels = {},
       log = (_) => {},
       ammanClient = connectClient
-        ? ConnectedAmmanClient.getInstance()
+        ? ConnectedAmmanClient.getInstance(AMMAN_RELAY_URI, ammanClientOpts)
         : new DisconnectedAmmanClient(),
     } = args
     if (Amman._instance != null) {
@@ -146,7 +160,11 @@ export class Amman {
       log,
       ammanClient
     )
-    Amman._instance = new Amman(addAddressLabels, args.errorResolver)
+    Amman._instance = new Amman(
+      addAddressLabels,
+      ammanClient,
+      args.errorResolver
+    )
     return Amman._instance
   }
 }
