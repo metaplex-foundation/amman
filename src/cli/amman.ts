@@ -22,6 +22,9 @@ import { killRunningServer } from '../utils/http'
 import { AMMAN_STORAGE_PORT } from '../storage'
 
 const commands = yargs(hideBin(process.argv))
+  // -----------------
+  // start
+  // -----------------
   .command(
     'start',
     'Launches a solana-test-validator and the amman relay and/or mock storage if so configured',
@@ -30,14 +33,22 @@ const commands = yargs(hideBin(process.argv))
         .positional('config', {
           describe:
             'File containing config with `validator` property along with options for the relay and storage.',
+          type: 'string',
+          demandOption: false,
         })
         .help('help', startHelp())
     }
   )
+  // -----------------
+  // stop
+  // -----------------
   .command(
     'stop',
     'Stops the relay and storage and kills the running solana test validator'
   )
+  // -----------------
+  // airdrop
+  // -----------------
   .command('airdrop', 'Airdrops provided Sol to the payer', (args) =>
     args
       .positional('destination', {
@@ -65,9 +76,15 @@ const commands = yargs(hideBin(process.argv))
       })
       .help('help', airdropHelp())
   )
+  // -----------------
+  // label
+  // -----------------
   .command('label', 'Adds PublicKey labels to amman', (args) =>
     args.help('help', labelHelp())
   )
+  // -----------------
+  // account
+  // -----------------
   .command(
     'account',
     'Retrieves account information for a PublicKey or a label',
@@ -78,9 +95,12 @@ const commands = yargs(hideBin(process.argv))
         type: 'string',
       })
   )
+  // -----------------
+  // run
+  // -----------------
   .command(
     'run',
-    'Executes the provided command after expanding all address labels.',
+    'Executes the provided command after expanding all address labels',
     (args) => args.help('help', runHelp())
   )
 
@@ -94,6 +114,9 @@ async function main() {
   const command = cs[0]
 
   switch (command) {
+    // -----------------
+    // start
+    // -----------------
     case 'start': {
       const { needHelp } = await handleStartCommand(args as StartCommandArgs)
       if (needHelp) {
@@ -101,6 +124,9 @@ async function main() {
       }
       break
     }
+    // -----------------
+    // stop
+    // -----------------
     case 'stop': {
       await killRunningServer(AMMAN_RELAY_PORT)
       await killRunningServer(AMMAN_STORAGE_PORT)
@@ -111,6 +137,9 @@ async function main() {
       } catch (err) {}
       break
     }
+    // -----------------
+    // airdrop
+    // -----------------
     case 'airdrop': {
       const { commitment, label } = args
       try {
@@ -145,6 +174,9 @@ async function main() {
       })
       break
     }
+    // -----------------
+    // label
+    // -----------------
     case 'label': {
       const labels = cs.slice(1)
       assert(labels.length > 0, 'At least one label is required')
@@ -171,6 +203,9 @@ async function main() {
       })
       break
     }
+    // -----------------
+    // run
+    // -----------------
     case 'run': {
       const args = cs.slice(1)
       assert(
@@ -192,6 +227,6 @@ async function main() {
 }
 
 main().catch((err: any) => {
-  console.error(err)
+  logError(err)
   process.exit(1)
 })

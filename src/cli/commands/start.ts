@@ -1,11 +1,18 @@
 import path from 'path'
 import { logDebug, logInfo } from '../../utils'
 import { initValidator } from '../../validator'
+import { DEFAULT_VALIDATOR_CONFIG, initValidator } from '../../validator'
 import { AmmanConfig } from '../../types'
 import { canAccess } from '../../utils/fs'
+import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 
 export type StartCommandArgs = {
   config?: string
+}
+
+export const DEFAULT_START_CONFIG: AmmanConfig = {
+  validator: DEFAULT_VALIDATOR_CONFIG,
+  relay: DEFAULT_RELAY_CONFIG,
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {
@@ -50,10 +57,10 @@ async function tryLoadLocalConfigRc() {
     logInfo('Found `.ammanrc.js` in current directory and using that as config')
     return { config, configPath }
   } else {
-    console.error(
-      '\n  No config provided nor an `.ammanrc.js` file found in current directory, using default config, run with `--help` for more info\n'
+    logInfo(
+      'No config provided nor `.ammanrc.js` found in current directory. Launching with default config.'
     )
-    return { config: { validator: {} }, configPath: null }
+    return { config: DEFAULT_START_CONFIG, configPath: null }
   }
 }
 
