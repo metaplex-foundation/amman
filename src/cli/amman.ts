@@ -47,6 +47,12 @@ const commands = yargs(hideBin(process.argv))
         type: 'number',
         default: 1,
       })
+      .option('label', {
+        alias: 'l',
+        describe: 'The label to give to the account being airdropped to',
+        type: 'string',
+        default: 'payer',
+      })
       .option('commitment', {
         alias: 'c',
         describe: 'The commitment to use for the Airdrop transaction',
@@ -88,7 +94,7 @@ async function main() {
       break
     }
     case 'airdrop': {
-      const { commitment } = args
+      const { commitment, label } = args
       try {
         const destination = cs[1]
         const maybeAmount = cs[2]
@@ -110,7 +116,7 @@ async function main() {
         )
         assertCommitment(commitment)
 
-        await handleAirdropCommand(destination, amount, commitment)
+        await handleAirdropCommand(destination, amount, label, commitment)
       } catch (err) {
         logError(err)
         commands.showHelp()

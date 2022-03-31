@@ -14,6 +14,7 @@ import { Amman } from '../../api'
 export async function handleAirdropCommand(
   pubKeyOrPathToKeypairFile: string,
   amount: number,
+  label: string,
   commitment: Commitment
 ) {
   let keystring = pubKeyOrPathToKeypairFile
@@ -34,9 +35,11 @@ export async function handleAirdropCommand(
   const amman = Amman.instance({
     ammanClientOpts: { autoUnref: false, ack: true },
   })
-  // amman.addr.addLabel('payer', keystring)
+  amman.addr.addLabel(label, keystring)
 
-  logInfo(`Airdropping ${amount} Sol to account '${keystring}'`)
+  logInfo(
+    `Airdropping ${amount} Sol to account '${keystring}' labeled '${label}'`
+  )
   return amman.airdrop(connection, new PublicKey(keystring), amount)
 }
 
