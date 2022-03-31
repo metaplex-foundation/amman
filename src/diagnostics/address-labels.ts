@@ -150,6 +150,28 @@ export class AddressLabels {
   }
 
   /**
+   * Resolves a known label for the provided key or address querying the amman relay if it
+   * isn't found in the cache.
+   * @returns label for the address or `undefined` if not found
+   */
+  async resolveRemote(
+    keyOrAddress: KeyLike | string
+  ): Promise<string | undefined> {
+    const address = publicKeyString(keyOrAddress)
+    const localAddress = this.knownLabels[address]
+    if (localAddress != null) return localAddress
+
+    const remoteLabels = await this.ammanClient.fetchAddressLabels()
+    // Remote labels are keyed `address: label`
+    // reverse key and value
+    const labels = Object.fromEntries(
+      Object.entries(remoteLabels).map(([key, value]) => [value, key])
+    )
+    this.knownLabels = { ...labels, ...this.knownLabels }
+    return this.knownLabels[address]
+  }
+
+  /**
    * Generates a keypair and returns its public key and the keypair itself as a Tuple.
    *
    * @param label if provided the key will be added to existing labels

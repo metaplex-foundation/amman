@@ -6,17 +6,25 @@ import {
   MSG_CLEAR_TRANSACTIONS,
   MSG_UPDATE_ADDRESS_LABELS,
   AMMAN_RELAY_URI,
+  MSG_GET_KNOWN_ADDRESS_LABELS,
 } from './consts'
+import { createTimeout } from './timeout'
 
 /** @private */
 export type AmmanClient = {
   clearAddressLabels(): void
   clearTransactions(): void
   addAddressLabels(labels: Record<string, string>): Promise<void>
+  fetchAddressLabels(): Promise<Record<string, string>>
   disconnect(): void
 }
 
 export type AmmanClientOpts = { autoUnref?: boolean; ack?: boolean }
+
+const AMMAN_NOT_RUNNING_ERROR =
+  'Unable to connect to send address labels, is amman running?\n' +
+  'If not please start one in a separate terminal via `amman start`.\n' +
+  'Alternatively do not set the `ack` option to `true` when instantiating the amman instance.'
 
 /** @private */
 export class ConnectedAmmanClient implements AmmanClient {
@@ -49,17 +57,7 @@ export class ConnectedAmmanClient implements AmmanClient {
     }
     const promise = this.ack
       ? new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(
-            () =>
-              reject(
-                new Error(
-                  'Unable to connect to send address labels, is amman running?\n' +
-                    'If not please start one in a separate terminal via `amman start`.\n' +
-                    'Alternatively do not set the `ack` option to `true` when instantiating the amman instance.'
-                )
-              ),
-            2000
-          )
+          const timeout = createTimeout(2000, AMMAN_NOT_RUNNING_ERROR, reject)
           this.socket
             .on('error', (err) => {
               clearTimeout(timeout)
@@ -75,6 +73,24 @@ export class ConnectedAmmanClient implements AmmanClient {
 
     this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
     return promise
+  }
+
+  async fetchAddressLabels(): Promise<Record<string, string>> {
+    logTrace('Fetching address labels')
+    return new Promise<Record<string, string>>((resolve, reject) => {
+      const timeout = createTimeout(2000, AMMAN_NOT_RUNNING_ERROR, reject)
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
+          clearTimeout(timeout)
+          logTrace('Got address labels %O', labels)
+          resolve(labels)
+        })
+        .emit(MSG_GET_KNOWN_ADDRESS_LABELS)
+    })
   }
 
   /**
@@ -103,6 +119,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
   clearTransactions(): void {}
   addAddressLabels(_labels: Record<string, string>): Promise<void> {
     return Promise.resolve()
+  }
+  fetchAddressLabels(): Promise<Record<string, string>> {
+    return Promise.resolve({})
   }
   disconnect() {}
 }

@@ -5,6 +5,7 @@ import { hideBin } from 'yargs/helpers'
 import { strict as assert } from 'assert'
 import {
   airdropHelp,
+  handleAccountCommand,
   handleAirdropCommand,
   handleLabelCommand,
   handleStartCommand,
@@ -64,6 +65,16 @@ const commands = yargs(hideBin(process.argv))
   )
   .command('label', 'Adds PublicKey labels to amman', (args) =>
     args.help('help', labelHelp())
+  )
+  .command(
+    'account',
+    'Retrieves account information for a PublicKey or a label',
+    (args) =>
+      args.positional('address', {
+        describe:
+          'A base58 PublicKey string or the label of the acount to retrieve',
+        type: 'string',
+      })
   )
 
 async function main() {
@@ -137,6 +148,19 @@ async function main() {
         )
       }
       await handleLabelCommand(labels as string[])
+      break
+    case 'account':
+      const address = cs[1]
+      assert(
+        address != null && typeof address === 'string',
+        'public key string or label is required'
+      )
+      const info = await handleAccountCommand(address)
+      console.log(info)
+      // Don't wait for web3.js to close connection to make this a bit quicker
+      process.nextTick(() => {
+        process.exit(0)
+      })
       break
     default:
       commands.showHelp()
