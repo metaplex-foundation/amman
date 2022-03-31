@@ -75,13 +75,10 @@ class RelayServer {
                 })} to ${socket.conn.remoteAddress}`
               )
             }
-            socket.emit(
-              MSG_UPDATE_ACCOUNT_INFO,
-              safeJsonStringify({
-                accountAddress,
-                accountInfo: { pretty, rendered },
-              })
-            )
+            socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
+              accountAddress,
+              accountInfo: { pretty, rendered },
+            })
           }
         )
       })
