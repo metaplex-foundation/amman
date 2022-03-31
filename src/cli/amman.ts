@@ -8,10 +8,10 @@ import {
   handleAirdropCommand,
   handleLabelCommand,
   handleRelayCommand,
-  handleValidatorCommand,
+  handleStartCommand,
   labelHelp,
-  ValidatorCommandArgs,
-  validatorHelp,
+  StartCommandArgs,
+  startHelp,
 } from './commands'
 import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
@@ -20,13 +20,18 @@ import { killRunningServer } from '../utils/http'
 import { AMMAN_STORAGE_PORT } from '../storage'
 
 const commands = yargs(hideBin(process.argv))
-  .command('validator [config]', 'Launches a solana-test-validator', (args) => {
-    return args
-      .positional('config', {
-        describe: 'File containing config with `validator` property.',
-      })
-      .help('help', validatorHelp())
-  })
+  .command(
+    'start',
+    'Launches a solana-test-validator and the amman relay and/or mock storage if so configured',
+    (args) => {
+      return args
+        .positional('config', {
+          describe:
+            'File containing config with `validator` property along with options for the relay and storage.',
+        })
+        .help('help', startHelp())
+    }
+  )
   .command(
     'relay',
     'Launches a server that relays messages to the amman-explorer',
@@ -79,10 +84,8 @@ async function main() {
   const command = cs[0]
 
   switch (command) {
-    case 'validator': {
-      const { needHelp } = await handleValidatorCommand(
-        args as ValidatorCommandArgs
-      )
+    case 'start': {
+      const { needHelp } = await handleStartCommand(args as StartCommandArgs)
       if (needHelp) {
         commands.showHelp()
       }
