@@ -2,6 +2,7 @@ import {
   StorageDriver,
   Metaplex,
   MetaplexFile,
+  MetaplexPlugin,
 } from '@lorisleiva/js-next-alpha'
 
 import { strict as assert } from 'assert'
@@ -70,23 +71,27 @@ export class AmmanMockStorageDriver extends StorageDriver {
     storageId: string,
     uploadRoot: string,
     options: AmmanMockStorageDriverOptions = {}
-  ) => {
+  ): MetaplexPlugin => {
     const {
       costPerByte = DEFAULT_COST_PER_BYTE,
       logInfo = ammanLogInfo,
       logDebug = ammanLogDebug,
       logTrace = ammanLogTrace,
     } = options
-    return (metaplex: Metaplex) =>
-      new AmmanMockStorageDriver(
-        metaplex,
-        storageId,
-        uploadRoot,
-        new BN(costPerByte),
-        logInfo,
-        logDebug,
-        logTrace
-      )
+    return {
+      install: (metaplex: Metaplex) =>
+        metaplex.setStorage(
+          new AmmanMockStorageDriver(
+            metaplex,
+            storageId,
+            uploadRoot,
+            new BN(costPerByte),
+            logInfo,
+            logDebug,
+            logTrace
+          )
+        ),
+    }
   }
 
   static readonly getStorageUri = (storageId: string) =>
