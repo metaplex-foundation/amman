@@ -229,6 +229,8 @@ function toAmmanAccount(account: Mint | Account) {
         (acc: Record<string, any>, [key, value]) => {
           if (isKeyLike(value)) {
             acc[key] = publicKeyString(value)
+          } else if (typeof value === 'bigint') {
+            acc[key] = value.toString()
           } else {
             acc[key] = value
           }
