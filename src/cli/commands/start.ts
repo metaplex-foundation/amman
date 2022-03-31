@@ -1,6 +1,5 @@
 import path from 'path'
-import { logDebug, logInfo } from '../../utils'
-import { initValidator } from '../../validator'
+import { logDebug, logError, logInfo } from '../../utils'
 import { DEFAULT_VALIDATOR_CONFIG, initValidator } from '../../validator'
 import { AmmanConfig } from '../../types'
 import { canAccess } from '../../utils/fs'
@@ -23,7 +22,7 @@ export async function handleStartCommand(args: StartCommandArgs) {
       logInfo('Loading config from %s', configPath)
     }
     if (config.validator == null) {
-      console.error(`This config ${config} is missing a 'validator' property`)
+      logError(`This config ${config} is missing a 'validator' property`)
       process.exit(1)
     }
     logInfo(
@@ -33,8 +32,8 @@ export async function handleStartCommand(args: StartCommandArgs) {
     await initValidator(config.validator, config.relay, config.storage)
     return { needHelp: false }
   } catch (err: any) {
-    console.error(err)
-    console.error(
+    logError(err)
+    logError(
       `Having trouble loading amman config from ${args.config} which resolved to ${configPath}`
     )
     return { needHelp: true }
@@ -54,7 +53,9 @@ async function tryLoadLocalConfigRc() {
   const configPath = path.join(process.cwd(), '.ammanrc.js')
   if (await canAccess(configPath)) {
     const config = require(configPath)
-    logInfo('Found `.ammanrc.js` in current directory and using that as config')
+    logDebug(
+      'Found `.ammanrc.js` in current directory and using that as config'
+    )
     return { config, configPath }
   } else {
     logInfo(
@@ -66,9 +67,11 @@ async function tryLoadLocalConfigRc() {
 
 export function startHelp() {
   return `
-amman start <config.js>
+amman start [<config.js>]
 
-At a minimum config should be a JavaScript module exporting 'validator' with any of the below properties:
+A config should be aJavaScript module exporting at a minimum 'validator' with any of the below properties:
+
+If no config is provided, a local .ammanrc.js will be used, falling back to a default config if not found.
 
 killRunningValidators: if true will kill any solana-test-validators currently running on the system.
 

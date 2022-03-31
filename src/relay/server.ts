@@ -7,7 +7,7 @@ import {
   AmmanAccountProvider,
   AmmanAccountRendererMap,
 } from '../types'
-import { logDebug, logInfo, logTrace, safeJsonStringify } from '../utils'
+import { logDebug, logTrace, safeJsonStringify } from '../utils'
 import { killRunningServer } from '../utils/http'
 import {
   AMMAN_RELAY_PORT,
@@ -122,7 +122,7 @@ export class Relay {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
         const addr = app.address() as AddressInfo
         const msg = `Amman Relay listening on ${addr.address}:${addr.port}`
-        logInfo(msg)
+        logDebug(msg)
         resolve({ app, io, relayServer })
       })
     })
