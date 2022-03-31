@@ -100,6 +100,9 @@ export async function initValidator(
     stdio: 'inherit',
   })
   child.unref()
+  await new Promise((resolve, reject) => {
+    child.on('spawn', resolve).on('error', reject)
+  })
 
   logInfo(
     'Spawning new solana-test-validator with programs predeployed and ledger at %s',
