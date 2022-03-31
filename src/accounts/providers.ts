@@ -1,3 +1,4 @@
+import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import {
   AmmanAccount,
@@ -5,6 +6,7 @@ import {
   AmmanAccountRendererMap,
 } from '../types'
 import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
+import { isKeyLike, publicKeyString } from '../utils/keys'
 
 /** @private */
 export type HandleWatchedAccountChanged = (
@@ -93,7 +95,7 @@ export class AccountProvider {
       return
     }
     {
-      const res = await this._syncAccountInfo(publicKey)
+      const res = await this.syncAccountInformation(publicKey)
       if (res != null) {
         onChanged(res.account, res.rendered)
       }
@@ -113,7 +115,11 @@ export class AccountProvider {
     )
   }
 
-  private async _syncAccountInfo(publicKey: PublicKey) {
+  async syncAccountInformation(
+    publicKey: PublicKey
+  ): Promise<
+    { account: AmmanAccount; rendered: string | undefined } | undefined
+  > {
     logTrace(`Resolving account ${publicKey.toBase58()}`)
     let accountInfo: AccountInfo<Buffer> | null
     try {
@@ -144,16 +150,18 @@ export class AccountProvider {
       return
     }
 
-    const res = this._resolveFromProviderMatching(accountInfo, publicKey)
+    let res = this._resolveFromProviderMatching(accountInfo, publicKey)
     if (res != null) {
       logTrace(res)
       return res
     }
 
-    // No matching provider found, let's try the ones for non-fixed accounts
-    return this._tryResolveAccountFromProviders(
-      this.nonfixedProviders,
-      accountInfo
+    // No matching provider found, let's try the ones for non-fixed accounts or builtins from the token program
+    return (
+      this._tryResolveAccountFromProviders(
+        this.nonfixedProviders,
+        accountInfo
+      ) ?? (await this._tryResolveAccountFromBuiltins(publicKey))
     )
   }
 
@@ -187,6 +195,19 @@ export class AccountProvider {
     }
   }
 
+  private async _tryResolveAccountFromBuiltins(address: PublicKey) {
+    for (const provider of [getMint, getAccount]) {
+      try {
+        const account = await provider(this.connection, address, 'singleGossip')
+        if (account != null) {
+          return { account: toAmmanAccount(account), rendered: undefined }
+        }
+      } catch (err) {
+        logTrace(err)
+      }
+    }
+  }
+
   private _resolveAccount(
     provider: AmmanAccountProvider,
     accountInfo: AccountInfo<Buffer>
@@ -195,5 +216,28 @@ export class AccountProvider {
     const render = this.renderers.get(provider)
     const rendered = render != null ? render(account) : undefined
     return { account, rendered }
+  }
+}
+
+// -----------------
+// Helpers
+// -----------------
+function toAmmanAccount(account: Mint | Account) {
+  return {
+    pretty() {
+      return Object.entries(account).reduce(
+        (acc: Record<string, any>, [key, value]) => {
+          if (isKeyLike(value)) {
+            acc[key] = publicKeyString(value)
+          } else if (typeof value === 'bigint') {
+            acc[key] = value.toString()
+          } else {
+            acc[key] = value
+          }
+          return acc
+        },
+        {}
+      )
+    },
   }
 }

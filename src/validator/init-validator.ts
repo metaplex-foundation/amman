@@ -6,13 +6,20 @@ import {
   sleep,
   tmpLedgerDir,
 } from '../utils'
+import { killRunningServer, resolveServerAddress } from '../utils/http'
 
+import http from 'http'
 import { execSync as exec, spawn } from 'child_process'
 import { solanaConfig } from './prepare-config'
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { ValidatorConfig } from './types'
 import { Relay } from '../relay/server'
 import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
+import {
+  AMMAN_STORAGE_PORT,
+  MockStorageServer,
+  StorageConfig,
+} from '../storage'
 
 /**
  * @private
@@ -35,7 +42,8 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
  */
 export async function initValidator(
   validatorConfig: Partial<ValidatorConfig>,
-  relayConfig: Partial<RelayConfig>
+  relayConfig: Partial<RelayConfig> = {},
+  storageConfig?: StorageConfig
 ) {
   const {
     killRunningValidators,
@@ -101,18 +109,34 @@ export async function initValidator(
   // Launch relay server in parallel
   if (launchExplorerRelay) {
     Relay.startServer(accountProviders, accountRenderers, killRunningRelay)
+      .then(({ app }) => {
+        logInfo('Successfully launched Relay at %s', resolveServerAddress(app))
+      })
       .catch((err) => {
         const msg = 'Failed to launch Relay'
-        if (logError.enabled) {
-          logError(msg)
-          logError(err)
-        } else {
-          console.error(msg)
-          console.error(err)
-        }
+        logError(msg)
+        logError(err)
       })
-      .then(() => {
-        logInfo('Successfully launched Relay')
+  }
+
+  // Launch Storage server in parallel as well
+  if (storageConfig != null && storageConfig.enabled) {
+    killRunningServer(AMMAN_STORAGE_PORT)
+      .then(() =>
+        MockStorageServer.createInstance(storageConfig).then((storage) =>
+          storage.start()
+        )
+      )
+      .then((server: http.Server) => {
+        logInfo(
+          'Successfully launched MockStorageServer at %s',
+          resolveServerAddress(server)
+        )
+      })
+      .catch((err) => {
+        const msg = 'Failed to launch MockStorageServer'
+        logError(msg)
+        logError(err)
       })
   }
 

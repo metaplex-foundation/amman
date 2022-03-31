@@ -7,15 +7,16 @@ import {
   AmmanAccountProvider,
   AmmanAccountRendererMap,
 } from '../types'
-import { logDebug, logInfo, logTrace } from '../utils'
+import { logDebug, logInfo, logTrace, safeJsonStringify } from '../utils'
+import { killRunningServer } from '../utils/http'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
   MSG_WATCH_ACCOUNT_INFO,
   MSG_UPDATE_ACCOUNT_INFO,
+  ACK_UPDATE_ADDRESS_LABELS,
 } from './consts'
-import { killRunningServer } from './server.kill'
 
 /**
  * A simple socket.io server which communicates to the Amman Explorere as well as accepting connections
@@ -51,6 +52,7 @@ class RelayServer {
           this.allKnownLabels[key] = val
         }
         socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
+        socket.emit(ACK_UPDATE_ADDRESS_LABELS)
       })
       .on(MSG_GET_KNOWN_ADDRESS_LABELS, () => {
         if (logTrace.enabled) {
@@ -67,9 +69,10 @@ class RelayServer {
             const pretty = account.pretty()
             if (logTrace.enabled) {
               logTrace(
-                `Sending account ${JSON.stringify({ pretty, rendered })} to ${
-                  socket.conn.remoteAddress
-                }`
+                `Sending account ${safeJsonStringify({
+                  pretty,
+                  rendered,
+                })} to ${socket.conn.remoteAddress}`
               )
             }
             socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
@@ -119,11 +122,7 @@ export class Relay {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
         const addr = app.address() as AddressInfo
         const msg = `Amman Relay listening on ${addr.address}:${addr.port}`
-        if (logInfo.enabled) {
-          logInfo(msg)
-        } else {
-          console.log(msg)
-        }
+        logInfo(msg)
         resolve({ app, io, relayServer })
       })
     })

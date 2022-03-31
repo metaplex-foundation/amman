@@ -2,39 +2,13 @@ import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
 import { isValidAddress } from '../utils'
-
-/**
- * Represents anything that can be used to extract the base58 representation
- * of a public key.
- * @private
- */
-export type KeyLike = string | PublicKey | Keypair
-
-function isKeyLike(val: any): val is KeyLike {
-  if (val == null) return false
-  return (
-    typeof val === 'string' ||
-    typeof (val as PublicKey).toBase58 === 'function' ||
-    (val as Keypair).publicKey != null
-  )
-}
-function publicKeyString(key: KeyLike) {
-  if (typeof key === 'string') {
-    return key
-  }
-  if (typeof (key as PublicKey).toBase58 === 'function') {
-    return (key as PublicKey).toBase58()
-  }
-  if (typeof (key as Keypair).publicKey != null) {
-    return (key as Keypair).publicKey.toBase58()
-  }
-  return key.toString()
-}
+import { mapLabel } from './address-label-mapper'
+import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
 
 /** @private */
-export type AddLabel = (label: string, key: KeyLike) => void
+export type AddLabel = (label: string, key: KeyLike) => Promise<AddressLabels>
 /** @private */
-export type AddLabels = (labels: any) => void
+export type AddLabels = (labels: any) => Promise<AddressLabels>
 /** @private */
 export type GenKeypair = (label?: string) => [PublicKey, Keypair]
 
@@ -62,7 +36,9 @@ export class AddressLabels {
       )
       ammanClient = ConnectedAmmanClient.getInstance()
     }
-    this.ammanClient.addAddressLabels(knownLabels)
+    if (Object.keys(knownLabels).length > 0) {
+      this.ammanClient.addAddressLabels(knownLabels)
+    }
   }
 
   /**
@@ -76,37 +52,49 @@ export class AddressLabels {
   /**
    * Adds the provided label for the provided key.
    */
-  addLabel: AddLabel = (label, key) => {
+  addLabel: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
-    if (!isValidAddress(keyString)) return
+    if (!isValidAddress(keyString)) return this
 
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
     this.knownLabels[keyString] = label
 
-    this.ammanClient.addAddressLabels({ [keyString]: label })
+    await this.ammanClient.addAddressLabels({ [keyString]: mapLabel(label) })
+    return this
   }
 
   /**
    * Adds labels for all {@link KeyLike}s it finds on the provided object
    */
-  addLabels: AddLabels = (obj) => {
-    for (const [label, key] of Object.entries(obj)) {
-      if (typeof label === 'string' && isKeyLike(key)) {
-        this.addLabel(label, key)
+  addLabels: AddLabels = async (obj) => {
+    if (obj != null) {
+      const labels: Record<string, string> = {}
+      for (const [label, key] of Object.entries(obj)) {
+        if (typeof label === 'string' && isKeyLike(key)) {
+          const keyString = publicKeyString(key)
+          if (isValidAddress(keyString)) {
+            this.knownLabels[keyString] = label
+            labels[keyString] = mapLabel(label)
+            this.logLabel(`🔑 ${label}: ${keyString}`)
+          }
+        }
       }
+      await this.ammanClient.addAddressLabels(labels)
     }
+    return this
   }
 
   /**
    * Adds the provided label for the provided key unless a label for that key
    * was added previously.
    */
-  addLabelIfUnknown: AddLabel = (label, key) => {
+  addLabelIfUnknown: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
     if (this.knownLabels[keyString] == null) {
-      this.addLabel(label, keyString)
+      await this.addLabel(label, keyString)
     }
+    return this
   }
 
   /**
@@ -131,6 +119,28 @@ export class AddressLabels {
    */
   resolve(keyOrAddress: KeyLike | string): string | undefined {
     const address = publicKeyString(keyOrAddress)
+    return this.knownLabels[address]
+  }
+
+  /**
+   * Resolves a known label for the provided key or address querying the amman relay if it
+   * isn't found in the cache.
+   * @returns label for the address or `undefined` if not found
+   */
+  async resolveRemote(
+    keyOrAddress: KeyLike | string
+  ): Promise<string | undefined> {
+    const address = publicKeyString(keyOrAddress)
+    const localAddress = this.knownLabels[address]
+    if (localAddress != null) return localAddress
+
+    const remoteLabels = await this.ammanClient.fetchAddressLabels()
+    // Remote labels are keyed `address: label`
+    // reverse key and value
+    const labels = Object.fromEntries(
+      Object.entries(remoteLabels).map(([key, value]) => [value, key])
+    )
+    this.knownLabels = { ...labels, ...this.knownLabels }
     return this.knownLabels[address]
   }
 

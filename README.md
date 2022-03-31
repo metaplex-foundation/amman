@@ -9,8 +9,8 @@ running validator.
 
 - [API](#api)
 - [CLI](#cli)
-  - [Commands: validator](#commands-validator)
-    - [Sample Validator Config](#sample-validator-config)
+  - [Commands: start](#commands-start)
+    - [Sample Validator/Relay/Storage Config](#sample-validatorrelaystorage-config)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -26,19 +26,22 @@ transactions, asserts and more via an API. Please find the [API docs here](https
 amman [command]
 
 Commands:
-  amman validator [config]  Launches a solana-test-validator
-  amman relay               Launches a server that relays messages to the
-                            amman-explorer
+  amman start    Launches a solana-test-validator and the amman relay and/or
+                 mock storage if so configured
+  amman stop     Stops the relay + storage and kills the running solana test
+                 validator
+  amman airdrop  Airdrops provided Sol to the payer
+  amman label    Adds PublicKey labels to amman
 
 Options:
   --help     Show help                                                 [boolean]
   --version  Show version number                                       [boolean]
 ``` 
 
-### Commands: validator
+### Commands: start
 
 ```sh
-amman validator <config.js>
+amman start <config.js>
 ```
 
 If no `config.js` is provided _amman_ looks for an `.ammanrc.js` file in the current directory.
@@ -55,14 +58,17 @@ properties:
 - resetLedger: if true the ledger is reset to genesis at startup
 - verifyFees: if true the validator is not considered fully started up until it charges transaction fees
 
-#### Sample Validator/Relay Config
+#### Sample Validator/Relay/Storage Config
 
-Below is an example validator config with all values set to the defaults except for an added
-program.
+Below is an example config with all values set to the defaults except for an added
+program and a `relay` and `storage` config.
 
 A _amman-explorer relay_ is launched automatically with the validator unless it is running in a
 _CI_ environment and if a relay is already running on the known _relay port_, it is killed
 first.
+
+A _mock storage_ is launched only if a `storage` config is provided. In case a storage server
+is already running on the known _storage port_, it is killed first.
 
 ```js
 import { LOCALHOST, tmpLedgerDir } from '@metaplex-foundation/amman'
@@ -83,7 +89,12 @@ module.exports = {
   },
   relay: {
     killlRunningRelay: true,
-  }
+  },
+  storage: {
+    enabled: process.env.CI == null && process.env.NO_STORAGE == null,
+    storageId: 'mock-storage',
+    clearOnStart: true,
+  },
 }
 ```
 

@@ -1,14 +1,14 @@
 import path from 'path'
-import { promises as fs } from 'fs'
 import { logDebug, logInfo } from '../../utils'
 import { initValidator } from '../../validator'
 import { AmmanConfig } from '../../types'
+import { canAccess } from '../../utils/fs'
 
-export type ValidatorCommandArgs = {
+export type StartCommandArgs = {
   config?: string
 }
 
-export async function handleValidatorCommand(args: ValidatorCommandArgs) {
+export async function handleStartCommand(args: StartCommandArgs) {
   let config: AmmanConfig, configPath
   try {
     ;({ config, configPath } = await resolveConfig(args))
@@ -23,7 +23,7 @@ export async function handleValidatorCommand(args: ValidatorCommandArgs) {
       `Running validator with ${config.validator.programs.length} custom program(s) preloaded`
     )
     logDebug(config.validator)
-    await initValidator(config.validator, config.relay)
+    await initValidator(config.validator, config.relay, config.storage)
     return { needHelp: false }
   } catch (err: any) {
     console.error(err)
@@ -34,7 +34,7 @@ export async function handleValidatorCommand(args: ValidatorCommandArgs) {
   }
 }
 
-function resolveConfig({ config }: ValidatorCommandArgs) {
+function resolveConfig({ config }: StartCommandArgs) {
   if (config == null) {
     return tryLoadLocalConfigRc()
   } else {
@@ -57,20 +57,11 @@ async function tryLoadLocalConfigRc() {
   }
 }
 
-async function canAccess(p: string) {
-  try {
-    await fs.access(p)
-    return true
-  } catch (_) {
-    return false
-  }
-}
-
-export function validatorHelp() {
+export function startHelp() {
   return `
-amman validator <config.js>
+amman start <config.js>
 
-The config should be a JavaScript module exporting 'validator' with any of the below properties:
+At a minimum config should be a JavaScript module exporting 'validator' with any of the below properties:
 
 killRunningValidators: if true will kill any solana-test-validators currently running on the system.
 
