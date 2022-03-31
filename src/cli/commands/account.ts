@@ -1,6 +1,5 @@
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
-import { Amman } from '../../api'
-import { isValidPublicKeyAddress, LOCALHOST } from '../../utils'
+import { LOCALHOST } from '../../utils'
 import { strict as assert } from 'assert'
 import { bold, dim } from 'ansi-colors'
 // @ts-ignore no types available, but it's a simpler function
@@ -8,6 +7,7 @@ import hexdump from 'buffer-hexdump'
 
 import table from 'text-table'
 import { AccountProvider } from '../../accounts/providers'
+import { resolveAccountAddress } from '../utils'
 
 export async function handleAccountCommand(acc: string) {
   const address = await resolveAccountAddress(acc)
@@ -34,16 +34,6 @@ Length: ${len} (0x${len.toString(16)}) bytes
 ${hexdump(accountInfo.data)}
 ${accountData}
 `
-}
-
-async function resolveAccountAddress(acc: string) {
-  if (isValidPublicKeyAddress(acc)) return acc
-  const amman = Amman.instance({
-    ammanClientOpts: { autoUnref: false, ack: true },
-  })
-  const resolved = await amman.addr.resolveRemote(acc)
-  amman.disconnect()
-  return resolved
 }
 
 async function tryResolveAccountData(pubkey: PublicKey) {

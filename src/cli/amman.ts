@@ -8,10 +8,12 @@ import {
   handleAccountCommand,
   handleAirdropCommand,
   handleLabelCommand,
+  handleRunCommand,
   handleStartCommand,
   labelHelp,
   StartCommandArgs,
   startHelp,
+  runHelp,
 } from './commands'
 import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
@@ -34,7 +36,7 @@ const commands = yargs(hideBin(process.argv))
   )
   .command(
     'stop',
-    'Stops the relay + storage and kills the running solana test validator'
+    'Stops the relay and storage and kills the running solana test validator'
   )
   .command('airdrop', 'Airdrops provided Sol to the payer', (args) =>
     args
@@ -75,6 +77,11 @@ const commands = yargs(hideBin(process.argv))
           'A base58 PublicKey string or the label of the acount to retrieve',
         type: 'string',
       })
+  )
+  .command(
+    'run',
+    'Executes the provided command after expanding all address labels.',
+    (args) => args.help('help', runHelp())
   )
 
 async function main() {
@@ -138,7 +145,7 @@ async function main() {
       })
       break
     }
-    case 'label':
+    case 'label': {
       const labels = cs.slice(1)
       assert(labels.length > 0, 'At least one label is required')
       for (const label of labels) {
@@ -149,7 +156,8 @@ async function main() {
       }
       await handleLabelCommand(labels as string[])
       break
-    case 'account':
+    }
+    case 'account': {
       const address = cs[1]
       assert(
         address != null && typeof address === 'string',
@@ -162,6 +170,22 @@ async function main() {
         process.exit(0)
       })
       break
+    }
+    case 'run': {
+      const args = cs.slice(1)
+      assert(
+        args.length > 0,
+        'At least one argument is required or did you mean to `amman start`?'
+      )
+      try {
+        const { stdout, stderr } = await handleRunCommand(args)
+        console.error(stderr)
+        console.log(stdout)
+      } catch (err: any) {
+        logError(err.toString())
+      }
+      break
+    }
     default:
       commands.showHelp()
   }
