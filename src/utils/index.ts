@@ -57,3 +57,13 @@ export function isValidPublicKeyAddress(address: string) {
 export function tmpLedgerDir(testLabel = 'amman-ledger') {
   return path.join(tmpdir(), testLabel)
 }
+
+/**
+ * Custom JSON.stringify which avoids failing on bigint values
+ * @category utils
+ */
+export function safeJsonStringify(obj: any) {
+  return JSON.stringify(obj, (_, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  )
+}

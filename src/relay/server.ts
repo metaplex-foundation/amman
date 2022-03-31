@@ -7,7 +7,7 @@ import {
   AmmanAccountProvider,
   AmmanAccountRendererMap,
 } from '../types'
-import { logDebug, logInfo, logTrace } from '../utils'
+import { logDebug, logInfo, logTrace, safeJsonStringify } from '../utils'
 import { killRunningServer } from '../utils/http'
 import {
   AMMAN_RELAY_PORT,
@@ -69,15 +69,19 @@ class RelayServer {
             const pretty = account.pretty()
             if (logTrace.enabled) {
               logTrace(
-                `Sending account ${JSON.stringify({ pretty, rendered })} to ${
-                  socket.conn.remoteAddress
-                }`
+                `Sending account ${safeJsonStringify({
+                  pretty,
+                  rendered,
+                })} to ${socket.conn.remoteAddress}`
               )
             }
-            socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
-              accountAddress,
-              accountInfo: { pretty, rendered },
-            })
+            socket.emit(
+              MSG_UPDATE_ACCOUNT_INFO,
+              safeJsonStringify({
+                accountAddress,
+                accountInfo: { pretty, rendered },
+              })
+            )
           }
         )
       })
