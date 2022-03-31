@@ -27,9 +27,9 @@ amman [command]
 
 Commands:
   amman start    Launches a solana-test-validator and the amman relay and/or
-                    mock storage if so configured
-  amman relay    Launches a server that relays messages to the amman-explorer
-  amman stop     Stops the relay and kills the runnint solana test validator
+                 mock storage if so configured
+  amman stop     Stops the relay + storage and kills the running solana test
+                 validator
   amman airdrop  Airdrops provided Sol to the payer
   amman label    Adds PublicKey labels to amman
 
@@ -66,6 +66,9 @@ program and a `relay` and `storage` config.
 A _amman-explorer relay_ is launched automatically with the validator unless it is running in a
 _CI_ environment and if a relay is already running on the known _relay port_, it is killed
 first.
+
+A _mock storage_ is launched only if a `storage` config is provided. In case a storage server
+is already running on the known _storage port_, it is killed first.
 
 ```js
 import { LOCALHOST, tmpLedgerDir } from '@metaplex-foundation/amman'

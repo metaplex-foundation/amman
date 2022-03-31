@@ -7,7 +7,6 @@ import {
   airdropHelp,
   handleAirdropCommand,
   handleLabelCommand,
-  handleRelayCommand,
   handleStartCommand,
   labelHelp,
   StartCommandArgs,
@@ -33,21 +32,8 @@ const commands = yargs(hideBin(process.argv))
     }
   )
   .command(
-    'relay',
-    'Launches a server that relays messages to the amman-explorer',
-    (args) => {
-      return args.option('ignoreRunning', {
-        alias: 'i',
-        desc: 'If provided does not kill a relay that is already running on the relay port',
-        type: 'boolean',
-        default: false,
-        demandOption: false,
-      })
-    }
-  )
-  .command(
     'stop',
-    'Stops the relay and kills the runnint solana test validator'
+    'Stops the relay + storage and kills the running solana test validator'
   )
   .command('airdrop', 'Airdrops provided Sol to the payer', (args) =>
     args
@@ -90,9 +76,6 @@ async function main() {
         commands.showHelp()
       }
       break
-    }
-    case 'relay': {
-      return handleRelayCommand({}, new Map(), args.ignoreRunning)
     }
     case 'stop': {
       await killRunningServer(AMMAN_RELAY_PORT)
