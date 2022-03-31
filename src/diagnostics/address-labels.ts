@@ -3,34 +3,7 @@ import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
 import { isValidAddress } from '../utils'
 import { mapLabel } from './address-label-mapper'
-
-/**
- * Represents anything that can be used to extract the base58 representation
- * of a public key.
- * @private
- */
-export type KeyLike = string | PublicKey | Keypair
-
-function isKeyLike(val: any): val is KeyLike {
-  if (val == null) return false
-  return (
-    typeof val === 'string' ||
-    typeof (val as PublicKey).toBase58 === 'function' ||
-    (val as Keypair).publicKey != null
-  )
-}
-function publicKeyString(key: KeyLike) {
-  if (typeof key === 'string') {
-    return key
-  }
-  if (typeof (key as PublicKey).toBase58 === 'function') {
-    return (key as PublicKey).toBase58()
-  }
-  if (typeof (key as Keypair).publicKey != null) {
-    return (key as Keypair).publicKey.toBase58()
-  }
-  return key.toString()
-}
+import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
 
 /** @private */
 export type AddLabel = (label: string, key: KeyLike) => Promise<AddressLabels>

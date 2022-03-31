@@ -2,9 +2,12 @@ import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { Amman } from '../../api'
 import { isValidPublicKeyAddress, LOCALHOST } from '../../utils'
 import { strict as assert } from 'assert'
-import { bold } from 'ansi-colors'
-// @ts-ignore
+import { bold, dim } from 'ansi-colors'
+// @ts-ignore no types available, but it's a simpler function
 import hexdump from 'buffer-hexdump'
+
+import table from 'text-table'
+import { AccountProvider } from '../../accounts/providers'
 
 export async function handleAccountCommand(acc: string) {
   const address = await resolveAccountAddress(acc)
@@ -13,10 +16,14 @@ export async function handleAccountCommand(acc: string) {
   }
 
   const connection = new Connection(LOCALHOST, 'singleGossip')
-  const accountInfo = await connection.getAccountInfo(new PublicKey(address))
+  const pubkey = new PublicKey(address)
+  const accountInfo = await connection.getAccountInfo(pubkey)
   assert(accountInfo != null, 'Account info should not be null')
   const len = accountInfo.data.length
   const sol = accountInfo.lamports / LAMPORTS_PER_SOL
+
+  const accountData = (await tryResolveAccountData(pubkey)) ?? ''
+
   return `
 ${bold('Public Key')}: ${address}
 ${bold('Balance   ')}: ${sol} SOL
@@ -25,6 +32,7 @@ ${bold('Executable')}: ${accountInfo.executable}
 ${bold('Rent Epoch')}: ${accountInfo.rentEpoch}
 Length: ${len} (0x${len.toString(16)}) bytes
 ${hexdump(accountInfo.data)}
+${accountData}
 `
 }
 
@@ -36,4 +44,22 @@ async function resolveAccountAddress(acc: string) {
   const resolved = await amman.addr.resolveRemote(acc)
   amman.disconnect()
   return resolved
+}
+
+async function tryResolveAccountData(pubkey: PublicKey) {
+  const accountProvider = AccountProvider.fromRecord({}, new Map())
+  const res = await accountProvider.syncAccountInformation(pubkey)
+  const pretty = res?.account?.pretty()
+  if (pretty == null) return
+
+  const rows: any[] = []
+
+  for (const [key, value] of Object.entries(pretty)) {
+    rows.push([key, dim(value ?? 'null')])
+  }
+  return (
+    `\n${bold('Account Data')}` +
+    `\n${bold('------------')}` +
+    `\n${table(rows)}`
+  )
 }
