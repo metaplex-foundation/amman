@@ -1,12 +1,14 @@
 import { Amman } from '../../api'
 import { isValidPublicKeyAddress } from '../../utils'
 
-export async function resolveAccountAddress(acc: string) {
-  if (isValidPublicKeyAddress(acc)) return acc
-  const amman = Amman.instance({
+export function cliAmmanInstance() {
+  return Amman.instance({
     ammanClientOpts: { autoUnref: false, ack: true },
   })
-  const resolved = await amman.addr.resolveRemote(acc)
-  amman.disconnect()
+}
+
+export async function resolveAccountAddress(amman: Amman, acc: string) {
+  if (isValidPublicKeyAddress(acc)) return acc
+  const resolved = await amman.addr.resolveRemote(acc, true)
   return resolved
 }

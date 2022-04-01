@@ -143,6 +143,9 @@ export class Amman {
       transactionLabelMapper?: TransactionLabelMapper
     } = {}
   ) {
+    if (Amman._instance != null) {
+      return Amman._instance
+    }
     const { connectClient = process.env.CI == null, ammanClientOpts } = args
     const {
       knownLabels = {},
@@ -151,9 +154,6 @@ export class Amman {
         ? ConnectedAmmanClient.getInstance(AMMAN_RELAY_URI, ammanClientOpts)
         : new DisconnectedAmmanClient(),
     } = args
-    if (Amman._instance != null) {
-      return Amman._instance
-    }
     ammanClient.clearAddressLabels()
     const addAddressLabels = AddressLabels.setInstance(
       knownLabels ?? {},
@@ -165,6 +165,14 @@ export class Amman {
       ammanClient,
       args.errorResolver
     )
+    return Amman._instance
+  }
+
+  /** @internal */
+  static get expectInstance() {
+    if (Amman._instance == null) {
+      throw new Error('Amman instance not created but was expected')
+    }
     return Amman._instance
   }
 }

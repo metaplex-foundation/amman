@@ -1,5 +1,6 @@
 import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
+import { Amman } from '../api'
 import {
   AmmanAccount,
   AmmanAccountProvider,
@@ -200,7 +201,11 @@ export class AccountProvider {
       try {
         const account = await provider(this.connection, address, 'singleGossip')
         if (account != null) {
-          return { account: toAmmanAccount(account), rendered: undefined }
+          const ammanAccount = await this._toAmmanAccount(account)
+          return {
+            account: ammanAccount,
+            rendered: undefined,
+          }
         }
       } catch (err) {
         logTrace(err)
@@ -217,27 +222,37 @@ export class AccountProvider {
     const rendered = render != null ? render(account) : undefined
     return { account, rendered }
   }
-}
 
-// -----------------
-// Helpers
-// -----------------
-function toAmmanAccount(account: Mint | Account) {
-  return {
-    pretty() {
-      return Object.entries(account).reduce(
-        (acc: Record<string, any>, [key, value]) => {
-          if (isKeyLike(value)) {
-            acc[key] = publicKeyString(value)
-          } else if (typeof value === 'bigint') {
-            acc[key] = value.toString()
-          } else {
-            acc[key] = value
-          }
-          return acc
-        },
-        {}
-      )
-    },
+  // -----------------
+  // Helpers
+  // -----------------
+  private async _toAmmanAccount(
+    account: Mint | Account
+  ): Promise<AmmanAccount> {
+    const acc: Record<string, any> = {}
+    for (const [key, value] of Object.entries(account)) {
+      if (isKeyLike(value)) {
+        const publicKeyStr = publicKeyString(value)
+        const label = await this._tryResolveAddressRemote(publicKeyStr)
+        acc[key] = label == null ? publicKeyStr : `${label} (${publicKeyStr})`
+      } else if (typeof value === 'bigint') {
+        acc[key] = value.toString()
+      } else {
+        acc[key] = value
+      }
+    }
+    return {
+      pretty() {
+        return acc
+      },
+    }
+  }
+
+  private async _tryResolveAddressRemote(publicKeyStr: string) {
+    try {
+      return await Amman.expectInstance.addr.resolveRemote(publicKeyStr)
+    } catch (err) {
+      logError(err)
+    }
   }
 }

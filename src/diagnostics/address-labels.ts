@@ -22,7 +22,7 @@ export class AddressLabels {
   /**
    * Creates an instance of {@link AddressLabels}.
    *
-   * @param knownLabels labels known ahead of time, i.e. program ids.
+   * @param knownLabels labels keyed as [address, label] known ahead of time, i.e. program ids.
    * @param logLabel if provided to added labels are logged using this function
    */
   private constructor(
@@ -123,25 +123,39 @@ export class AddressLabels {
   }
 
   /**
+   * Resolves a address for the known label
+   * @returns label for the address or `undefined` if not found
+   */
+  resolveLabel(search: string) {
+    for (const [key, label] of Object.entries(this.knownLabels)) {
+      if (label === search) return key
+    }
+  }
+
+  /**
    * Resolves a known label for the provided key or address querying the amman relay if it
    * isn't found in the cache.
    * @returns label for the address or `undefined` if not found
    */
   async resolveRemote(
-    keyOrAddress: KeyLike | string
+    keyOrAddressOrLabel: KeyLike | string,
+    keyIsLabel: boolean = false
   ): Promise<string | undefined> {
-    const address = publicKeyString(keyOrAddress)
-    const localAddress = this.knownLabels[address]
-    if (localAddress != null) return localAddress
+    const address = publicKeyString(keyOrAddressOrLabel)
+    {
+      const localAddress = keyIsLabel
+        ? this.resolveLabel(keyOrAddressOrLabel as string)
+        : this.knownLabels[address]
+      if (localAddress != null) return localAddress
+    }
 
     const remoteLabels = await this.ammanClient.fetchAddressLabels()
-    // Remote labels are keyed `address: label`
-    // reverse key and value
-    const labels = Object.fromEntries(
-      Object.entries(remoteLabels).map(([key, value]) => [value, key])
-    )
-    this.knownLabels = { ...labels, ...this.knownLabels }
-    return this.knownLabels[address]
+    this.knownLabels = { ...remoteLabels, ...this.knownLabels }
+
+    const localAddress = keyIsLabel
+      ? this.resolveLabel(keyOrAddressOrLabel as string)
+      : this.knownLabels[address]
+    return localAddress
   }
 
   /**

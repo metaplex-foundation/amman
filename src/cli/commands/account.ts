@@ -7,10 +7,11 @@ import hexdump from 'buffer-hexdump'
 
 import table from 'text-table'
 import { AccountProvider } from '../../accounts/providers'
-import { resolveAccountAddress } from '../utils'
+import { cliAmmanInstance, resolveAccountAddress } from '../utils'
 
 export async function handleAccountCommand(acc: string) {
-  const address = await resolveAccountAddress(acc)
+  const amman = cliAmmanInstance()
+  const address = await resolveAccountAddress(amman, acc)
   if (address == null) {
     throw new Error(`Account ${acc} could not be resolved to an address`)
   }
@@ -34,6 +35,7 @@ Length: ${len} (0x${len.toString(16)}) bytes
 ${hexdump(accountInfo.data)}
 ${accountData}
 `
+  amman.disconnect()
   return { connection, rendered }
 }
 
