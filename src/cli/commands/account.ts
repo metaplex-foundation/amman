@@ -24,7 +24,7 @@ export async function handleAccountCommand(acc: string) {
 
   const accountData = (await tryResolveAccountData(pubkey)) ?? ''
 
-  return `
+  const rendered = `
 ${bold('Public Key')}: ${address}
 ${bold('Balance   ')}: ${sol} SOL
 ${bold('Owner     ')}: ${accountInfo.owner}
@@ -34,6 +34,7 @@ Length: ${len} (0x${len.toString(16)}) bytes
 ${hexdump(accountInfo.data)}
 ${accountData}
 `
+  return { connection, rendered }
 }
 
 async function tryResolveAccountData(pubkey: PublicKey) {

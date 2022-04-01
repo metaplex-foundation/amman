@@ -35,12 +35,14 @@ export async function handleAirdropCommand(
   const amman = Amman.instance({
     ammanClientOpts: { autoUnref: false, ack: true },
   })
+
   amman.addr.addLabel(label, keystring)
 
   logInfo(
     `Airdropping ${amount} Sol to account '${keystring}' labeled '${label}'`
   )
-  return amman.airdrop(connection, new PublicKey(keystring), amount)
+  await amman.airdrop(connection, new PublicKey(keystring), amount)
+  return { connection }
 }
 
 export function airdropHelp() {

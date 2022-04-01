@@ -20,6 +20,7 @@ import { AMMAN_RELAY_PORT } from '../relay'
 import { assertCommitment, commitments, logError, logInfo } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { AMMAN_STORAGE_PORT } from '../storage'
+import { closeConnection } from './utils'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------
@@ -163,15 +164,18 @@ async function main() {
         )
         assertCommitment(commitment)
 
-        await handleAirdropCommand(destination, amount, label, commitment)
+        const { connection } = await handleAirdropCommand(
+          destination,
+          amount,
+          label,
+          commitment
+        )
+
+        await closeConnection(connection, true)
       } catch (err) {
         logError(err)
         commands.showHelp()
       }
-      // Don't wait for web3.js to close connection to make this a bit quicker
-      process.nextTick(() => {
-        process.exit(0)
-      })
       break
     }
     // -----------------
@@ -195,12 +199,9 @@ async function main() {
         address != null && typeof address === 'string',
         'public key string or label is required'
       )
-      const info = await handleAccountCommand(address)
-      console.log(info)
-      // Don't wait for web3.js to close connection to make this a bit quicker
-      process.nextTick(() => {
-        process.exit(0)
-      })
+      const { connection, rendered } = await handleAccountCommand(address)
+      console.log(rendered)
+      await closeConnection(connection, true)
       break
     }
     // -----------------
