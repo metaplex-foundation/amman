@@ -7,8 +7,11 @@ export function cliAmmanInstance() {
   })
 }
 
-export async function resolveAccountAddress(amman: Amman, acc: string) {
-  if (isValidPublicKeyAddress(acc)) return acc
-  const resolved = await amman.addr.resolveRemote(acc, true)
+export async function resolveAccountAddresses(
+  amman: Amman,
+  acc: string
+): Promise<string[]> {
+  if (isValidPublicKeyAddress(acc)) return [acc]
+  const resolved = await amman.addr.resolveRemoteLabel(acc)
   return resolved
 }

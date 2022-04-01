@@ -1,29 +1,48 @@
 import { strict as assert } from 'assert'
-import { cliAmmanInstance, resolveAccountAddress } from '../utils'
+import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { exec as execCb } from 'child_process'
 import { promisify } from 'util'
 import { dim } from 'ansi-colors'
+import { logError } from '../../utils'
 const exec = promisify(execCb)
 
 export const LABEL_INDICATOR = '+'
 
 export async function handleRunCommand(args: (string | number)[]) {
   const amman = cliAmmanInstance()
-  const withLabelsExpanded = await Promise.all(
-    args.map(async (arg: string | number) => {
-      if (typeof arg === 'string' && arg.startsWith(LABEL_INDICATOR)) {
-        const resolvedAddress = await resolveAccountAddress(amman, arg.slice(1))
-        assert(resolvedAddress != null, `Could not resolve label ${arg}`)
-        return resolvedAddress
-      }
-      return arg
-    })
-  )
-  amman.disconnect()
-
-  const cmd = withLabelsExpanded.join(' ')
-  console.log(`\n${dim(cmd)}`)
-  return exec(cmd)
+  try {
+    const withLabelsExpanded = await Promise.all(
+      args.map(async (arg: string | number) => {
+        if (typeof arg === 'string' && arg.startsWith(LABEL_INDICATOR)) {
+          const resolvedAddresses = await resolveAccountAddresses(
+            amman,
+            arg.slice(1)
+          )
+          assert(
+            resolvedAddresses.length !== 0,
+            `Could not resolve label ${arg}`
+          )
+          if (resolvedAddresses.length > 1) {
+            const rendered = resolvedAddresses.map((x) => dim(x)).join('\n  ')
+            throw new Error(
+              `Label ${arg} resolves to multiple addresses:\n  ${rendered}` +
+                `\n\nTherefore amman cannot expand it, please provide the address you want to use directly.`
+            )
+          }
+          return resolvedAddresses
+        }
+        return arg
+      })
+    )
+    const cmd = withLabelsExpanded.join(' ')
+    console.log(`\n${dim(cmd)}`)
+    return exec(cmd)
+  } catch (err: any) {
+    logError(err.message)
+    return Promise.resolve({ stdout: '', stderr: '' })
+  } finally {
+    amman.disconnect()
+  }
 }
 
 export function runHelp() {

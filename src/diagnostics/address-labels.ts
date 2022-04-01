@@ -123,13 +123,17 @@ export class AddressLabels {
   }
 
   /**
-   * Resolves a address for the known label
-   * @returns label for the address or `undefined` if not found
+   * Resolves all addresses labeled with the {@link label}.
+   * @returns addresses or empty if none found
    */
   resolveLabel(search: string) {
+    const addresses = []
     for (const [key, label] of Object.entries(this.knownLabels)) {
-      if (label === search) return key
+      if (label === search) {
+        addresses.push(key)
+      }
     }
+    return addresses
   }
 
   /**
@@ -137,31 +141,31 @@ export class AddressLabels {
    * isn't found in the cache.
    * @returns label for the address or `undefined` if not found
    */
-  async resolveRemote(
-    keyOrAddressOrLabel: KeyLike | string,
-    keyIsLabel: boolean = false
-  ): Promise<string | undefined> {
-    const address = publicKeyString(keyOrAddressOrLabel)
-    {
-      const localAddress = keyIsLabel
-        ? this.resolveLabel(keyOrAddressOrLabel as string)
-        : this.knownLabels[address]
-      if (localAddress != null) return localAddress
-    }
+  async resolveRemoteAddress(address: KeyLike): Promise<string | undefined> {
+    address = publicKeyString(address)
+    const localAddress = this.knownLabels[address]
+    if (localAddress != null) return localAddress
 
-    await this.getRemoteLabels()
+    await this.getRemoteLabelAddresses()
 
-    const localAddress = keyIsLabel
-      ? this.resolveLabel(keyOrAddressOrLabel as string)
-      : this.knownLabels[address]
-    return localAddress
+    return this.knownLabels[address]
+  }
+
+  /**
+   * Resolves an address for the  provided label querying the amman relay if it
+   * isn't found in the cache.
+   * @returns addresses labeled with the {@link label}
+   */
+  async resolveRemoteLabel(label: string): Promise<string[]> {
+    await this.getRemoteLabelAddresses()
+    return this.resolveLabel(label)
   }
 
   /**
    * Resolves all labeled addresses from the amman relay and updates the local labels.
-   * @returns knownLabels all known labels after the update
+   * @returns knownLabes all known labels after the update
    */
-  async getRemoteLabels() {
+  async getRemoteLabelAddresses() {
     const remoteLabels = await this.ammanClient.fetchAddressLabels()
     this.knownLabels = { ...this.knownLabels, ...remoteLabels }
     return this.knownLabels
