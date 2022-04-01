@@ -149,13 +149,22 @@ export class AddressLabels {
       if (localAddress != null) return localAddress
     }
 
-    const remoteLabels = await this.ammanClient.fetchAddressLabels()
-    this.knownLabels = { ...remoteLabels, ...this.knownLabels }
+    await this.getRemoteLabels()
 
     const localAddress = keyIsLabel
       ? this.resolveLabel(keyOrAddressOrLabel as string)
       : this.knownLabels[address]
     return localAddress
+  }
+
+  /**
+   * Resolves all labeled addresses from the amman relay and updates the local labels.
+   * @returns knownLabels all known labels after the update
+   */
+  async getRemoteLabels() {
+    const remoteLabels = await this.ammanClient.fetchAddressLabels()
+    this.knownLabels = { ...this.knownLabels, ...remoteLabels }
+    return this.knownLabels
   }
 
   /**

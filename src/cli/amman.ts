@@ -22,6 +22,7 @@ import { killRunningServer } from '../utils/http'
 import { AMMAN_STORAGE_PORT, MockStorageServer } from '../storage'
 import { closeConnection } from './utils'
 import { Amman } from '../api'
+import { Connection } from '@solana/web3.js'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------
@@ -89,13 +90,23 @@ const commands = yargs(hideBin(process.argv))
   // -----------------
   .command(
     'account',
-    'Retrieves account information for a PublicKey or a label',
+    'Retrieves account information for a PublicKey or a label or shows all labeled accounts',
     (args) =>
-      args.positional('address', {
-        describe:
-          'A base58 PublicKey string or the label of the acount to retrieve',
-        type: 'string',
-      })
+      args
+        .positional('address', {
+          describe:
+            'A base58 PublicKey string or the label of the acount to retrieve.' +
+            ' If it is not provided, all labeled accounts are shown.',
+          type: 'string',
+          demandOption: false,
+        })
+        .option('includeTx', {
+          alias: 't',
+          describe:
+            'If to include transactions in the shown labeled accounts when no label/address is provided',
+          type: 'boolean',
+          default: false,
+        })
   )
   // -----------------
   // run
@@ -189,15 +200,30 @@ async function main() {
       await handleLabelCommand(labels as string[])
       break
     }
+    // -----------------
+    // account
+    // -----------------
     case 'account': {
       const address = cs[1]
+      const { includeTx } = args
       assert(
-        address != null && typeof address === 'string',
-        'public key string or label is required'
+        address == null || typeof address === 'string',
+        'provided public key or label needs to be a string'
       )
-      const { connection, rendered } = await handleAccountCommand(address)
+      assert(
+        !includeTx || address == null,
+        '--includeTx can only be used when noe address is provided'
+      )
+
+      const { connection, rendered } = await handleAccountCommand(
+        address,
+        includeTx
+      )
       console.log(rendered)
-      await closeConnection(connection, true)
+      if (connection! != null) {
+        await closeConnection(connection, true)
+      }
+      disconnectAmman()
       break
     }
     // -----------------
@@ -223,17 +249,28 @@ async function main() {
   }
 }
 
-async function stopAmman() {
-  try {
-    exec('pkill -f solana-test-validator')
-    logInfo('Killed currently running solana-test-validator')
-  } catch (_) {}
+async function disconnectAmman(connection?: Connection) {
   try {
     Amman.existingInstance?.disconnect()
   } catch (_) {}
   try {
     MockStorageServer.existingInstance?.stop()
   } catch (_) {}
+
+  if (connection! != null) {
+    try {
+      await closeConnection(connection, true)
+    } catch (_) {}
+  }
+}
+
+async function stopAmman() {
+  try {
+    exec('pkill -f solana-test-validator')
+    logInfo('Killed currently running solana-test-validator')
+  } catch (_) {}
+
+  disconnectAmman()
 
   try {
     await killRunningServer(AMMAN_RELAY_PORT)

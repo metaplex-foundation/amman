@@ -9,7 +9,12 @@ import table from 'text-table'
 import { AccountProvider } from '../../accounts/providers'
 import { cliAmmanInstance, resolveAccountAddress } from '../utils'
 
-export async function handleAccountCommand(acc: string) {
+export async function handleAccountCommand(
+  acc: string | undefined,
+  includeTxs: boolean = false
+) {
+  if (acc == null) return renderAllKnownAccounts(includeTxs)
+
   const amman = cliAmmanInstance()
   const address = await resolveAccountAddress(amman, acc)
   if (address == null) {
@@ -37,6 +42,24 @@ ${accountData}
 `
   amman.disconnect()
   return { connection, rendered }
+}
+
+async function renderAllKnownAccounts(includeTxs: boolean) {
+  const amman = cliAmmanInstance()
+  const accounts = await amman.addr.getRemoteLabels()
+  if (Object.keys(accounts).length === 0) {
+    const rendered = 'No labeled accounts found'
+    return { connection: undefined, rendered }
+  }
+
+  const rows = []
+  for (const [address, label] of Object.entries(accounts)) {
+    if (!includeTxs && address.length > 44) continue
+    rows.push([bold(label), address])
+  }
+  const rendered = table(rows)
+  amman.disconnect()
+  return { connection: undefined, rendered }
 }
 
 async function tryResolveAccountData(pubkey: PublicKey) {
