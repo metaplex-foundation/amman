@@ -2,6 +2,7 @@ import { strict as assert } from 'assert'
 import { cliAmmanInstance, resolveAccountAddress } from '../utils'
 import { exec as execCb } from 'child_process'
 import { promisify } from 'util'
+import { dim } from 'ansi-colors'
 const exec = promisify(execCb)
 
 export const LABEL_INDICATOR = '+'
@@ -21,7 +22,7 @@ export async function handleRunCommand(args: (string | number)[]) {
   amman.disconnect()
 
   const cmd = withLabelsExpanded.join(' ')
-  console.log(`\n${cmd}`)
+  console.log(`\n${dim(cmd)}`)
   return exec(cmd)
 }
 
