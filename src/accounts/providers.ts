@@ -250,7 +250,9 @@ export class AccountProvider {
 
   private async _tryResolveAddressRemote(publicKeyStr: string) {
     try {
-      return await Amman.expectInstance.addr.resolveRemote(publicKeyStr)
+      const instance = Amman.existingInstance
+      if (instance == null) return
+      return await instance.addr.resolveRemote(publicKeyStr)
     } catch (err) {
       logError(err)
     }

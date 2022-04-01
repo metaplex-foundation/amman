@@ -14,6 +14,9 @@ export class MockStorageServer {
   }
 
   static _instance: MockStorageServer | undefined
+  static get existingInstance() {
+    return MockStorageServer._instance
+  }
   static async createInstance(storageConfig: StorageConfig) {
     if (MockStorageServer._instance == null) {
       const { storageId, clearOnStart } = {

@@ -19,8 +19,9 @@ import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
 import { assertCommitment, commitments, logError, logInfo } from '../utils'
 import { killRunningServer } from '../utils/http'
-import { AMMAN_STORAGE_PORT } from '../storage'
+import { AMMAN_STORAGE_PORT, MockStorageServer } from '../storage'
 import { closeConnection } from './utils'
+import { Amman } from '../api'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------
@@ -119,6 +120,7 @@ async function main() {
     // start
     // -----------------
     case 'start': {
+      process.on('SIGINT', stopAmman).on('SIGHUP', stopAmman)
       const { needHelp } = await handleStartCommand(args as StartCommandArgs)
       if (needHelp) {
         commands.showHelp()
@@ -129,13 +131,7 @@ async function main() {
     // stop
     // -----------------
     case 'stop': {
-      await killRunningServer(AMMAN_RELAY_PORT)
-      await killRunningServer(AMMAN_STORAGE_PORT)
-
-      try {
-        exec('pkill -f solana-test-validator')
-        logInfo('Killed currently running solana-test-validator')
-      } catch (err) {}
+      await stopAmman()
       break
     }
     // -----------------
@@ -225,6 +221,26 @@ async function main() {
     default:
       commands.showHelp()
   }
+}
+
+async function stopAmman() {
+  try {
+    exec('pkill -f solana-test-validator')
+    logInfo('Killed currently running solana-test-validator')
+  } catch (_) {}
+  try {
+    Amman.existingInstance?.disconnect()
+  } catch (_) {}
+  try {
+    MockStorageServer.existingInstance?.stop()
+  } catch (_) {}
+
+  try {
+    await killRunningServer(AMMAN_RELAY_PORT)
+  } catch (_) {}
+  try {
+    await killRunningServer(AMMAN_STORAGE_PORT)
+  } catch (_) {}
 }
 
 main().catch((err: any) => {

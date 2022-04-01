@@ -169,10 +169,7 @@ export class Amman {
   }
 
   /** @internal */
-  static get expectInstance() {
-    if (Amman._instance == null) {
-      throw new Error('Amman instance not created but was expected')
-    }
+  static get existingInstance() {
     return Amman._instance
   }
 }
