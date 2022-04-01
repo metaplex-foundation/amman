@@ -1,5 +1,6 @@
 import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
+import numeral from 'numeral'
 import { Amman } from '../api'
 import {
   AmmanAccount,
@@ -8,6 +9,9 @@ import {
 } from '../types'
 import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
 import { isKeyLike, publicKeyString } from '../utils/keys'
+import { isAccount, isMint } from './types'
+
+export const DEFAULT_MINT_DECIMALS = 9
 
 /** @private */
 export type HandleWatchedAccountChanged = (
@@ -230,13 +234,27 @@ export class AccountProvider {
     account: Mint | Account
   ): Promise<AmmanAccount> {
     const acc: Record<string, any> = {}
-    for (const [key, value] of Object.entries(account)) {
+    const amountDivisor = isAccount(account)
+      ? (await this._getMintDecimals(account.mint)).divisor
+      : isMint(account)
+      ? Math.pow(10, account.decimals)
+      : 1
+    for (let [key, value] of Object.entries(account)) {
       if (isKeyLike(value)) {
         const publicKeyStr = publicKeyString(value)
         const label = await this._tryResolveAddressRemote(publicKeyStr)
         acc[key] = label == null ? publicKeyStr : `${label} (${publicKeyStr})`
       } else if (typeof value === 'bigint') {
-        acc[key] = value.toString()
+        const formatted = numeral(value).format('0,0')
+        // Mint specific adjustments
+        if (key === 'amount' || key === 'supply') {
+          const balance = value / BigInt(amountDivisor)
+          acc[key] = formatted + ` (balance: ${balance.toString()})`
+        } else {
+          acc[key] = formatted
+        }
+      } else if (typeof value === 'number') {
+        acc[key] = numeral(value).format('0,0')
       } else {
         acc[key] = value
       }
@@ -246,6 +264,20 @@ export class AccountProvider {
         return acc
       },
     }
+  }
+
+  private async _getMintDecimals(
+    publicKey: PublicKey
+  ): Promise<{ decimals: number; divisor: number }> {
+    let decimals: number
+    try {
+      const mint = await getMint(this.connection, publicKey, 'singleGossip')
+      decimals = mint.decimals
+    } catch (err) {
+      decimals = DEFAULT_MINT_DECIMALS
+    }
+    const divisor = Math.pow(10, decimals)
+    return { decimals, divisor }
   }
 
   private async _tryResolveAddressRemote(publicKeyStr: string) {
