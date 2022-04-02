@@ -28,10 +28,14 @@ amman [command]
 Commands:
   amman start    Launches a solana-test-validator and the amman relay and/or
                  mock storage if so configured
-  amman stop     Stops the relay + storage and kills the running solana test
+  amman stop     Stops the relay and storage and kills the running solana test
                  validator
   amman airdrop  Airdrops provided Sol to the payer
-  amman label    Adds PublicKey labels to amman
+  amman label    Adds labels for accounts or transactions to amman
+  amman account  Retrieves account information for a PublicKey or a label or
+                 shows all labeled accounts
+  amman run      Executes the provided command after expanding all address
+                 labels
 
 Options:
   --help     Show help                                                 [boolean]

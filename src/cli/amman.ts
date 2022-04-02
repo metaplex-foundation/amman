@@ -82,8 +82,10 @@ const commands = yargs(hideBin(process.argv))
   // -----------------
   // label
   // -----------------
-  .command('label', 'Adds PublicKey labels to amman', (args) =>
-    args.help('help', labelHelp())
+  .command(
+    'label',
+    'Adds labels for accounts or transactions to amman',
+    (args) => args.help('help', labelHelp())
   )
   // -----------------
   // account
@@ -118,7 +120,7 @@ const commands = yargs(hideBin(process.argv))
       args
         .option('label', {
           alias: 'l',
-          describe: 'The label to use for the address',
+          describe: 'Used to label addresses found int the command output ',
           type: 'string',
           multiple: true,
           demandOption: false,

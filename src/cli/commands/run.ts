@@ -19,13 +19,11 @@ export async function handleRunCommand(
     const withLabelsExpanded = await Promise.all(
       args.map(async (arg: string | number) => {
         if (typeof arg === 'string' && arg.startsWith(LABEL_INDICATOR)) {
-          const resolvedAddresses = await resolveAccountAddresses(
-            amman,
-            arg.slice(1)
-          )
+          const label = arg.slice(1)
+          const resolvedAddresses = await resolveAccountAddresses(amman, label)
           assert(
             resolvedAddresses.length !== 0,
-            `Could not resolve label ${arg}`
+            `Could not resolve label ${label}`
           )
           if (resolvedAddresses.length > 1) {
             const rendered = resolvedAddresses.map((x) => dim(x)).join('\n  ')
