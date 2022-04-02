@@ -1,8 +1,8 @@
-import { PublicKey } from '@solana/web3.js'
 import crypto from 'crypto'
 import { tmpdir } from 'os'
 import path from 'path'
 
+export * from './address'
 export * from './guards'
 export * from './log'
 
@@ -23,28 +23,6 @@ export const sleep = (ms: number) =>
  */
 export function createHash(s: Buffer) {
   return crypto.createHash('sha256').update(s).digest('hex')
-}
-
-/**
- * Checks if a string is valid base58 via a Regex.
- * @private
- */
-export function isValidAddress(address: string) {
-  return /^[0-9a-zA-Z]+$/.test(address)
-}
-
-/**
- * Checks if a string is valid PublicKey address.
- * @private
- */
-export function isValidPublicKeyAddress(address: string) {
-  if (!isValidAddress(address)) return false
-  try {
-    new PublicKey(address)
-    return true
-  } catch (_) {
-    return false
-  }
 }
 
 /**

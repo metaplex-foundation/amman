@@ -1,6 +1,6 @@
 import {
   commitments,
-  isValidAddress,
+  isValidSolanaAddress,
   LOCALHOST,
   logDebug,
   logInfo,
@@ -19,7 +19,7 @@ export async function handleAirdropCommand(
 ) {
   let keystring = pubKeyOrPathToKeypairFile
 
-  if (!isValidAddress(pubKeyOrPathToKeypairFile)) {
+  if (!isValidSolanaAddress(pubKeyOrPathToKeypairFile)) {
     logDebug(`Resolving public key from file: ${pubKeyOrPathToKeypairFile}`)
     assert(
       path.extname(pubKeyOrPathToKeypairFile) === '.json',

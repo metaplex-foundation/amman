@@ -1,7 +1,13 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
-import { isValidAddress } from '../utils'
+import {
+  extractSolanaAddresses,
+  isPublicKeyAddress,
+  isSignatureAddress,
+  isValidSolanaAddress,
+  logError,
+} from '../utils'
 import { mapLabel } from './address-label-mapper'
 import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
 
@@ -54,7 +60,7 @@ export class AddressLabels {
    */
   addLabel: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
-    if (!isValidAddress(keyString)) return this
+    if (!isValidSolanaAddress(keyString)) return this
 
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
@@ -73,7 +79,7 @@ export class AddressLabels {
       for (const [label, key] of Object.entries(obj)) {
         if (typeof label === 'string' && isKeyLike(key)) {
           const keyString = publicKeyString(key)
-          if (isValidAddress(keyString)) {
+          if (isValidSolanaAddress(keyString)) {
             this.knownLabels[keyString] = label
             labels[keyString] = mapLabel(label)
             this.logLabel(`🔑 ${label}: ${keyString}`)
@@ -201,6 +207,46 @@ export class AddressLabels {
       fn.$spec = `isKeyOf('${label}')`
     }
     return fn
+  }
+
+  async addLabelsFromText(
+    labels: string[],
+    text: string,
+    opts: { transactionsOnly?: boolean; accountsOnly?: boolean } = {}
+  ) {
+    const { transactionsOnly = false, accountsOnly = false } = opts
+    assert(
+      !transactionsOnly || !accountsOnly,
+      'cannot only filter by transactionsOnly or accountsOnly'
+    )
+
+    let addresses = extractSolanaAddresses(text)
+    if (transactionsOnly) {
+      addresses = addresses.filter(isSignatureAddress)
+    } else if (accountsOnly) {
+      addresses = addresses.filter(isPublicKeyAddress)
+    }
+
+    if (addresses.length < labels.length) {
+      if (transactionsOnly) {
+        logError('Was unable to find enough transaction only addresses')
+      }
+      if (accountsOnly) {
+        logError('Was unable to find enough account only addresses')
+      }
+      throw Error(
+        `Cannot auto-label ${labels.length} labels with ${addresses.length} addresses (not enough addresses)`
+      )
+    }
+
+    const acc: Record<string, string> = {}
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i]
+      const address = addresses[i]!
+
+      acc[label] = address.value
+    }
+    await this.addLabels(acc)
   }
 
   /**

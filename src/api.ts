@@ -80,7 +80,7 @@ export class Amman {
     )
     const receiverLabel = this.addr.resolve(publicKey)
     const receiver = receiverLabel == null ? '' : ` -> ${receiverLabel}`
-    this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
+    await this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
 
     const signatureResult = await connection.confirmTransaction(sig)
     return { signature: sig, signatureResult }

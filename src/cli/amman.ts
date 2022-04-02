@@ -114,7 +114,30 @@ const commands = yargs(hideBin(process.argv))
   .command(
     'run',
     'Executes the provided command after expanding all address labels',
-    (args) => args.help('help', runHelp())
+    (args) =>
+      args
+        .option('label', {
+          alias: 'l',
+          describe: 'The label to use for the address',
+          type: 'string',
+          multiple: true,
+          demandOption: false,
+        })
+        .option('txOnly', {
+          alias: 't',
+          describe: 'Includes only transaction addresses when labeling.',
+          type: 'string',
+          demandOption: false,
+          default: false,
+        })
+        .option('accOnly', {
+          alias: 'a',
+          describe: 'Includes only account addresses when labeling.',
+          type: 'string',
+          demandOption: false,
+          default: false,
+        })
+        .help('help', runHelp())
   )
 
 async function main() {
@@ -174,7 +197,7 @@ async function main() {
         const { connection } = await handleAirdropCommand(
           destination,
           amount,
-          label,
+          label!,
           commitment
         )
 
@@ -230,13 +253,24 @@ async function main() {
     // run
     // -----------------
     case 'run': {
-      const args = cs.slice(1)
+      let labels: string | string[] = args.label ?? []
+      if (!Array.isArray(labels)) {
+        labels = [labels]
+      }
+
+      const { txOnly, accOnly } = args
+      const cmdArgs = cs.slice(1)
       assert(
-        args.length > 0,
+        cmdArgs.length > 0,
         'At least one argument is required or did you mean to `amman start`?'
       )
       try {
-        const { stdout, stderr } = await handleRunCommand(args)
+        const { stdout, stderr } = await handleRunCommand(
+          labels,
+          cmdArgs,
+          txOnly,
+          accOnly
+        )
         console.error(stderr)
         console.log(stdout)
       } catch (err: any) {

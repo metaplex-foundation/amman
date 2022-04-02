@@ -3,12 +3,17 @@ import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { exec as execCb } from 'child_process'
 import { promisify } from 'util'
 import { dim } from 'ansi-colors'
-import { logError } from '../../utils'
+import { logDebug, logError } from '../../utils'
 const exec = promisify(execCb)
 
 export const LABEL_INDICATOR = '+'
 
-export async function handleRunCommand(args: (string | number)[]) {
+export async function handleRunCommand(
+  labels: string[],
+  args: (string | number)[],
+  transactionsOnly: boolean,
+  accountsOnly: boolean
+) {
   const amman = cliAmmanInstance()
   try {
     const withLabelsExpanded = await Promise.all(
@@ -36,7 +41,22 @@ export async function handleRunCommand(args: (string | number)[]) {
     )
     const cmd = withLabelsExpanded.join(' ')
     console.log(`\n${dim(cmd)}`)
-    return exec(cmd)
+
+    const { stderr, stdout } = await exec(cmd)
+
+    if (labels.length > 0) {
+      try {
+        logDebug(`Adding labels ${labels} from stdout`)
+        await amman.addr.addLabelsFromText(labels, stdout, {
+          transactionsOnly,
+          accountsOnly,
+        })
+      } catch (err: any) {
+        logError(`Failed to add labels from command output\n${err.message}`)
+      }
+    }
+
+    return { stderr, stdout }
   } catch (err: any) {
     logError(err.message)
     return Promise.resolve({ stdout: '', stderr: '' })
