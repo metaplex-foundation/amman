@@ -19,8 +19,10 @@ import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
 import { assertCommitment, commitments, logError, logInfo } from '../utils'
 import { killRunningServer } from '../utils/http'
-import { AMMAN_STORAGE_PORT } from '../storage'
+import { AMMAN_STORAGE_PORT, MockStorageServer } from '../storage'
 import { closeConnection } from './utils'
+import { Amman } from '../api'
+import { Connection } from '@solana/web3.js'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------
@@ -80,21 +82,33 @@ const commands = yargs(hideBin(process.argv))
   // -----------------
   // label
   // -----------------
-  .command('label', 'Adds PublicKey labels to amman', (args) =>
-    args.help('help', labelHelp())
+  .command(
+    'label',
+    'Adds labels for accounts or transactions to amman',
+    (args) => args.help('help', labelHelp())
   )
   // -----------------
   // account
   // -----------------
   .command(
     'account',
-    'Retrieves account information for a PublicKey or a label',
+    'Retrieves account information for a PublicKey or a label or shows all labeled accounts',
     (args) =>
-      args.positional('address', {
-        describe:
-          'A base58 PublicKey string or the label of the acount to retrieve',
-        type: 'string',
-      })
+      args
+        .positional('address', {
+          describe:
+            'A base58 PublicKey string or the label of the acount to retrieve.' +
+            ' If it is not provided, all labeled accounts are shown.',
+          type: 'string',
+          demandOption: false,
+        })
+        .option('includeTx', {
+          alias: 't',
+          describe:
+            'If to include transactions in the shown labeled accounts when no label/address is provided',
+          type: 'boolean',
+          default: false,
+        })
   )
   // -----------------
   // run
@@ -102,7 +116,30 @@ const commands = yargs(hideBin(process.argv))
   .command(
     'run',
     'Executes the provided command after expanding all address labels',
-    (args) => args.help('help', runHelp())
+    (args) =>
+      args
+        .option('label', {
+          alias: 'l',
+          describe: 'Used to label addresses found int the command output ',
+          type: 'string',
+          multiple: true,
+          demandOption: false,
+        })
+        .option('txOnly', {
+          alias: 't',
+          describe: 'Includes only transaction addresses when labeling.',
+          type: 'string',
+          demandOption: false,
+          default: false,
+        })
+        .option('accOnly', {
+          alias: 'a',
+          describe: 'Includes only account addresses when labeling.',
+          type: 'string',
+          demandOption: false,
+          default: false,
+        })
+        .help('help', runHelp())
   )
 
 async function main() {
@@ -119,6 +156,7 @@ async function main() {
     // start
     // -----------------
     case 'start': {
+      process.on('SIGINT', stopAmman).on('SIGHUP', stopAmman)
       const { needHelp } = await handleStartCommand(args as StartCommandArgs)
       if (needHelp) {
         commands.showHelp()
@@ -129,13 +167,7 @@ async function main() {
     // stop
     // -----------------
     case 'stop': {
-      await killRunningServer(AMMAN_RELAY_PORT)
-      await killRunningServer(AMMAN_STORAGE_PORT)
-
-      try {
-        exec('pkill -f solana-test-validator')
-        logInfo('Killed currently running solana-test-validator')
-      } catch (err) {}
+      await stopAmman()
       break
     }
     // -----------------
@@ -167,7 +199,7 @@ async function main() {
         const { connection } = await handleAirdropCommand(
           destination,
           amount,
-          label,
+          label!,
           commitment
         )
 
@@ -193,28 +225,54 @@ async function main() {
       await handleLabelCommand(labels as string[])
       break
     }
+    // -----------------
+    // account
+    // -----------------
     case 'account': {
       const address = cs[1]
+      const { includeTx } = args
       assert(
-        address != null && typeof address === 'string',
-        'public key string or label is required'
+        address == null || typeof address === 'string',
+        'provided public key or label needs to be a string'
       )
-      const { connection, rendered } = await handleAccountCommand(address)
+      assert(
+        !includeTx || address == null,
+        '--includeTx can only be used when noe address is provided'
+      )
+
+      const { connection, rendered } = await handleAccountCommand(
+        address,
+        includeTx
+      )
       console.log(rendered)
-      await closeConnection(connection, true)
+      if (connection! != null) {
+        await closeConnection(connection, true)
+      }
+      disconnectAmman()
       break
     }
     // -----------------
     // run
     // -----------------
     case 'run': {
-      const args = cs.slice(1)
+      let labels: string | string[] = args.label ?? []
+      if (!Array.isArray(labels)) {
+        labels = [labels]
+      }
+
+      const { txOnly, accOnly } = args
+      const cmdArgs = cs.slice(1)
       assert(
-        args.length > 0,
+        cmdArgs.length > 0,
         'At least one argument is required or did you mean to `amman start`?'
       )
       try {
-        const { stdout, stderr } = await handleRunCommand(args)
+        const { stdout, stderr } = await handleRunCommand(
+          labels,
+          cmdArgs,
+          txOnly,
+          accOnly
+        )
         console.error(stderr)
         console.log(stdout)
       } catch (err: any) {
@@ -225,6 +283,37 @@ async function main() {
     default:
       commands.showHelp()
   }
+}
+
+async function disconnectAmman(connection?: Connection) {
+  try {
+    Amman.existingInstance?.disconnect()
+  } catch (_) {}
+  try {
+    MockStorageServer.existingInstance?.stop()
+  } catch (_) {}
+
+  if (connection! != null) {
+    try {
+      await closeConnection(connection, true)
+    } catch (_) {}
+  }
+}
+
+async function stopAmman() {
+  try {
+    exec('pkill -f solana-test-validator')
+    logInfo('Killed currently running solana-test-validator')
+  } catch (_) {}
+
+  disconnectAmman()
+
+  try {
+    await killRunningServer(AMMAN_RELAY_PORT)
+  } catch (_) {}
+  try {
+    await killRunningServer(AMMAN_STORAGE_PORT)
+  } catch (_) {}
 }
 
 main().catch((err: any) => {

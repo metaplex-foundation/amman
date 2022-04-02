@@ -80,7 +80,7 @@ export class Amman {
     )
     const receiverLabel = this.addr.resolve(publicKey)
     const receiver = receiverLabel == null ? '' : ` -> ${receiverLabel}`
-    this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
+    await this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
 
     const signatureResult = await connection.confirmTransaction(sig)
     return { signature: sig, signatureResult }
@@ -143,6 +143,9 @@ export class Amman {
       transactionLabelMapper?: TransactionLabelMapper
     } = {}
   ) {
+    if (Amman._instance != null) {
+      return Amman._instance
+    }
     const { connectClient = process.env.CI == null, ammanClientOpts } = args
     const {
       knownLabels = {},
@@ -151,9 +154,6 @@ export class Amman {
         ? ConnectedAmmanClient.getInstance(AMMAN_RELAY_URI, ammanClientOpts)
         : new DisconnectedAmmanClient(),
     } = args
-    if (Amman._instance != null) {
-      return Amman._instance
-    }
     ammanClient.clearAddressLabels()
     const addAddressLabels = AddressLabels.setInstance(
       knownLabels ?? {},
@@ -165,6 +165,11 @@ export class Amman {
       ammanClient,
       args.errorResolver
     )
+    return Amman._instance
+  }
+
+  /** @internal */
+  static get existingInstance() {
     return Amman._instance
   }
 }

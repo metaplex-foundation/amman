@@ -21,9 +21,10 @@ export type AmmanClient = {
 
 export type AmmanClientOpts = { autoUnref?: boolean; ack?: boolean }
 
-const AMMAN_NOT_RUNNING_ERROR =
-  'Unable to connect to send address labels, is amman running?\n' +
-  'If not please start one in a separate terminal via `amman start`.\n' +
+const AMMAN_UNABLE_ADD_LABELS = 'Unable to connect to send address labels'
+const AMMAN_UNABLE_FETCH_LABELS = 'Unable to connect to fetch address labels'
+const AMMAN_NOT_RUNNING_ERROR = ', is amman running?\n'
+'If not please start one in a separate terminal via `amman start`.\n' +
   'Alternatively do not set the `ack` option to `true` when instantiating the amman instance.'
 
 /** @private */
@@ -57,7 +58,11 @@ export class ConnectedAmmanClient implements AmmanClient {
     }
     const promise = this.ack
       ? new Promise<void>((resolve, reject) => {
-          const timeout = createTimeout(2000, AMMAN_NOT_RUNNING_ERROR, reject)
+          const timeout = createTimeout(
+            2000,
+            AMMAN_UNABLE_ADD_LABELS + AMMAN_NOT_RUNNING_ERROR,
+            reject
+          )
           this.socket
             .on('error', (err) => {
               clearTimeout(timeout)
@@ -78,7 +83,11 @@ export class ConnectedAmmanClient implements AmmanClient {
   async fetchAddressLabels(): Promise<Record<string, string>> {
     logTrace('Fetching address labels')
     return new Promise<Record<string, string>>((resolve, reject) => {
-      const timeout = createTimeout(2000, AMMAN_NOT_RUNNING_ERROR, reject)
+      const timeout = createTimeout(
+        2000,
+        AMMAN_UNABLE_FETCH_LABELS + AMMAN_NOT_RUNNING_ERROR,
+        reject
+      )
       this.socket
         .on('error', (err) => {
           clearTimeout(timeout)

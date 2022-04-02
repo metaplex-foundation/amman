@@ -7,24 +7,32 @@ import hexdump from 'buffer-hexdump'
 
 import table from 'text-table'
 import { AccountProvider } from '../../accounts/providers'
-import { resolveAccountAddress } from '../utils'
+import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 
-export async function handleAccountCommand(acc: string) {
-  const address = await resolveAccountAddress(acc)
-  if (address == null) {
+export async function handleAccountCommand(
+  acc: string | undefined,
+  includeTxs: boolean = false
+) {
+  if (acc == null) return renderAllKnownAccounts(includeTxs)
+
+  const amman = cliAmmanInstance()
+  const addresses = await resolveAccountAddresses(amman, acc)
+  if (addresses.length === 0) {
     throw new Error(`Account ${acc} could not be resolved to an address`)
   }
 
   const connection = new Connection(LOCALHOST, 'singleGossip')
-  const pubkey = new PublicKey(address)
-  const accountInfo = await connection.getAccountInfo(pubkey)
-  assert(accountInfo != null, 'Account info should not be null')
-  const len = accountInfo.data.length
-  const sol = accountInfo.lamports / LAMPORTS_PER_SOL
+  const rendereds = []
+  for (const address of addresses) {
+    const pubkey = new PublicKey(address)
+    const accountInfo = await connection.getAccountInfo(pubkey)
+    assert(accountInfo != null, 'Account info should not be null')
+    const len = accountInfo.data.length
+    const sol = accountInfo.lamports / LAMPORTS_PER_SOL
 
-  const accountData = (await tryResolveAccountData(pubkey)) ?? ''
+    const accountData = (await tryResolveAccountData(pubkey)) ?? ''
 
-  const rendered = `
+    const rendered = `
 ${bold('Public Key')}: ${address}
 ${bold('Balance   ')}: ${sol} SOL
 ${bold('Owner     ')}: ${accountInfo.owner}
@@ -34,7 +42,37 @@ Length: ${len} (0x${len.toString(16)}) bytes
 ${hexdump(accountInfo.data)}
 ${accountData}
 `
+    rendereds.push(rendered)
+  }
+
+  let rendered = rendereds.join(
+    '\n==================================================================\n'
+  )
+  if (rendereds.length > 1) {
+    rendered +=
+      `\n${bold('NOTE')}: found ${rendereds.length}` +
+      ` accounts labeled '${acc}' and printed all of them above`
+  }
+  amman.disconnect()
   return { connection, rendered }
+}
+
+async function renderAllKnownAccounts(includeTxs: boolean) {
+  const amman = cliAmmanInstance()
+  const accounts = await amman.addr.getRemoteLabelAddresses()
+  if (Object.keys(accounts).length === 0) {
+    const rendered = 'No labeled accounts found'
+    return { connection: undefined, rendered }
+  }
+
+  const rows = []
+  for (const [address, label] of Object.entries(accounts)) {
+    if (!includeTxs && address.length > 44) continue
+    rows.push([bold(label), address])
+  }
+  const rendered = table(rows)
+  amman.disconnect()
+  return { connection: undefined, rendered }
 }
 
 async function tryResolveAccountData(pubkey: PublicKey) {

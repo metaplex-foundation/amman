@@ -1,6 +1,6 @@
 import {
   commitments,
-  isValidAddress,
+  isValidSolanaAddress,
   LOCALHOST,
   logDebug,
   logInfo,
@@ -19,7 +19,7 @@ export async function handleAirdropCommand(
 ) {
   let keystring = pubKeyOrPathToKeypairFile
 
-  if (!isValidAddress(pubKeyOrPathToKeypairFile)) {
+  if (!isValidSolanaAddress(pubKeyOrPathToKeypairFile)) {
     logDebug(`Resolving public key from file: ${pubKeyOrPathToKeypairFile}`)
     assert(
       path.extname(pubKeyOrPathToKeypairFile) === '.json',
@@ -57,7 +57,7 @@ Airdrops provided Sol to the provided public key.
       The commitment to use for Airdrop transaction
 
   Examples:
-    amman airdrop 100 DTTTQyKBNPDFa3cHfFJwDWcNPRJgemSisyWaohFbMRPi
-    amman airdrop 100 ./keypairs/payer.json
+    amman airdrop DTTTQyKBNPDFa3cHfFJwDWcNPRJgemSisyWaohFbMRPi 100
+    amman airdrop ./keypairs/payer.json 100
 `
 }

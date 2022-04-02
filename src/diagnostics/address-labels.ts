@@ -1,7 +1,13 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
 import { AmmanClient, ConnectedAmmanClient } from '../relay'
 import { strict as assert } from 'assert'
-import { isValidAddress } from '../utils'
+import {
+  extractSolanaAddresses,
+  isPublicKeyAddress,
+  isSignatureAddress,
+  isValidSolanaAddress,
+  logError,
+} from '../utils'
 import { mapLabel } from './address-label-mapper'
 import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
 
@@ -22,7 +28,7 @@ export class AddressLabels {
   /**
    * Creates an instance of {@link AddressLabels}.
    *
-   * @param knownLabels labels known ahead of time, i.e. program ids.
+   * @param knownLabels labels keyed as [address, label] known ahead of time, i.e. program ids.
    * @param logLabel if provided to added labels are logged using this function
    */
   private constructor(
@@ -54,7 +60,7 @@ export class AddressLabels {
    */
   addLabel: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
-    if (!isValidAddress(keyString)) return this
+    if (!isValidSolanaAddress(keyString)) return this
 
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
@@ -73,7 +79,7 @@ export class AddressLabels {
       for (const [label, key] of Object.entries(obj)) {
         if (typeof label === 'string' && isKeyLike(key)) {
           const keyString = publicKeyString(key)
-          if (isValidAddress(keyString)) {
+          if (isValidSolanaAddress(keyString)) {
             this.knownLabels[keyString] = label
             labels[keyString] = mapLabel(label)
             this.logLabel(`🔑 ${label}: ${keyString}`)
@@ -123,25 +129,52 @@ export class AddressLabels {
   }
 
   /**
+   * Resolves all addresses labeled with the {@link label}.
+   * @returns addresses or empty if none found
+   */
+  resolveLabel(search: string) {
+    const addresses = []
+    for (const [key, label] of Object.entries(this.knownLabels)) {
+      if (label === search) {
+        addresses.push(key)
+      }
+    }
+    return addresses
+  }
+
+  /**
    * Resolves a known label for the provided key or address querying the amman relay if it
    * isn't found in the cache.
    * @returns label for the address or `undefined` if not found
    */
-  async resolveRemote(
-    keyOrAddress: KeyLike | string
-  ): Promise<string | undefined> {
-    const address = publicKeyString(keyOrAddress)
+  async resolveRemoteAddress(address: KeyLike): Promise<string | undefined> {
+    address = publicKeyString(address)
     const localAddress = this.knownLabels[address]
     if (localAddress != null) return localAddress
 
-    const remoteLabels = await this.ammanClient.fetchAddressLabels()
-    // Remote labels are keyed `address: label`
-    // reverse key and value
-    const labels = Object.fromEntries(
-      Object.entries(remoteLabels).map(([key, value]) => [value, key])
-    )
-    this.knownLabels = { ...labels, ...this.knownLabels }
+    await this.getRemoteLabelAddresses()
+
     return this.knownLabels[address]
+  }
+
+  /**
+   * Resolves an address for the  provided label querying the amman relay if it
+   * isn't found in the cache.
+   * @returns addresses labeled with the {@link label}
+   */
+  async resolveRemoteLabel(label: string): Promise<string[]> {
+    await this.getRemoteLabelAddresses()
+    return this.resolveLabel(label)
+  }
+
+  /**
+   * Resolves all labeled addresses from the amman relay and updates the local labels.
+   * @returns knownLabes all known labels after the update
+   */
+  async getRemoteLabelAddresses() {
+    const remoteLabels = await this.ammanClient.fetchAddressLabels()
+    this.knownLabels = { ...this.knownLabels, ...remoteLabels }
+    return this.knownLabels
   }
 
   /**
@@ -174,6 +207,46 @@ export class AddressLabels {
       fn.$spec = `isKeyOf('${label}')`
     }
     return fn
+  }
+
+  async addLabelsFromText(
+    labels: string[],
+    text: string,
+    opts: { transactionsOnly?: boolean; accountsOnly?: boolean } = {}
+  ) {
+    const { transactionsOnly = false, accountsOnly = false } = opts
+    assert(
+      !transactionsOnly || !accountsOnly,
+      'cannot only filter by transactionsOnly or accountsOnly'
+    )
+
+    let addresses = extractSolanaAddresses(text)
+    if (transactionsOnly) {
+      addresses = addresses.filter(isSignatureAddress)
+    } else if (accountsOnly) {
+      addresses = addresses.filter(isPublicKeyAddress)
+    }
+
+    if (addresses.length < labels.length) {
+      if (transactionsOnly) {
+        logError('Was unable to find enough transaction only addresses')
+      }
+      if (accountsOnly) {
+        logError('Was unable to find enough account only addresses')
+      }
+      throw Error(
+        `Cannot auto-label ${labels.length} labels with ${addresses.length} addresses (not enough addresses)`
+      )
+    }
+
+    const acc: Record<string, string> = {}
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i]
+      const address = addresses[i]!
+
+      acc[label] = address.value
+    }
+    await this.addLabels(acc)
   }
 
   /**
