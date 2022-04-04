@@ -13,6 +13,10 @@ export type AmmanAccount = {
   pretty(): Record<string, any>
 }
 
+/**
+ * The type that an account provider needs to implement so that amman can deserialize account data.
+ * @category diagnostics
+ */
 export type AmmanAccountProvider = {
   byteSize: number | ((args: any) => void)
   fromAccountInfo(
