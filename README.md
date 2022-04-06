@@ -82,7 +82,11 @@ module.exports = {
     killRunningValidators: true,
     launchExplorerRelay: process.env.CI == null,
     programs: [
-      { programId: programIds.metadata, deployPath: localDeployPath('mpl_token_metadata') },
+      { 
+        label: 'Token Metadata Program',
+        programId: programIds.metadata,
+        deployPath: localDeployPath('mpl_token_metadata')
+      },
     ],
     jsonRpcUrl: LOCALHOST,
     websocketUrl: '',
