@@ -18,7 +18,11 @@ export class PrettyLogger {
   readonly prettyLogs: InstructionLogs[] = []
   depth: number = 0
 
-  addLine(line: string, error: TransactionError | null, cluster: Cluster) {
+  async addLine(
+    line: string,
+    error: TransactionError | null,
+    cluster: Cluster
+  ) {
     const newLogs = []
     let newTransaction = false
     const prefixBuilder = (depth: number) => {
@@ -45,9 +49,10 @@ export class PrettyLogger {
 
       if (matches.length > 0) {
         const programAddress = matches[0][1]
-        const programName =
-          programLabel(programAddress, cluster) ||
-          `Unknown (${programAddress}) Program`
+        const programName = await this.prettyProgramLabel(
+          programAddress,
+          cluster
+        )
 
         if (this.depth === 0) {
           this.prettyLogs.push({
@@ -134,5 +139,12 @@ export class PrettyLogger {
     }
 
     return { newLogs, newTransaction }
+  }
+
+  async prettyProgramLabel(programAddress: string, cluster: Cluster) {
+    const programName =
+      programLabel(programAddress, cluster) ||
+      `Unknown (${programAddress}) Program`
+    return programName
   }
 }

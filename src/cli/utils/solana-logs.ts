@@ -3,19 +3,23 @@ import split from 'split2'
 import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import colors from 'ansi-colors'
 
-export function pipeSolanaLogs() {
+export async function pipeSolanaLogs() {
   const logger = new PrettyLogger()
   const child = spawn('solana', ['logs'], {
     detached: false,
     stdio: 'pipe',
   })
-  child.stdout
-    ?.pipe(split())
-    .on('data', (line: string) => logLine(logger, line))
+  for await (const line of child.stdout?.pipe(split())) {
+    await logLine(logger, line)
+  }
 }
 
-function logLine(logger: PrettyLogger, line: string) {
-  const { newLogs, newTransaction } = logger.addLine(line, null, Cluster.Amman)
+async function logLine(logger: PrettyLogger, line: string) {
+  const { newLogs, newTransaction } = await logger.addLine(
+    line,
+    null,
+    Cluster.Amman
+  )
   if (newTransaction) {
     console.log('')
   }
