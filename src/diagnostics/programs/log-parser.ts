@@ -14,33 +14,34 @@ export type InstructionLogs = {
   failed: boolean
 }
 
-export function prettyProgramLogs(
-  logs: string[],
-  error: TransactionError | null,
-  cluster: Cluster
-): InstructionLogs[] {
-  let depth = 0
-  let prettyLogs: InstructionLogs[] = []
-  const prefixBuilder = (depth: number) => {
-    const prefix = new Array(depth - 1).fill('\u00A0\u00A0').join('')
-    return prefix + '> '
-  }
+export class PrettyLogger {
+  readonly prettyLogs: InstructionLogs[] = []
+  depth: number = 0
 
-  let prettyError
-  if (error) {
-    prettyError = getTransactionInstructionError(error)
-  }
+  addLine(line: string, error: TransactionError | null, cluster: Cluster) {
+    const newLogs = []
+    let newTransaction = false
+    const prefixBuilder = (depth: number) => {
+      const prefix = new Array(depth - 1).fill('\u00A0\u00A0').join('')
+      return prefix + '> '
+    }
 
-  logs.forEach((log) => {
-    if (log.startsWith('Program log:')) {
-      prettyLogs[prettyLogs.length - 1].logs.push({
-        prefix: prefixBuilder(depth),
-        text: log,
+    let prettyError
+    if (error) {
+      prettyError = getTransactionInstructionError(error)
+    }
+
+    if (line.startsWith('Program log:')) {
+      const log: LogMessage = {
+        prefix: prefixBuilder(this.depth),
+        text: line,
         style: 'muted',
-      })
+      }
+      this.prettyLogs[this.prettyLogs.length - 1].logs.push(log)
+      newLogs.push(log)
     } else {
       const regex = /Program (\w*) invoke \[(\d)\]/g
-      const matches = [...log.matchAll(regex)]
+      const matches = [...line.matchAll(regex)]
 
       if (matches.length > 0) {
         const programAddress = matches[0][1]
@@ -48,74 +49,90 @@ export function prettyProgramLogs(
           programLabel(programAddress, cluster) ||
           `Unknown (${programAddress}) Program`
 
-        if (depth === 0) {
-          prettyLogs.push({
+        if (this.depth === 0) {
+          this.prettyLogs.push({
             logs: [],
             failed: false,
           })
         } else {
-          prettyLogs[prettyLogs.length - 1].logs.push({
-            prefix: prefixBuilder(depth),
+          const log: LogMessage = {
+            prefix: prefixBuilder(this.depth),
             style: 'info',
             text: `Invoking ${programName}`,
-          })
+          }
+          this.prettyLogs[this.prettyLogs.length - 1].logs.push(log)
+          newLogs.push(log)
+          if (this.depth === 1) {
+            newTransaction = true
+          }
         }
 
-        depth++
-      } else if (log.includes('success')) {
-        prettyLogs[prettyLogs.length - 1].logs.push({
-          prefix: prefixBuilder(depth),
+        this.depth++
+      } else if (line.includes('success')) {
+        const log: LogMessage = {
+          prefix: prefixBuilder(this.depth),
           style: 'success',
           text: `Program returned success`,
-        })
-        depth--
-      } else if (log.includes('failed')) {
-        const instructionLog = prettyLogs[prettyLogs.length - 1]
+        }
+        this.prettyLogs[this.prettyLogs.length - 1].logs.push(log)
+        newLogs.push(log)
+        this.depth--
+      } else if (line.includes('failed')) {
+        const instructionLog = this.prettyLogs[this.prettyLogs.length - 1]
         if (!instructionLog.failed) {
           instructionLog.failed = true
-          instructionLog.logs.push({
-            prefix: prefixBuilder(depth),
+          const log: LogMessage = {
+            prefix: prefixBuilder(this.depth),
             style: 'warning',
-            text: `Program returned error: ${log.slice(log.indexOf(': ') + 2)}`,
-          })
+            text: `Program returned error: ${line.slice(
+              line.indexOf(': ') + 2
+            )}`,
+          }
+          instructionLog.logs.push(log)
+          newLogs.push(log)
         }
-        depth--
+        this.depth--
       } else {
-        if (depth === 0) {
-          prettyLogs.push({
+        if (this.depth === 0) {
+          this.prettyLogs.push({
             logs: [],
             failed: false,
           })
-          depth++
+          this.depth++
         }
         // system transactions don't start with "Program log:"
-        prettyLogs[prettyLogs.length - 1].logs.push({
-          prefix: prefixBuilder(depth),
-          text: log,
+        const log: LogMessage = {
+          prefix: prefixBuilder(this.depth),
+          text: line,
           style: 'muted',
-        })
+        }
+        this.prettyLogs[this.prettyLogs.length - 1].logs.push(log)
+        newLogs.push(log)
       }
     }
-  })
 
-  // If the instruction's simulation returned an error without any logs then add an empty log entry for Runtime error
-  // For example BpfUpgradableLoader fails without returning any logs for Upgrade instruction with buffer that doesn't exist
-  if (prettyError && prettyLogs.length === 0) {
-    prettyLogs.push({
-      logs: [],
-      failed: true,
-    })
+    // If the instruction's simulation returned an error without any logs then add an empty log entry for Runtime error
+    // For example BpfUpgradableLoader fails without returning any logs for Upgrade instruction with buffer that doesn't exist
+    if (prettyError && this.prettyLogs.length === 0) {
+      this.prettyLogs.push({
+        logs: [],
+        failed: true,
+      })
+    }
+
+    if (prettyError && prettyError.index === this.prettyLogs.length - 1) {
+      const failedIx = this.prettyLogs[prettyError.index]
+      failedIx.failed = true
+
+      const log: LogMessage = {
+        prefix: prefixBuilder(1),
+        text: `Runtime error: ${prettyError.message}`,
+        style: 'warning',
+      }
+      failedIx.logs.push(log)
+      newLogs.push(log)
+    }
+
+    return { newLogs, newTransaction }
   }
-
-  if (prettyError && prettyError.index === prettyLogs.length - 1) {
-    const failedIx = prettyLogs[prettyError.index]
-    failedIx.failed = true
-    failedIx.logs.push({
-      prefix: prefixBuilder(1),
-      text: `Runtime error: ${prettyError.message}`,
-      style: 'warning',
-    })
-  }
-
-  return prettyLogs
 }
