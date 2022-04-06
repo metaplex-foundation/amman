@@ -3,12 +3,14 @@ import { Commitment } from '@solana/web3.js'
 /**
  * Definition of a bpf program which the test-validator loads at startup.
  *
+ * @property label a human-readable label for the program.
  * @property programId the public key under which to deploy the program
  *
  * @property deployPath the path at which the program  `.so` file built via
  * `cargo build-bpf`is located
  */
 export type Program = {
+  label?: string
   programId: string
   deployPath: string
 }

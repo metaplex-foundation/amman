@@ -111,7 +111,12 @@ export async function initValidator(
 
   // Launch relay server in parallel
   if (launchExplorerRelay) {
-    Relay.startServer(accountProviders, accountRenderers, killRunningRelay)
+    Relay.startServer(
+      accountProviders,
+      accountRenderers,
+      programs,
+      killRunningRelay
+    )
       .then(({ app }) => {
         logInfo('Successfully launched Relay at %s', resolveServerAddress(app))
       })

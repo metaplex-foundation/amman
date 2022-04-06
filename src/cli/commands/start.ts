@@ -5,6 +5,7 @@ import { AmmanConfig } from '../../types'
 import { canAccess } from '../../utils/fs'
 import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 import { pipeSolanaLogs } from '../utils/solana-logs'
+import { cliAmmanInstance } from '../utils'
 
 export type StartCommandArgs = {
   config?: string
@@ -34,7 +35,7 @@ export async function handleStartCommand(args: StartCommandArgs) {
     await initValidator(config.validator, config.relay, config.storage)
 
     if (config.streamTransactionLogs) {
-      pipeSolanaLogs()
+      pipeSolanaLogs(cliAmmanInstance())
     }
     return { needHelp: false }
   } catch (err: any) {

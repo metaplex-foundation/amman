@@ -2,6 +2,7 @@
 import { TransactionError } from '@solana/web3.js'
 import { Cluster, programLabel } from './program-names'
 import { getTransactionInstructionError } from './program-err'
+import { Amman } from '../../api'
 
 export type LogMessage = {
   text: string
@@ -17,6 +18,8 @@ export type InstructionLogs = {
 export class PrettyLogger {
   readonly prettyLogs: InstructionLogs[] = []
   depth: number = 0
+
+  constructor(readonly amman: Amman) {}
 
   async addLine(
     line: string,
@@ -142,9 +145,11 @@ export class PrettyLogger {
   }
 
   async prettyProgramLabel(programAddress: string, cluster: Cluster) {
-    const programName =
-      programLabel(programAddress, cluster) ||
-      `Unknown (${programAddress}) Program`
-    return programName
+    const programName = programLabel(programAddress, cluster)
+    if (programName != null) return programName
+    const resolvedProgramName = await this.amman.addr.resolveRemoteAddress(
+      programAddress
+    )
+    return resolvedProgramName ?? `Unknown (${programAddress}) Program`
   }
 }
