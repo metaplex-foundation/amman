@@ -14,6 +14,7 @@ import {
   StartCommandArgs,
   startHelp,
   runHelp,
+  handleLogsCommand,
 } from './commands'
 import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
@@ -49,6 +50,10 @@ const commands = yargs(hideBin(process.argv))
     'stop',
     'Stops the relay and storage and kills the running solana test validator'
   )
+  // -----------------
+  // logs
+  // -----------------
+  .command('logs', `Launches 'solana logs' and pipes them through a prettifier`)
   // -----------------
   // airdrop
   // -----------------
@@ -168,6 +173,13 @@ async function main() {
     // -----------------
     case 'stop': {
       await stopAmman()
+      break
+    }
+    // -----------------
+    // logs
+    // -----------------
+    case 'logs': {
+      handleLogsCommand()
       break
     }
     // -----------------

@@ -7,6 +7,7 @@ export type AmmanConfig = {
   validator?: ValidatorConfig
   relay?: RelayConfig
   storage?: StorageConfig
+  streamTransactionLogs?: boolean
 }
 
 export type AmmanAccount = {

@@ -28,8 +28,9 @@ amman [command]
 Commands:
   amman start    Launches a solana-test-validator and the amman relay and/or
                  mock storage if so configured
-  amman stop     Stops the relay and storage and kills the running solana test
-                 validator
+  amman stop     Stops the relay and storage and kills the running solana
+                 test validator
+  amman logs     Launches 'solana logs' and pipes them through a prettifier
   amman airdrop  Airdrops provided Sol to the payer
   amman label    Adds labels for accounts or transactions to amman
   amman account  Retrieves account information for a PublicKey or a label or
@@ -82,7 +83,11 @@ module.exports = {
     killRunningValidators: true,
     launchExplorerRelay: process.env.CI == null,
     programs: [
-      { programId: programIds.metadata, deployPath: localDeployPath('mpl_token_metadata') },
+      { 
+        label: 'Token Metadata Program',
+        programId: programIds.metadata,
+        deployPath: localDeployPath('mpl_token_metadata')
+      },
     ],
     jsonRpcUrl: LOCALHOST,
     websocketUrl: '',

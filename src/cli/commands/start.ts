@@ -4,6 +4,8 @@ import { DEFAULT_VALIDATOR_CONFIG, initValidator } from '../../validator'
 import { AmmanConfig } from '../../types'
 import { canAccess } from '../../utils/fs'
 import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
+import { pipeSolanaLogs } from '../utils/solana-logs'
+import { cliAmmanInstance } from '../utils'
 
 export type StartCommandArgs = {
   config?: string
@@ -12,6 +14,7 @@ export type StartCommandArgs = {
 export const DEFAULT_START_CONFIG: AmmanConfig = {
   validator: DEFAULT_VALIDATOR_CONFIG,
   relay: DEFAULT_RELAY_CONFIG,
+  streamTransactionLogs: true,
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {
@@ -30,6 +33,10 @@ export async function handleStartCommand(args: StartCommandArgs) {
     )
     logDebug(config.validator)
     await initValidator(config.validator, config.relay, config.storage)
+
+    if (config.streamTransactionLogs) {
+      pipeSolanaLogs(cliAmmanInstance())
+    }
     return { needHelp: false }
   } catch (err: any) {
     logError(err)
@@ -40,12 +47,16 @@ export async function handleStartCommand(args: StartCommandArgs) {
   }
 }
 
-function resolveConfig({ config }: StartCommandArgs) {
+async function resolveConfig({ config }: StartCommandArgs) {
   if (config == null) {
-    return tryLoadLocalConfigRc()
+    const { config: localConfig, configPath } = await tryLoadLocalConfigRc()
+    return { config: { ...DEFAULT_START_CONFIG, ...localConfig }, configPath }
   } else {
     const configPath = path.resolve(config)
-    return { config: require(configPath), configPath }
+    return {
+      config: { ...DEFAULT_START_CONFIG, ...require(configPath) },
+      configPath,
+    }
   }
 }
 

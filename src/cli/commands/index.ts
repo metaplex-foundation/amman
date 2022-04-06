@@ -1,5 +1,6 @@
 export * from './account'
 export * from './airdrop'
 export * from './label'
+export * from './logs'
 export * from './run'
 export * from './start'

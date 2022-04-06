@@ -9,6 +9,7 @@ import {
 } from '../types'
 import { logDebug, logTrace, safeJsonStringify } from '../utils'
 import { killRunningServer } from '../utils/http'
+import { Program } from '../validator/types'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
@@ -25,8 +26,12 @@ import {
  * @private
  */
 class RelayServer {
-  private readonly allKnownLabels: Record<string, string> = {}
-  constructor(readonly io: Server, readonly accountProvider: AccountProvider) {
+  constructor(
+    readonly io: Server,
+    readonly accountProvider: AccountProvider,
+    // Keyed pubkey:label
+    private readonly allKnownLabels: Record<string, string> = {}
+  ) {
     this.hookConnectionEvents()
   }
 
@@ -90,20 +95,24 @@ class RelayServer {
  * @private
  * */
 export class Relay {
-  private static createApp(accountProvider: AccountProvider) {
+  private static createApp(
+    accountProvider: AccountProvider,
+    knownLabels: Record<string, string>
+  ) {
     const server = createServer()
     const io = new Server(server, {
       cors: {
         origin: '*',
       },
     })
-    const relayServer = new RelayServer(io, accountProvider)
+    const relayServer = new RelayServer(io, accountProvider, knownLabels)
     return { app: server, io, relayServer }
   }
 
   static async startServer(
     accountProviders: Record<string, AmmanAccountProvider>,
     accountRenderers: AmmanAccountRendererMap,
+    programs: Program[],
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -117,7 +126,16 @@ export class Relay {
       accountProviders,
       accountRenderers
     )
-    const { app, io, relayServer } = this.createApp(accountProvider)
+    const knownLabels = programs
+      .filter((x) => x.label != null)
+      .reduce((acc: Record<string, string>, x) => {
+        acc[x.programId] = x.label!
+        return acc
+      }, {})
+    const { app, io, relayServer } = this.createApp(
+      accountProvider,
+      knownLabels
+    )
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
         const addr = app.address() as AddressInfo
