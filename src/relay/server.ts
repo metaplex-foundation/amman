@@ -80,7 +80,7 @@ class RelayServer {
                 })} to ${socket.conn.remoteAddress}`
               )
             }
-            socket.emit(MSG_UPDATE_ACCOUNT_INFO, {
+            socket.broadcast.emit(MSG_UPDATE_ACCOUNT_INFO, {
               accountAddress,
               accountInfo: { pretty, rendered },
             })
