@@ -7,6 +7,7 @@ import { Amman } from '../../api'
 export type LogMessage = {
   text: string
   prefix: string
+  count?: number[]
   style: 'muted' | 'info' | 'success' | 'warning'
 }
 
@@ -15,11 +16,35 @@ export type InstructionLogs = {
   failed: boolean
 }
 
+const txExecutedRx = /Transaction executed in slot/i
+
 export class PrettyLogger {
   readonly prettyLogs: InstructionLogs[] = []
+  instructionCount: number[] = []
   depth: number = 0
 
   constructor(readonly amman: Amman) {}
+
+  private incDepth() {
+    this.depth++
+    this.instructionCount[this.depth - 1] = 0
+  }
+
+  private decDepth() {
+    this.depth--
+    if (this.depth >= 0) {
+      this.instructionCount.length = this.depth
+    }
+  }
+
+  private incInstructionCount() {
+    const count = this.instructionCount[this.depth - 1] ?? 0
+    this.instructionCount[this.depth - 1] = count + 1
+  }
+
+  private resetCount() {
+    this.instructionCount = []
+  }
 
   async addLine(
     line: string,
@@ -38,6 +63,10 @@ export class PrettyLogger {
       prettyError = getTransactionInstructionError(error)
     }
 
+    if (txExecutedRx.test(line)) {
+      newTransaction = true
+      this.resetCount()
+    }
     if (line.startsWith('Program log:')) {
       const log: LogMessage = {
         prefix: prefixBuilder(this.depth),
@@ -51,6 +80,11 @@ export class PrettyLogger {
       const matches = [...line.matchAll(regex)]
 
       if (matches.length > 0) {
+        // -----------------
+        // Invoke Instruction
+        // -----------------
+        this.incInstructionCount()
+
         const programAddress = matches[0][1]
         const programName = await this.prettyProgramLabel(
           programAddress,
@@ -66,17 +100,17 @@ export class PrettyLogger {
           const log: LogMessage = {
             prefix: prefixBuilder(this.depth),
             style: 'info',
+            count: this.instructionCount.slice(),
             text: `Invoking ${programName}`,
           }
           this.prettyLogs[this.prettyLogs.length - 1].logs.push(log)
           newLogs.push(log)
-          if (this.depth === 1) {
-            newTransaction = true
-          }
         }
-
-        this.depth++
+        this.incDepth()
       } else if (line.includes('success')) {
+        // -----------------
+        // Instruction Success
+        // -----------------
         const log: LogMessage = {
           prefix: prefixBuilder(this.depth),
           style: 'success',
@@ -84,7 +118,7 @@ export class PrettyLogger {
         }
         this.prettyLogs[this.prettyLogs.length - 1].logs.push(log)
         newLogs.push(log)
-        this.depth--
+        this.decDepth()
       } else if (line.includes('failed')) {
         const instructionLog = this.prettyLogs[this.prettyLogs.length - 1]
         if (!instructionLog.failed) {
@@ -99,14 +133,14 @@ export class PrettyLogger {
           instructionLog.logs.push(log)
           newLogs.push(log)
         }
-        this.depth--
+        this.decDepth()
       } else {
         if (this.depth === 0) {
           this.prettyLogs.push({
             logs: [],
             failed: false,
           })
-          this.depth++
+          this.incDepth()
         }
         // system transactions don't start with "Program log:"
         const log: LogMessage = {
@@ -141,7 +175,10 @@ export class PrettyLogger {
       newLogs.push(log)
     }
 
-    return { newLogs, newTransaction }
+    return {
+      newLogs,
+      newTransaction,
+    }
   }
 
   async prettyProgramLabel(programAddress: string, cluster: Cluster) {

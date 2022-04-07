@@ -26,7 +26,11 @@ async function logLine(logger: PrettyLogger, line: string) {
   }
   for (const log of newLogs) {
     const color = styleToColor(log.style)
-    console.log(`${colors.dim(log.prefix)}${color(log.text)}`)
+    const count =
+      log.count != null
+        ? colors.bgGreen(colors.black(`#${log.count.join('.')} `)) + ' '
+        : ''
+    console.log(`${colors.dim(log.prefix)}${count}${color(log.text)}`)
   }
 }
 
