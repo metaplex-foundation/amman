@@ -21,12 +21,15 @@ export async function pipeSolanaLogs(amman?: Amman) {
 }
 
 async function logLine(logger: PrettyLogger, line: string) {
-  const { newLogs, newTransaction } = await logger.addLine(
+  const { newLogs, newInstruction, newOuterInstruction } = await logger.addLine(
     line,
     null,
     Cluster.Amman
   )
-  if (newTransaction) {
+  if (newOuterInstruction) {
+    console.log(colors.dim('\n--------------------------------'))
+  }
+  if (newInstruction) {
     console.log('')
   }
   for (const log of newLogs) {

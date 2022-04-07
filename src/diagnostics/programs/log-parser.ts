@@ -52,7 +52,8 @@ export class PrettyLogger {
     cluster: Cluster
   ) {
     const newLogs = []
-    let newTransaction = false
+    let newInstruction = false
+    let newOuterInstruction = false
     const prefixBuilder = (depth: number) => {
       const prefix = new Array(depth - 1).fill('\u00A0\u00A0').join('')
       return prefix + '> '
@@ -64,7 +65,6 @@ export class PrettyLogger {
     }
 
     if (txExecutedRx.test(line)) {
-      newTransaction = true
       this.resetCount()
     }
     if (line.startsWith('Program log:')) {
@@ -97,6 +97,10 @@ export class PrettyLogger {
             failed: false,
           })
         } else {
+          if (this.depth <= 1) {
+            newOuterInstruction = true
+          }
+          newInstruction = true
           const log: LogMessage = {
             prefix: prefixBuilder(this.depth),
             style: 'info',
@@ -177,7 +181,8 @@ export class PrettyLogger {
 
     return {
       newLogs,
-      newTransaction,
+      newInstruction,
+      newOuterInstruction,
     }
   }
 
