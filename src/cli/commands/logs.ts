@@ -1,6 +1,6 @@
-import { cliAmmanInstance } from '../utils'
+import { maybeAmmanInstance } from '../utils'
 import { pipeSolanaLogs } from '../utils/solana-logs'
 
 export function handleLogsCommand() {
-  return pipeSolanaLogs(cliAmmanInstance())
+  return pipeSolanaLogs(maybeAmmanInstance())
 }

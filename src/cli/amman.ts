@@ -161,7 +161,6 @@ async function main() {
     // start
     // -----------------
     case 'start': {
-      process.on('SIGINT', stopAmman).on('SIGHUP', stopAmman)
       const { needHelp } = await handleStartCommand(args as StartCommandArgs)
       if (needHelp) {
         commands.showHelp()

@@ -96,7 +96,7 @@ export async function initValidator(
   }
 
   const child = spawn('solana-test-validator', args, {
-    detached: true,
+    detached: false,
     stdio: 'inherit',
   })
   child.unref()

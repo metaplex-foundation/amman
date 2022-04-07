@@ -3,15 +3,20 @@ import split from 'split2'
 import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import colors from 'ansi-colors'
 import { Amman } from '../../api'
+import { logTrace } from '../../utils'
 
-export async function pipeSolanaLogs(amman: Amman) {
+export async function pipeSolanaLogs(amman?: Amman) {
   const logger = new PrettyLogger(amman)
   const child = spawn('solana', ['logs'], {
     detached: false,
     stdio: 'pipe',
   })
   for await (const line of child.stdout?.pipe(split())) {
-    await logLine(logger, line)
+    try {
+      await logLine(logger, line)
+    } catch (err) {
+      logTrace('Logger encountered an error', err)
+    }
   }
 }
 
@@ -26,7 +31,11 @@ async function logLine(logger: PrettyLogger, line: string) {
   }
   for (const log of newLogs) {
     const color = styleToColor(log.style)
-    console.log(`${colors.dim(log.prefix)}${color(log.text)}`)
+    const count =
+      log.count != null
+        ? colors.bgGreen(colors.black(`#${log.count.join('.')} `)) + ' '
+        : ''
+    console.log(`${colors.dim(log.prefix)}${count}${color(log.text)}`)
   }
 }
 
