@@ -1,10 +1,20 @@
 import { Amman } from '../../api'
-import { isValidPublicKeyAddress } from '../../utils'
+import { isValidPublicKeyAddress, logTrace } from '../../utils'
 
 export function cliAmmanInstance() {
   return Amman.instance({
     ammanClientOpts: { autoUnref: false, ack: true },
   })
+}
+
+export function maybeAmmanInstance() {
+  try {
+    return Amman.instance({
+      ammanClientOpts: { autoUnref: false, ack: true },
+    })
+  } catch (_) {
+    logTrace('Amman instance not connected')
+  }
 }
 
 export async function resolveAccountAddresses(

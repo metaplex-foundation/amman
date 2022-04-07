@@ -4,7 +4,7 @@ import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import colors from 'ansi-colors'
 import { Amman } from '../../api'
 
-export async function pipeSolanaLogs(amman: Amman) {
+export async function pipeSolanaLogs(amman?: Amman) {
   const logger = new PrettyLogger(amman)
   const child = spawn('solana', ['logs'], {
     detached: false,

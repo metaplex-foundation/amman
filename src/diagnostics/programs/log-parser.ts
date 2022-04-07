@@ -23,7 +23,7 @@ export class PrettyLogger {
   instructionCount: number[] = []
   depth: number = 0
 
-  constructor(readonly amman: Amman) {}
+  constructor(readonly amman?: Amman) {}
 
   private incDepth() {
     this.depth++
@@ -184,9 +184,10 @@ export class PrettyLogger {
   async prettyProgramLabel(programAddress: string, cluster: Cluster) {
     const programName = programLabel(programAddress, cluster)
     if (programName != null) return programName
-    const resolvedProgramName = await this.amman.addr.resolveRemoteAddress(
-      programAddress
-    )
+    const resolvedProgramName =
+      this.amman != null
+        ? await this.amman.addr.resolveRemoteAddress(programAddress)
+        : null
     return resolvedProgramName ?? `Unknown (${programAddress}) Program`
   }
 }
