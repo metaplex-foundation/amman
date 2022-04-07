@@ -57,11 +57,14 @@ export class AddressLabels {
 
   /**
    * Adds the provided label for the provided key.
+   * If the label collides with an existing label, for a different key it will
+   * be suffixed with a number.
    */
   addLabel: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
     if (!isValidSolanaAddress(keyString)) return this
 
+    label = this._nonCollidingLabel(mapLabel(label), keyString)
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
     this.knownLabels[keyString] = label
@@ -72,16 +75,19 @@ export class AddressLabels {
 
   /**
    * Adds labels for all {@link KeyLike}s it finds on the provided object
+   * If the label collides with an existing label, for a different key it will
+   * be suffixed with a number.
    */
   addLabels: AddLabels = async (obj) => {
     if (obj != null) {
       const labels: Record<string, string> = {}
-      for (const [label, key] of Object.entries(obj)) {
+      for (let [label, key] of Object.entries(obj)) {
         if (typeof label === 'string' && isKeyLike(key)) {
           const keyString = publicKeyString(key)
           if (isValidSolanaAddress(keyString)) {
+            label = this._nonCollidingLabel(mapLabel(label), keyString)
+            labels[keyString] = label
             this.knownLabels[keyString] = label
-            labels[keyString] = mapLabel(label)
             this.logLabel(`🔑 ${label}: ${keyString}`)
           }
         }
@@ -241,9 +247,8 @@ export class AddressLabels {
 
     const acc: Record<string, string> = {}
     for (let i = 0; i < labels.length; i++) {
-      const label = labels[i]
       const address = addresses[i]!
-
+      const label = labels[i]
       acc[label] = address.value
     }
     await this.addLabels(acc)
@@ -263,6 +268,23 @@ export class AddressLabels {
       const keyString = publicKeyString(val)
       return { label: this.knownLabels[keyString] ?? key, key: keyString }
     })
+  }
+
+  private _nonCollidingLabel(label: string, address: string) {
+    // We are actually trying to re-label a key that we labeled before
+    if (this.knownLabels[address] != null) {
+      return label
+    }
+    // It's a new key, so we'll make sure that we tweak the label such that
+    // two different keys won't have the same label
+    const labels = new Set(Object.values(this.knownLabels))
+    if (!labels.has(label)) return label
+    let i = 0
+    do {
+      i++
+      const indexedLabel = `${label}-${i}`
+      if (!labels.has(indexedLabel)) return indexedLabel
+    } while (true)
   }
 
   // -----------------
