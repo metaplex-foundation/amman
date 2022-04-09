@@ -47,10 +47,14 @@ export function extractSolanaAddresses(text: string): Address[] {
 
   return matches
     .slice(0)
-    .map((m) => {
-      if (m.length <= 44) return { type: 'publicKey', value: m }
-      if (m.length >= 87) return { type: 'signature', value: m }
-      return null
-    })
+    .map(identifySolanaAddress)
     .filter((x) => x != null) as Address[]
+}
+
+export function identifySolanaAddress(maybeAddress: string): Address | null {
+  if (maybeAddress.length <= 44)
+    return { type: 'publicKey', value: maybeAddress }
+  if (maybeAddress.length >= 87)
+    return { type: 'signature', value: maybeAddress }
+  return null
 }
