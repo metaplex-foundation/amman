@@ -21,9 +21,6 @@ export type Program = {
  * @property killRunningValidators if true will kill any solana-test-validators
  * currently running on the system.
  *
- * @property launchExplorerRelay if true an amman-explorer relay is launched
- * alongside the validator
- *
  * @property programs array of {@link Program} which should be loaded into the
  * test validator
  *
@@ -43,7 +40,6 @@ export type Program = {
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean
-  launchExplorerRelay: boolean
   programs: Program[]
   jsonRpcUrl: string
   websocketUrl: string

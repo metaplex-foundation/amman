@@ -26,7 +26,6 @@ import {
  */
 export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   killRunningValidators: true,
-  launchExplorerRelay: process.env.CI == null,
   programs: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
@@ -55,13 +54,16 @@ export async function initValidator(
     resetLedger,
     limitLedgerSize,
     verifyFees,
-    launchExplorerRelay,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
-  const { killRunningRelay, accountProviders, accountRenderers }: RelayConfig =
-    {
-      ...DEFAULT_RELAY_CONFIG,
-      ...relayConfig,
-    }
+  const {
+    killRunningRelay,
+    accountProviders,
+    accountRenderers,
+    enabled: relayEnabled,
+  }: RelayConfig = {
+    ...DEFAULT_RELAY_CONFIG,
+    ...relayConfig,
+  }
 
   if (killRunningValidators) {
     try {
@@ -110,7 +112,7 @@ export async function initValidator(
   )
 
   // Launch relay server in parallel
-  if (launchExplorerRelay) {
+  if (relayEnabled) {
     Relay.startServer(
       accountProviders,
       accountRenderers,
