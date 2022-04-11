@@ -17,6 +17,7 @@ import { Relay } from '../relay/server'
 import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 import {
   AMMAN_STORAGE_PORT,
+  DEFAULT_STORAGE_CONFIG,
   MockStorageServer,
   StorageConfig,
 } from '../storage'
@@ -132,7 +133,11 @@ export async function initValidator(
   }
 
   // Launch Storage server in parallel as well
-  if (storageConfig != null && storageConfig.enabled) {
+  const storageEnabled =
+    storageConfig != null &&
+    { ...DEFAULT_STORAGE_CONFIG, ...storageConfig }.enabled
+
+  if (storageEnabled) {
     killRunningServer(AMMAN_STORAGE_PORT)
       .then(() =>
         MockStorageServer.createInstance(storageConfig).then((storage) =>
