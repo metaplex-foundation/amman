@@ -78,7 +78,7 @@ export async function keypairFromFile(fullPath: string): Promise<Keypair> {
 /** @private */
 export async function ensureDirCleaned(dir: string) {
   if (!canRead(dir)) return
-  return fs.promises.rmdir(dir, { recursive: true })
+  return fs.promises.rm(dir, { recursive: true })
 }
 
 /** @private */
