@@ -3,6 +3,15 @@ import { RelayConfig } from './relay/types'
 import { StorageConfig } from './storage'
 import { ValidatorConfig } from './validator/types'
 
+/**
+ * Amman Config
+ *
+ * @property validatorConfig Validator configuration
+ * @property relayConfig Relay configuration
+ * @property storageConfig Mock Storage configuration
+ * @property streamTransactionLogs if `true` the `solana logs` command is
+ * spawned and its output piped through a prettifier, defaults to run except when in a CI environment
+ */
 export type AmmanConfig = {
   validator?: ValidatorConfig
   relay?: RelayConfig

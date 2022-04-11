@@ -34,6 +34,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   resetLedger: true,
   limitLedgerSize: 1e4,
   verifyFees: false,
+  detached: process.env.CI != null,
 }
 
 /**
@@ -54,6 +55,7 @@ export async function initValidator(
     resetLedger,
     limitLedgerSize,
     verifyFees,
+    detached,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
   const {
     killRunningRelay,
@@ -98,7 +100,7 @@ export async function initValidator(
   }
 
   const child = spawn('solana-test-validator', args, {
-    detached: false,
+    detached,
     stdio: 'inherit',
   })
   child.unref()
