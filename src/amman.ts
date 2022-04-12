@@ -1,4 +1,4 @@
-export { tmpLedgerDir, LOCALHOST } from './utils'
+export { tmpLedgerDir, LOCALHOST, identifySolanaAddress } from './utils'
 export * from './api'
 export * from './asserts'
 export * from './diagnostics'

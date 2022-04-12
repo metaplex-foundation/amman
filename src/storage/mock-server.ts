@@ -4,7 +4,7 @@ import path from 'path'
 import { AMMAN_STORAGE_PORT, AMMAN_STORAGE_ROOT, StorageConfig } from '.'
 import { logDebug, logError, logTrace } from '../utils'
 import { canRead, ensureDirCleaned, ensureDirSync } from '../utils/fs'
-import { DefaultStorageConfig } from './types'
+import { DEFAULT_STORAGE_CONFIG } from './types'
 
 export class MockStorageServer {
   server?: Server
@@ -20,7 +20,7 @@ export class MockStorageServer {
   static async createInstance(storageConfig: StorageConfig) {
     if (MockStorageServer._instance == null) {
       const { storageId, clearOnStart } = {
-        ...DefaultStorageConfig,
+        ...DEFAULT_STORAGE_CONFIG,
         ...storageConfig,
       }
       const storageDir = path.join(AMMAN_STORAGE_ROOT, storageId)

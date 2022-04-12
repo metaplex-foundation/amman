@@ -17,6 +17,7 @@ import { Relay } from '../relay/server'
 import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 import {
   AMMAN_STORAGE_PORT,
+  DEFAULT_STORAGE_CONFIG,
   MockStorageServer,
   StorageConfig,
 } from '../storage'
@@ -26,7 +27,6 @@ import {
  */
 export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   killRunningValidators: true,
-  launchExplorerRelay: process.env.CI == null,
   programs: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
@@ -35,6 +35,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   resetLedger: true,
   limitLedgerSize: 1e4,
   verifyFees: false,
+  detached: process.env.CI != null,
 }
 
 /**
@@ -55,13 +56,17 @@ export async function initValidator(
     resetLedger,
     limitLedgerSize,
     verifyFees,
-    launchExplorerRelay,
+    detached,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
-  const { killRunningRelay, accountProviders, accountRenderers }: RelayConfig =
-    {
-      ...DEFAULT_RELAY_CONFIG,
-      ...relayConfig,
-    }
+  const {
+    killRunningRelay,
+    accountProviders,
+    accountRenderers,
+    enabled: relayEnabled,
+  }: RelayConfig = {
+    ...DEFAULT_RELAY_CONFIG,
+    ...relayConfig,
+  }
 
   if (killRunningValidators) {
     try {
@@ -96,7 +101,7 @@ export async function initValidator(
   }
 
   const child = spawn('solana-test-validator', args, {
-    detached: false,
+    detached,
     stdio: 'inherit',
   })
   child.unref()
@@ -110,7 +115,7 @@ export async function initValidator(
   )
 
   // Launch relay server in parallel
-  if (launchExplorerRelay) {
+  if (relayEnabled) {
     Relay.startServer(
       accountProviders,
       accountRenderers,
@@ -128,7 +133,11 @@ export async function initValidator(
   }
 
   // Launch Storage server in parallel as well
-  if (storageConfig != null && storageConfig.enabled) {
+  const storageEnabled =
+    storageConfig != null &&
+    { ...DEFAULT_STORAGE_CONFIG, ...storageConfig }.enabled
+
+  if (storageEnabled) {
     killRunningServer(AMMAN_STORAGE_PORT)
       .then(() =>
         MockStorageServer.createInstance(storageConfig).then((storage) =>

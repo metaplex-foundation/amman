@@ -81,7 +81,6 @@ import { LOCALHOST, tmpLedgerDir } from '@metaplex-foundation/amman'
 module.exports = {
   validator: {
     killRunningValidators: true,
-    launchExplorerRelay: process.env.CI == null,
     programs: [
       { 
         label: 'Token Metadata Program',
@@ -95,12 +94,14 @@ module.exports = {
     ledgerDir: tmpLedgerDir(),
     resetLedger: true,
     verifyFees: false,
+    detached: process.env.CI != null,
   },
   relay: {
+    enabled: process.env.CI == null,
     killlRunningRelay: true,
   },
   storage: {
-    enabled: process.env.CI == null && process.env.NO_STORAGE == null,
+    enabled: process.env.CI == null,
     storageId: 'mock-storage',
     clearOnStart: true,
   },

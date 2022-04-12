@@ -14,7 +14,7 @@ export type StartCommandArgs = {
 export const DEFAULT_START_CONFIG: AmmanConfig = {
   validator: DEFAULT_VALIDATOR_CONFIG,
   relay: DEFAULT_RELAY_CONFIG,
-  streamTransactionLogs: true,
+  streamTransactionLogs: process.env.CI == null,
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {

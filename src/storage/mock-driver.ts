@@ -3,7 +3,8 @@ import {
   Metaplex,
   MetaplexFile,
   MetaplexPlugin,
-} from '@lorisleiva/js-next-alpha'
+  SolAmount,
+} from '@metaplex-foundation/js-next'
 
 import { strict as assert } from 'assert'
 import BN from 'bn.js'
@@ -97,8 +98,10 @@ export class AmmanMockStorageDriver extends StorageDriver {
   static readonly getStorageUri = (storageId: string) =>
     `${AMMAN_STORAGE_URI}/${storageId}`
 
-  public async getPrice(file: MetaplexFile): Promise<BN> {
-    return new BN(file.buffer.byteLength).mul(this.costPerByte)
+  public async getPrice(file: MetaplexFile): Promise<SolAmount> {
+    return SolAmount.fromLamports(
+      new BN(file.buffer.byteLength).mul(this.costPerByte)
+    )
   }
 
   public async upload(file: MetaplexFile): Promise<string> {

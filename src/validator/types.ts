@@ -21,9 +21,6 @@ export type Program = {
  * @property killRunningValidators if true will kill any solana-test-validators
  * currently running on the system.
  *
- * @property launchExplorerRelay if true an amman-explorer relay is launched
- * alongside the validator
- *
  * @property programs array of {@link Program} which should be loaded into the
  * test validator
  *
@@ -40,10 +37,13 @@ export type Program = {
  *
  * @property verifyFees if `true` the validator is not considered fully started
  * up until it charges transaction fees
+ *
+ * @property detached if `true` the `solana-test-validator` will run detached
+ * which allows `amman` to exit while the validator keeps running. This
+ * defaults to `true` when run in CI.
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean
-  launchExplorerRelay: boolean
   programs: Program[]
   jsonRpcUrl: string
   websocketUrl: string
@@ -52,4 +52,5 @@ export type ValidatorConfig = {
   resetLedger: boolean
   limitLedgerSize: number
   verifyFees: boolean
+  detached: boolean
 }

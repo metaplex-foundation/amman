@@ -26,7 +26,7 @@ export type StorageConfig = {
  *
  * @category config
  */
-export const DefaultStorageConfig: Omit<StorageConfig, 'storageId'> = {
+export const DEFAULT_STORAGE_CONFIG: Omit<StorageConfig, 'storageId'> = {
   enabled: process.env.CI == null,
   clearOnStart: true,
 }
