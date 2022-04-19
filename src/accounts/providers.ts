@@ -11,6 +11,9 @@ import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
 import { isKeyLike, publicKeyString } from '../utils/keys'
 import { isAccount, isMint } from './types'
 
+const AMMAN_TRACE_UNRESOLVED_ACCOUNTS =
+  process.env.AMMAN_TRACE_UNRESOLVED_ACCOUNTS != null
+
 export const DEFAULT_MINT_DECIMALS = 9
 
 /** @private */
@@ -83,6 +86,7 @@ export class AccountProvider {
       providersWithRender.length
     )
     logTrace({ providersBySize: this.byByteSize })
+    logTrace({ providersUnknownSize: this.nonfixedProviders })
   }
 
   async watchAccount(
@@ -176,10 +180,13 @@ export class AccountProvider {
   ) {
     const providers = this.byByteSize.get(accountInfo.data.byteLength)
     if (providers == null) {
-      logTrace('Unable to find a provider for %s', publicKey.toBase58())
+      logTrace(
+        'Unable to find a provider by byteSize for %s',
+        publicKey.toBase58()
+      )
       logTrace({
         size: accountInfo.data.byteLength,
-        allProviders: this.byByteSize,
+        allProvidersByByteSize: this.byByteSize,
       })
       return
     }
@@ -195,7 +202,9 @@ export class AccountProvider {
       try {
         return this._resolveAccount(provider, accountInfo)
       } catch (err) {
-        logTrace(err)
+        if (AMMAN_TRACE_UNRESOLVED_ACCOUNTS) {
+          logTrace(err)
+        }
       }
     }
   }
