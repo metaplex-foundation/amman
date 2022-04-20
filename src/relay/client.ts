@@ -1,5 +1,4 @@
 import io, { Socket } from 'socket.io-client'
-import { RelayAccountState } from '../accounts/state'
 import { logDebug, logTrace } from '../utils'
 import {
   ACK_UPDATE_ADDRESS_LABELS,
@@ -12,6 +11,7 @@ import {
   MSG_REQUEST_ACCOUNT_STATES,
 } from './consts'
 import { createTimeout } from './timeout'
+import { RelayAccountState } from './types'
 
 /** @private */
 export type AmmanClient = {
@@ -121,11 +121,18 @@ export class ConnectedAmmanClient implements AmmanClient {
           clearTimeout(timeout)
           reject(err)
         })
-        .on(MSG_RESPOND_ACCOUNT_STATES, (states: RelayAccountState[]) => {
-          clearTimeout(timeout)
-          logTrace('Got account states %O', states)
-          resolve(states)
-        })
+        .on(
+          MSG_RESPOND_ACCOUNT_STATES,
+          (accountAddress: string, states: RelayAccountState[]) => {
+            clearTimeout(timeout)
+            logDebug(
+              'Got account states for address %s, %O',
+              accountAddress,
+              states
+            )
+            resolve(states)
+          }
+        )
         .emit(MSG_REQUEST_ACCOUNT_STATES, address)
     })
   }

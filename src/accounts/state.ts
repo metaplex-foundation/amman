@@ -5,11 +5,6 @@ import { AccountProvider } from './providers'
 import { strict as assert } from 'assert'
 
 export type AccountState = { account: AmmanAccount; rendered?: string }
-export type RelayAccountState = {
-  account: Record<string, any>
-  rendered?: string
-  timestamp: number
-}
 
 class AccountStateTracker {
   readonly states: (AccountState & { timestamp: number })[] = []
@@ -45,20 +40,20 @@ export class AccountStates {
     this.accountProvider.watchAccount(
       address,
       (account: AmmanAccount, rendered?: string) => {
+        logTrace(`Account ${address} changed`)
         this.add(address, { account, rendered })
       }
     )
   }
 
   add(address: string, state: AccountState) {
-    this.get(address).add(state)
+    const states = this.get(address)
+    assert(states != null, 'expected states to be set before adding')
+    states.add(state)
   }
 
-  get(address: string): AccountStateTracker {
-    if (!this.states.has(address)) {
-      this.states.set(address, new AccountStateTracker())
-    }
-    return this.states.get(address)!
+  get(address: string): AccountStateTracker | undefined {
+    return this.states.get(address)
   }
 
   private _onLog = async (logs: Logs, _ctx: Context) => {
@@ -66,13 +61,15 @@ export class AccountStates {
       commitment: 'confirmed',
     })
     if (tx == null) {
-      logTrace(`Could not find transaction ${logs.signature}`)
+      logDebug(`Could not find transaction ${logs.signature}`)
       return
     }
-    if (tx.transaction != null) {
-      for (const key of tx.transaction.message.accountKeys) {
-        this.watch(key.toBase58())
-      }
+    const nonProgramAddresses = tx.transaction.message
+      .nonProgramIds()
+      .map((x) => x.toBase58())
+
+    for (const key of nonProgramAddresses) {
+      this.watch(key)
     }
   }
 

@@ -33,9 +33,9 @@ export async function handleAccountCommand(
     const len = accountInfo.data.length
     const sol = accountInfo.lamports / LAMPORTS_PER_SOL
 
-    const accountStates = (await tryResolveAccountStates(pubkey)) ?? ''
+    const accountStates = await tryResolveAccountStates(pubkey)
     const rawData =
-      accountStates == null
+      accountStates == null || accountStates.length === 0
         ? `\n${hexdump(accountInfo.data)}`
         : dim(' (raw data omitted)')
 

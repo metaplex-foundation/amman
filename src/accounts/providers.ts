@@ -107,6 +107,8 @@ export class AccountProvider {
       const res = await this.syncAccountInformation(publicKey)
       if (res != null) {
         onChanged(res.account, res.rendered)
+      } else {
+        logTrace(`Account ${publicKeyString(publicKey)} not resolvable`)
       }
     }
 
@@ -119,6 +121,8 @@ export class AccountProvider {
         )
         if (res != null) {
           onChanged(res.account, res.rendered)
+        } else {
+          logDebug(`Account ${publicKeyString(publicKey)} not resolvable`)
         }
       }
     )

@@ -32,3 +32,9 @@ export type RelayConfig = {
   accountProviders: Record<string, AmmanAccountProvider>
   accountRenderers: AmmanAccountRendererMap
 }
+
+export type RelayAccountState = {
+  account: Record<string, any>
+  rendered?: string
+  timestamp: number
+}

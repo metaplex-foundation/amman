@@ -43,9 +43,9 @@ class RelayServer {
     this.io.on('connection', (socket) => {
       const client = `${socket.id} from ${socket.client.conn.remoteAddress}`
       socket.on('disconnect', () =>
-        logDebug(`socket.io ${client} disconnected`)
+        logTrace(`socket.io ${client} disconnected`)
       )
-      logDebug(`socket.io ${client} connected`)
+      logTrace(`socket.io ${client} connected`)
       this.hookMessages(socket)
     })
   }
@@ -71,8 +71,10 @@ class RelayServer {
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
       })
       .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
-        const states = this.accountStates.get(pubkey).relayStates
-        socket.emit(MSG_RESPOND_ACCOUNT_STATES, states)
+        const states = this.accountStates.get(pubkey)?.relayStates
+        // TODO(thlorenz): we could automatically watch the account here
+        // and broadcast updates
+        socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
       })
     /*
       .on(MSG_WATCH_ACCOUNT_INFO, async (accountAddress: string) => {
