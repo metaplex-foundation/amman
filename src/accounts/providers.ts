@@ -51,14 +51,12 @@ export class AccountProvider {
   readonly byByteSize: Map<number, AmmanAccountProvider[]> = new Map()
   readonly nonfixedProviders: AmmanAccountProvider[] = []
   readonly connection: Connection = new Connection(LOCALHOST, 'confirmed')
-  private currentSlot: number = 0
 
   private constructor(
     providers: AmmanAccountProvider[],
     private readonly renderers: AmmanAccountRendererMap
   ) {
     this._mapProviders(providers)
-    this.connection.onSlotUpdate(({ slot }) => (this.currentSlot = slot))
   }
 
   static fromRecord(
@@ -93,41 +91,16 @@ export class AccountProvider {
     logTrace({ providersUnknownSize: this.nonfixedProviders })
   }
 
-  async watchAccount(
-    accountAddress: string,
-    onChanged: HandleWatchedAccountChanged
+  async tryResolveAccount(
+    publicKey: PublicKey,
+    accountInfo?: AccountInfo<Buffer>
   ) {
-    let publicKey: PublicKey
-    try {
-      publicKey = new PublicKey(accountAddress)
-    } catch (err) {
-      logError(
-        `Invalid account address ${accountAddress}. Unable to create PublicKey`
-      )
-      logError(err)
-      return
-    }
-    {
-      const res = await this.syncAccountInformation(publicKey)
-      if (res != null) {
-        onChanged(res.account, this.currentSlot, res.rendered)
-      } else {
-        logTrace(`Account ${publicKeyString(publicKey)} not resolvable`)
-      }
-    }
+    accountInfo ??=
+      (await this.connection.getAccountInfo(publicKey)) ?? undefined
 
-    this.connection.onAccountChange(
-      publicKey,
-      async (accountInfo: AccountInfo<Buffer>) => {
-        const res = await this._getProviderAndResolveAccount(
-          accountInfo,
-          publicKey
-        )
-        if (res != null) {
-          onChanged(res.account, this.currentSlot, res.rendered)
-        }
-      }
-    )
+    return accountInfo != null
+      ? this._getProviderAndResolveAccount(accountInfo, publicKey)
+      : null
   }
 
   async syncAccountInformation(

@@ -1,6 +1,6 @@
-import { Connection, Context, Logs } from '@solana/web3.js'
+import { Connection, Context, Logs, PublicKey } from '@solana/web3.js'
 import { AmmanAccount } from '../types'
-import { logDebug, logTrace } from '../utils/log'
+import { logDebug } from '../utils/log'
 import { AccountProvider } from './providers'
 import { strict as assert } from 'assert'
 import EventEmitter from 'events'
@@ -37,19 +37,18 @@ export class AccountStates extends EventEmitter {
     this.connection.onLogs('all', this._onLog, 'confirmed')
   }
 
-  watch(address: string) {
-    if (this.states.has(address)) return
-    this.states.set(address, new AccountStateTracker())
+  async update(address: string, slot: number) {
+    if (!this.states.has(address)) {
+      this.states.set(address, new AccountStateTracker())
+    }
 
-    logTrace(`Watching account ${address}`)
-    this.accountProvider.watchAccount(
-      address,
-      (account: AmmanAccount, slot: number, rendered?: string) => {
-        logTrace(`Account ${address} changed`)
-        this.add(address, { account, slot, rendered })
-        this.emit(`account-changed:${address}`, this.get(address)?.relayStates)
-      }
+    const res = await this.accountProvider.tryResolveAccount(
+      new PublicKey(address)
     )
+    if (res == null) return
+
+    this.add(address, { ...res, slot })
+    this.emit(`account-changed:${address}`, this.get(address)?.relayStates)
   }
 
   add(address: string, state: AccountState) {
@@ -62,7 +61,7 @@ export class AccountStates extends EventEmitter {
     return this.states.get(address)
   }
 
-  private _onLog = async (logs: Logs, _ctx: Context) => {
+  private _onLog = async (logs: Logs, ctx: Context) => {
     const tx = await this.connection.getTransaction(logs.signature, {
       commitment: 'confirmed',
     })
@@ -75,7 +74,7 @@ export class AccountStates extends EventEmitter {
       .map((x) => x.toBase58())
 
     for (const key of nonProgramAddresses) {
-      this.watch(key)
+      this.update(key, ctx.slot)
     }
   }
 

@@ -67,7 +67,6 @@ class RelayServer {
       })
       .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
         const states = this.accountStates.get(pubkey)?.relayStates
-        this.accountStates.watch(pubkey)
         if (states != null) {
           socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
         }
