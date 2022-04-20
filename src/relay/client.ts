@@ -1,4 +1,5 @@
 import io, { Socket } from 'socket.io-client'
+import { RelayAccountState } from '../accounts/state'
 import { logDebug, logTrace } from '../utils'
 import {
   ACK_UPDATE_ADDRESS_LABELS,
@@ -7,6 +8,8 @@ import {
   MSG_UPDATE_ADDRESS_LABELS,
   AMMAN_RELAY_URI,
   MSG_GET_KNOWN_ADDRESS_LABELS,
+  MSG_RESPOND_ACCOUNT_STATES,
+  MSG_REQUEST_ACCOUNT_STATES,
 } from './consts'
 import { createTimeout } from './timeout'
 
@@ -16,6 +19,7 @@ export type AmmanClient = {
   clearTransactions(): void
   addAddressLabels(labels: Record<string, string>): Promise<void>
   fetchAddressLabels(): Promise<Record<string, string>>
+  fetchAccountStates(address: string): Promise<RelayAccountState[]>
   disconnect(): void
 }
 
@@ -23,6 +27,8 @@ export type AmmanClientOpts = { autoUnref?: boolean; ack?: boolean }
 
 const AMMAN_UNABLE_ADD_LABELS = 'Unable to connect to send address labels'
 const AMMAN_UNABLE_FETCH_LABELS = 'Unable to connect to fetch address labels'
+const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
+  'Unable to connect to fetch account states'
 const AMMAN_NOT_RUNNING_ERROR = ', is amman running?\n'
 'If not please start one in a separate terminal via `amman start`.\n' +
   'Alternatively do not set the `ack` option to `true` when instantiating the amman instance.'
@@ -102,6 +108,28 @@ export class ConnectedAmmanClient implements AmmanClient {
     })
   }
 
+  async fetchAccountStates(address: string) {
+    logTrace('Fetching account states for %s', address)
+    return new Promise<RelayAccountState[]>((resolve, reject) => {
+      const timeout = createTimeout(
+        2000,
+        AMMAN_UNABLE_FETCH_ACCOUNT_STATES + AMMAN_NOT_RUNNING_ERROR,
+        reject
+      )
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(MSG_RESPOND_ACCOUNT_STATES, (states: RelayAccountState[]) => {
+          clearTimeout(timeout)
+          logTrace('Got account states %O', states)
+          resolve(states)
+        })
+        .emit(MSG_REQUEST_ACCOUNT_STATES, address)
+    })
+  }
+
   /**
    * Disconnects this client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the opts.
@@ -131,6 +159,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
   }
   fetchAddressLabels(): Promise<Record<string, string>> {
     return Promise.resolve({})
+  }
+  fetchAccountStates(_address: string): Promise<RelayAccountState[]> {
+    return Promise.resolve([])
   }
   disconnect() {}
 }

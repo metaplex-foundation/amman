@@ -264,6 +264,10 @@ export class AccountProvider {
         }
       } else if (typeof value === 'number') {
         acc[key] = numeral(value).format('0,0')
+      } else if (typeof value.pretty === 'function') {
+        acc[key] = value.pretty()
+      } else if (typeof value === 'object') {
+        acc[key] = JSON.stringify(value)
       } else {
         acc[key] = value
       }

@@ -17,3 +17,7 @@ export const MSG_GET_KNOWN_ADDRESS_LABELS = 'get:known-address-labels'
 export const MSG_WATCH_ACCOUNT_INFO = 'watch:account-info'
 /** @private */
 export const MSG_UPDATE_ACCOUNT_INFO = 'update:account-info'
+/** @private */
+export const MSG_REQUEST_ACCOUNT_STATES = 'request:account-states'
+/** @private */
+export const MSG_RESPOND_ACCOUNT_STATES = 'respond:account-states'

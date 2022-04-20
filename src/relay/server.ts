@@ -2,6 +2,7 @@ import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
+import { AccountStates } from '../accounts/state'
 import {
   AmmanAccount,
   AmmanAccountProvider,
@@ -17,6 +18,8 @@ import {
   MSG_WATCH_ACCOUNT_INFO,
   MSG_UPDATE_ACCOUNT_INFO,
   ACK_UPDATE_ADDRESS_LABELS,
+  MSG_REQUEST_ACCOUNT_STATES,
+  MSG_RESPOND_ACCOUNT_STATES,
 } from './consts'
 
 /**
@@ -29,6 +32,7 @@ class RelayServer {
   constructor(
     readonly io: Server,
     readonly accountProvider: AccountProvider,
+    readonly accountStates: AccountStates,
     // Keyed pubkey:label
     private readonly allKnownLabels: Record<string, string> = {}
   ) {
@@ -66,6 +70,11 @@ class RelayServer {
         }
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
       })
+      .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
+        const states = this.accountStates.get(pubkey).relayStates
+        socket.emit(MSG_RESPOND_ACCOUNT_STATES, states)
+      })
+    /*
       .on(MSG_WATCH_ACCOUNT_INFO, async (accountAddress: string) => {
         this.accountProvider.watchAccount(
           accountAddress,
@@ -87,6 +96,7 @@ class RelayServer {
           }
         )
       })
+      */
   }
 }
 
@@ -97,6 +107,7 @@ class RelayServer {
 export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
+    accountStates: AccountStates,
     knownLabels: Record<string, string>
   ) {
     const server = createServer()
@@ -105,7 +116,12 @@ export class Relay {
         origin: '*',
       },
     })
-    const relayServer = new RelayServer(io, accountProvider, knownLabels)
+    const relayServer = new RelayServer(
+      io,
+      accountProvider,
+      accountStates,
+      knownLabels
+    )
     return { app: server, io, relayServer }
   }
 
@@ -126,6 +142,8 @@ export class Relay {
       accountProviders,
       accountRenderers
     )
+    AccountStates.createInstance(accountProvider.connection, accountProvider)
+
     const knownLabels = programs
       .filter((x) => x.label != null)
       .reduce((acc: Record<string, string>, x) => {
@@ -134,6 +152,7 @@ export class Relay {
       }, {})
     const { app, io, relayServer } = this.createApp(
       accountProvider,
+      AccountStates.instance,
       knownLabels
     )
     return new Promise((resolve, reject) => {
