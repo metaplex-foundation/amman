@@ -100,7 +100,7 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
       addSuffix: true,
     })
     const ts = format(state.timestamp, 'HH:mm:ss:SSS')
-    const time = dim(`${tdelta} at ${ts}`)
+    const time = dim(`${tdelta} at ${ts} in slot ${state.slot}`)
     statesStr +=
       `\n${bold('Account State')} ${time}` +
       `\n${bold('-------------')}` +

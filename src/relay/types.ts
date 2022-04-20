@@ -35,6 +35,7 @@ export type RelayConfig = {
 
 export type RelayAccountState = {
   account: Record<string, any>
+  slot: number
   rendered?: string
   timestamp: number
 }

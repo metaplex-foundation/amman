@@ -5,7 +5,11 @@ import { AccountProvider } from './providers'
 import { strict as assert } from 'assert'
 import EventEmitter from 'events'
 
-export type AccountState = { account: AmmanAccount; rendered?: string }
+export type AccountState = {
+  account: AmmanAccount
+  slot: number
+  rendered?: string
+}
 
 class AccountStateTracker {
   readonly states: (AccountState & { timestamp: number })[] = []
@@ -15,10 +19,9 @@ class AccountStateTracker {
   }
 
   get relayStates() {
-    return this.states.map(({ account, rendered, timestamp }) => ({
+    return this.states.map(({ account, ...rest }) => ({
       account: account.pretty(),
-      rendered,
-      timestamp,
+      ...rest,
     }))
   }
 }
@@ -41,9 +44,9 @@ export class AccountStates extends EventEmitter {
     logTrace(`Watching account ${address}`)
     this.accountProvider.watchAccount(
       address,
-      (account: AmmanAccount, rendered?: string) => {
+      (account: AmmanAccount, slot: number, rendered?: string) => {
         logTrace(`Account ${address} changed`)
-        this.add(address, { account, rendered })
+        this.add(address, { account, slot, rendered })
         this.emit(`account-changed:${address}`, this.get(address)?.relayStates)
       }
     )

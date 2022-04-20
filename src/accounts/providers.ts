@@ -19,6 +19,7 @@ export const DEFAULT_MINT_DECIMALS = 9
 /** @private */
 export type HandleWatchedAccountChanged = (
   account: AmmanAccount,
+  slot: number,
   rendered?: string
 ) => void
 
@@ -49,12 +50,15 @@ export class AccountProvider {
    */
   readonly byByteSize: Map<number, AmmanAccountProvider[]> = new Map()
   readonly nonfixedProviders: AmmanAccountProvider[] = []
-  readonly connection: Connection = new Connection(LOCALHOST, 'singleGossip')
-  constructor(
+  readonly connection: Connection = new Connection(LOCALHOST, 'confirmed')
+  private currentSlot: number = 0
+
+  private constructor(
     providers: AmmanAccountProvider[],
-    readonly renderers: AmmanAccountRendererMap
+    private readonly renderers: AmmanAccountRendererMap
   ) {
     this._mapProviders(providers)
+    this.connection.onSlotUpdate(({ slot }) => (this.currentSlot = slot))
   }
 
   static fromRecord(
@@ -106,7 +110,7 @@ export class AccountProvider {
     {
       const res = await this.syncAccountInformation(publicKey)
       if (res != null) {
-        onChanged(res.account, res.rendered)
+        onChanged(res.account, this.currentSlot, res.rendered)
       } else {
         logTrace(`Account ${publicKeyString(publicKey)} not resolvable`)
       }
@@ -120,7 +124,7 @@ export class AccountProvider {
           publicKey
         )
         if (res != null) {
-          onChanged(res.account, res.rendered)
+          onChanged(res.account, this.currentSlot, res.rendered)
         }
       }
     )
