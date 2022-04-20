@@ -1,9 +1,9 @@
 import { AccountInfo } from '@solana/web3.js'
-import { RelayConfig, RelayAccountState } from './relay/types'
+import { RelayConfig } from './relay/types'
 import { StorageConfig } from './storage'
 import { ValidatorConfig } from './validator/types'
 
-export { RelayAccountState }
+export { RelayAccountState, AccountDiff } from './relay/types'
 
 /**
  * Amman Config

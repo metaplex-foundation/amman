@@ -101,12 +101,49 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
     })
     const ts = format(state.timestamp, 'HH:mm:ss:SSS')
     const time = dim(`${tdelta} at ${ts} in slot ${state.slot}`)
+
+    const diffRows: [string, string, string][] =
+      state.accountDiff
+        ?.map((x) => {
+          if (x.kind === 'E') {
+            return [x.path, x.lhs, x.rhs]
+          } else if (x.kind === 'N') {
+            return [x.path, '+', x.rhs]
+          } else if (x.kind === 'D') {
+            return [x.path, '-', x.lhs]
+          } else {
+            return [x.path, 'item at idx changed', x.index.toString()]
+          }
+        })
+        .map(([p, c, v]) => {
+          const sp: string =
+            p == null
+              ? ''
+              : Array.isArray(p)
+              ? p.join('.')
+              : typeof p === 'string'
+              ? p
+              : JSON.stringify(p)
+          const sc = typeof c === 'string' ? c : JSON.stringify(c)
+          const sv = typeof v === 'string' ? v : JSON.stringify(v)
+          return [sp, dim(sc), dim(sv)]
+        }) ?? []
+    const diffRendered = diffRows.length > 0 ? table(diffRows) : undefined
+
     statesStr +=
       `\n${bold('Account State')} ${time}` +
       `\n${bold('-------------')}` +
       `\n${table(rows)}`
     if (state.rendered != null) {
       statesStr += `\n${state.rendered}`
+    }
+
+    if (diffRendered != null) {
+      // prettier-ignore
+      statesStr +=
+        `\n\n${bold('Diffs')}` +
+        `\n${bold('-----')}` +
+        `\n${diffRendered}\n`
     }
   }
   return statesStr

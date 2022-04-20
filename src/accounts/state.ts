@@ -3,11 +3,14 @@ import { AmmanAccount } from '../types'
 import { logDebug } from '../utils/log'
 import { AccountProvider } from './providers'
 import { strict as assert } from 'assert'
+import { diff } from 'deep-diff'
 import EventEmitter from 'events'
+import { AccountDiff } from '../relay/types'
 
 export type AccountState = {
   account: AmmanAccount
   slot: number
+  accountDiff?: AccountDiff
   rendered?: string
 }
 
@@ -15,7 +18,13 @@ class AccountStateTracker {
   readonly states: (AccountState & { timestamp: number })[] = []
 
   add(state: AccountState) {
-    this.states.push({ ...state, timestamp: Date.now().valueOf() })
+    const lastState =
+      this.states.length > 0 ? this.states[this.states.length - 1] : null
+    const accountDiff: AccountDiff | undefined =
+      lastState == null
+        ? undefined
+        : diff(lastState.account.pretty(), state.account.pretty())
+    this.states.push({ ...state, accountDiff, timestamp: Date.now().valueOf() })
   }
 
   get relayStates() {
