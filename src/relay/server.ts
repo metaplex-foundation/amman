@@ -3,20 +3,15 @@ import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
-import {
-  AmmanAccount,
-  AmmanAccountProvider,
-  AmmanAccountRendererMap,
-} from '../types'
-import { logDebug, logTrace, safeJsonStringify } from '../utils'
+import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
+import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { Program } from '../validator/types'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
-  MSG_WATCH_ACCOUNT_INFO,
-  MSG_UPDATE_ACCOUNT_INFO,
+  MSG_UPDATE_ACCOUNT_STATES,
   ACK_UPDATE_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_RESPOND_ACCOUNT_STATES,
@@ -72,33 +67,14 @@ class RelayServer {
       })
       .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
         const states = this.accountStates.get(pubkey)?.relayStates
-        // TODO(thlorenz): we could automatically watch the account here
-        // and broadcast updates
-        socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
+        this.accountStates.watch(pubkey)
+        if (states != null) {
+          socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
+        }
+        this.accountStates.on(`account-changed:${pubkey}`, (states) => {
+          socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
+        })
       })
-    /*
-      .on(MSG_WATCH_ACCOUNT_INFO, async (accountAddress: string) => {
-        this.accountProvider.watchAccount(
-          accountAddress,
-          (account: AmmanAccount, rendered?: string) => {
-            if (socket.disconnected) return
-            const pretty = account.pretty()
-            if (logTrace.enabled) {
-              logTrace(
-                `Sending account ${safeJsonStringify({
-                  pretty,
-                  rendered,
-                })} to ${socket.conn.remoteAddress}`
-              )
-            }
-            socket.broadcast.emit(MSG_UPDATE_ACCOUNT_INFO, {
-              accountAddress,
-              accountInfo: { pretty, rendered },
-            })
-          }
-        )
-      })
-      */
   }
 }
 

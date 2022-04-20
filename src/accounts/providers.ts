@@ -121,8 +121,6 @@ export class AccountProvider {
         )
         if (res != null) {
           onChanged(res.account, res.rendered)
-        } else {
-          logDebug(`Account ${publicKeyString(publicKey)} not resolvable`)
         }
       }
     )

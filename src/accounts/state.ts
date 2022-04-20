@@ -3,6 +3,7 @@ import { AmmanAccount } from '../types'
 import { logDebug, logTrace } from '../utils/log'
 import { AccountProvider } from './providers'
 import { strict as assert } from 'assert'
+import EventEmitter from 'events'
 
 export type AccountState = { account: AmmanAccount; rendered?: string }
 
@@ -22,13 +23,14 @@ class AccountStateTracker {
   }
 }
 
-export class AccountStates {
+export class AccountStates extends EventEmitter {
   readonly states: Map<string, AccountStateTracker> = new Map()
 
   private constructor(
     readonly connection: Connection,
     readonly accountProvider: AccountProvider
   ) {
+    super()
     this.connection.onLogs('all', this._onLog, 'confirmed')
   }
 
@@ -36,12 +38,13 @@ export class AccountStates {
     if (this.states.has(address)) return
     this.states.set(address, new AccountStateTracker())
 
-    logDebug(`Watching account ${address}`)
+    logTrace(`Watching account ${address}`)
     this.accountProvider.watchAccount(
       address,
       (account: AmmanAccount, rendered?: string) => {
         logTrace(`Account ${address} changed`)
         this.add(address, { account, rendered })
+        this.emit(`account-changed:${address}`, this.get(address)?.relayStates)
       }
     )
   }
