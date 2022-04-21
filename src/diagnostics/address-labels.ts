@@ -16,7 +16,9 @@ export type AddLabel = (label: string, key: KeyLike) => Promise<AddressLabels>
 /** @private */
 export type AddLabels = (labels: any) => Promise<AddressLabels>
 /** @private */
-export type GenKeypair = (label?: string) => [PublicKey, Keypair]
+export type GenKeypair = () => [PublicKey, Keypair]
+/** @private */
+export type GenLabeledKeypair = (label: string) => Promise<[PublicKey, Keypair]>
 
 /**
  * Manages address labels in order to improve logging and provide them to tools
@@ -45,13 +47,15 @@ export class AddressLabels {
     if (Object.keys(knownLabels).length > 0) {
       this.ammanClient.addAddressLabels(knownLabels)
     }
+    this.getRemoteLabelAddresses()
   }
 
   /**
    * Clears all address labels collected so far and instructs the {@link
    * ammanClient} to do the same.
    */
-  clear() {
+  async clear() {
+    this.ammanClient.clearAddressLabels()
     this.knownLabels = {}
   }
 
@@ -64,12 +68,12 @@ export class AddressLabels {
     const keyString = publicKeyString(key)
     if (!isValidSolanaAddress(keyString)) return this
 
-    label = this._nonCollidingLabel(mapLabel(label), keyString)
+    label = await this._nonCollidingLabel(mapLabel(label), keyString)
     this.logLabel(`🔑 ${label}: ${keyString}`)
 
     this.knownLabels[keyString] = label
 
-    await this.ammanClient.addAddressLabels({ [keyString]: mapLabel(label) })
+    await this.ammanClient.addAddressLabels({ [keyString]: label })
     return this
   }
 
@@ -81,11 +85,17 @@ export class AddressLabels {
   addLabels: AddLabels = async (obj) => {
     if (obj != null) {
       const labels: Record<string, string> = {}
+      let synced = false
       for (let [label, key] of Object.entries(obj)) {
         if (typeof label === 'string' && isKeyLike(key)) {
           const keyString = publicKeyString(key)
           if (isValidSolanaAddress(keyString)) {
-            label = this._nonCollidingLabel(mapLabel(label), keyString)
+            label = await this._nonCollidingLabel(
+              mapLabel(label),
+              keyString,
+              !synced
+            )
+            synced = true
             labels[keyString] = label
             this.knownLabels[keyString] = label
             this.logLabel(`🔑 ${label}: ${keyString}`)
@@ -104,6 +114,7 @@ export class AddressLabels {
   addLabelIfUnknown: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
     if (this.knownLabels[keyString] == null) {
+      label = await this._nonCollidingLabel(mapLabel(label), keyString)
       await this.addLabel(label, keyString)
     }
     return this
@@ -184,18 +195,29 @@ export class AddressLabels {
   }
 
   /**
-   * Generates a keypair and returns its public key and the keypair itself as a Tuple.
+   * Generates a keypair and returns its public key and the keypair itself as a
+   * Tuple.
    *
-   * @param label if provided the key will be added to existing labels
    * @return [publicKey, keypair ]
    * @private
    */
-  genKeypair: GenKeypair = (label) => {
+  genKeypair: GenKeypair = () => {
     const kp = Keypair.generate()
-    if (label != null) {
-      this.addLabel(label, kp)
-    }
     return [kp.publicKey, kp]
+  }
+
+  /**
+   * Generates a keypair, labels it and returns its public key and the keypair
+   * itself as a Tuple.
+   *
+   * @param label the key will be added to existing labels
+   * @return [publicKey, keypair ]
+   * @private
+   */
+  genLabeledKeypair: GenLabeledKeypair = async (label) => {
+    const tuple = this.genKeypair()
+    await this.addLabel(label, tuple[0])
+    return tuple
   }
 
   /**
@@ -270,7 +292,15 @@ export class AddressLabels {
     })
   }
 
-  private _nonCollidingLabel(label: string, address: string) {
+  private async _nonCollidingLabel(
+    label: string,
+    address: string,
+    syncRemote = true
+  ) {
+    if (syncRemote) {
+      await this.getRemoteLabelAddresses()
+    }
+
     // We are actually trying to re-label a key that we labeled before
     if (this.knownLabels[address] != null) {
       return label

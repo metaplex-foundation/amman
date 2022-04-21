@@ -50,10 +50,12 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   clearAddressLabels() {
+    // TODO(thlorenz): this should ack to resolve a promise
     this.socket.emit(MSG_CLEAR_ADDRESS_LABELS)
   }
 
   clearTransactions() {
+    // TODO(thlorenz): this should ack to resolve a promise
     this.socket.emit(MSG_CLEAR_TRANSACTIONS)
   }
 

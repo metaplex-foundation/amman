@@ -74,7 +74,7 @@ async function renderAllKnownAccounts(includeTxs: boolean) {
   const rows = []
   for (const [address, label] of Object.entries(accounts)) {
     if (!includeTxs && address.length > 44) continue
-    rows.push([bold(label), address])
+    rows.push([label, dim(address)])
   }
   const rendered = table(rows)
   amman.disconnect()

@@ -5,7 +5,11 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from '@solana/web3.js'
-import { AddressLabels, GenKeypair } from './diagnostics/address-labels'
+import {
+  AddressLabels,
+  GenKeypair,
+  GenLabeledKeypair,
+} from './diagnostics/address-labels'
 import {
   AmmanClient,
   AmmanClientOpts,
@@ -55,14 +59,22 @@ export class Amman {
   private static _instance: Amman | undefined
 
   /**
-   * Generates a keypair and returns its public key and the keypair itself as a Tuple.
+   * Generates a keypair and returns its public key and the keypair itself as a
+   * Tuple.
    *
-   * @param label if provided the key will be added to existing labels
    * @return [publicKey, keypair ]
    */
-  genKeypair: GenKeypair = (label?: string) => {
-    return this.addr.genKeypair(label)
-  }
+  genKeypair: GenKeypair = () => this.addr.genKeypair()
+
+  /**
+   * Generates a keypair, labels it and returns its public key and the keypair
+   * itself as a Tuple.
+   *
+   * @param label the key will be added to existing labels
+   * @return [publicKey, keypair ]
+   */
+  genLabeledKeypair: GenLabeledKeypair = (label: string) =>
+    this.addr.genLabeledKeypair(label)
 
   /**
    * Drops the specified amount of tokens to the provided public key.
@@ -78,7 +90,7 @@ export class Amman {
       publicKey,
       sol * LAMPORTS_PER_SOL
     )
-    const receiverLabel = this.addr.resolve(publicKey)
+    const receiverLabel = await this.addr.resolveRemoteAddress(publicKey)
     const receiver = receiverLabel == null ? '' : ` -> ${receiverLabel}`
     await this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
 
@@ -154,9 +166,8 @@ export class Amman {
         ? ConnectedAmmanClient.getInstance(AMMAN_RELAY_URI, ammanClientOpts)
         : new DisconnectedAmmanClient(),
     } = args
-    ammanClient.clearAddressLabels()
     const addAddressLabels = AddressLabels.setInstance(
-      knownLabels ?? {},
+      knownLabels,
       log,
       ammanClient
     )
