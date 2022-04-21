@@ -228,7 +228,9 @@ export class AccountProvider {
       ? Math.pow(10, account.decimals)
       : 1
     for (let [key, value] of Object.entries(account)) {
-      if (isKeyLike(value)) {
+      if (value == null) {
+        acc[key] = value
+      } else if (isKeyLike(value)) {
         const publicKeyStr = publicKeyString(value)
         const label = await this._tryResolveAddressRemote(publicKeyStr)
         acc[key] = label == null ? publicKeyStr : `${label} (${publicKeyStr})`
