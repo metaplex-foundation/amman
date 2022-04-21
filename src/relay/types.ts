@@ -1,6 +1,12 @@
 import { Diff } from 'deep-diff'
 import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
 
+/** The version of amman, used by amman-explorer to detect amman compatibility */
+const { version } = require('../../package.json')
+export const AMMAN_VERSION: [number, number, number] = version
+  .split('.')
+  .map((v: string) => parseInt(v)) as [number, number, number]
+
 /**
  * The Default Amman Relay Configuration
  *

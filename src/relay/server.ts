@@ -15,7 +15,10 @@ import {
   ACK_UPDATE_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_RESPOND_ACCOUNT_STATES,
+  MSG_REQUEST_AMMAN_VERSION,
+  MSG_RESPOND_AMMAN_VERSION,
 } from './consts'
+import { AMMAN_VERSION } from './types'
 
 /**
  * A simple socket.io server which communicates to the Amman Explorere as well as accepting connections
@@ -73,6 +76,9 @@ class RelayServer {
         this.accountStates.on(`account-changed:${pubkey}`, (states) => {
           socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
         })
+      })
+      .on(MSG_REQUEST_AMMAN_VERSION, () => {
+        socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
   }
 }

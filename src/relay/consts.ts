@@ -19,3 +19,7 @@ export const MSG_UPDATE_ACCOUNT_STATES = 'update:account-states'
 export const MSG_REQUEST_ACCOUNT_STATES = 'request:account-states'
 /** @private */
 export const MSG_RESPOND_ACCOUNT_STATES = 'respond:account-states'
+/** @private */
+export const MSG_REQUEST_AMMAN_VERSION = 'request:relay-version'
+/** @private */
+export const MSG_RESPOND_AMMAN_VERSION = 'respond:relay-version'
