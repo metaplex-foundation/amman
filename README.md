@@ -95,6 +95,7 @@ module.exports = {
     resetLedger: true,
     verifyFees: false,
     detached: process.env.CI != null,
+    cloneCluster: 'https://api.metaplex.solana.com',
   },
   relay: {
     enabled: process.env.CI == null,

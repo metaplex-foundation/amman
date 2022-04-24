@@ -1,4 +1,5 @@
 import {
+  getExecutableAddress,
   LOCALHOST,
   logError,
   logInfo,
@@ -36,6 +37,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   limitLedgerSize: 1e4,
   verifyFees: false,
   detached: process.env.CI != null,
+  cloneCluster: 'https://api.metaplex.solana.com',
 }
 
 /**
@@ -57,6 +59,7 @@ export async function initValidator(
     limitLedgerSize,
     verifyFees,
     detached,
+    cloneCluster,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
   const {
     killRunningRelay,
@@ -84,12 +87,23 @@ export async function initValidator(
 
   const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
+  if (cloneCluster) {
+    args.push('-u')
+    args.push(cloneCluster)
+  }
 
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
-      args.push('--bpf-program')
-      args.push(programId)
-      args.push(deployPath)
+      if (deployPath) {
+        args.push('--bpf-program')
+        args.push(programId)
+        args.push(deployPath)
+      } else if (cloneCluster) {
+        args.push('-c')
+        args.push(programId)
+        args.push('-c')
+        args.push(await getExecutableAddress(programId, cloneCluster))
+      }
     }
   }
   args.push(...['--limit-ledger-size', limitLedgerSize.toString()])

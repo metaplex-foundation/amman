@@ -12,7 +12,7 @@ import { Commitment } from '@solana/web3.js'
 export type Program = {
   label?: string
   programId: string
-  deployPath: string
+  deployPath?: string
 }
 
 /**
@@ -41,6 +41,9 @@ export type Program = {
  * @property detached if `true` the `solana-test-validator` will run detached
  * which allows `amman` to exit while the validator keeps running. This
  * defaults to `true` when run in CI.
+ *
+ * @property cloneCluster the RPC url for which the test validator should use when
+ * cloning programs when the deployPath of the {@link Program} is undefined
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean
@@ -53,4 +56,5 @@ export type ValidatorConfig = {
   limitLedgerSize: number
   verifyFees: boolean
   detached: boolean
+  cloneCluster?: string
 }

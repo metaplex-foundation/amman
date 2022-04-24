@@ -1,4 +1,4 @@
-import { PublicKey } from '@solana/web3.js'
+import {Connection, PublicKey} from '@solana/web3.js'
 
 const captureSolanaAddressRx = /(\b[0-9a-zA-Z]{43,88})\b/g
 
@@ -57,4 +57,12 @@ export function identifySolanaAddress(maybeAddress: string): Address | null {
   if (maybeAddress.length >= 87)
     return { type: 'signature', value: maybeAddress }
   return null
+}
+
+export async function getExecutableAddress(programId: string, endpoint: string): Promise<string> {
+  const connection = new Connection(endpoint)
+  const programInfo = await connection.getParsedAccountInfo(new PublicKey(programId))
+  if (programInfo === null || programInfo.value === null) throw new Error(`Could not fetch program info for program: ${programId}`)
+  if (programInfo.value.data instanceof Buffer) throw new Error(`Could not parse account info for 'program': ${programId}`)
+  return programInfo.value.data.parsed.info.programData
 }
