@@ -129,6 +129,13 @@ export class Amman {
     logDebug('AmmanClient disconnected')
   }
   /**
+   * More force full version of disconnect.
+   */
+  destroy() {
+    this.ammanClient.destroy()
+    logDebug('AmmanClient destoyed')
+  }
+  /**
    * Creates an instance of {@link Amman}.
    *
    * @param args

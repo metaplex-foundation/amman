@@ -21,6 +21,7 @@ export type AmmanClient = {
   fetchAddressLabels(): Promise<Record<string, string>>
   fetchAccountStates(address: string): Promise<RelayAccountState[]>
   disconnect(): void
+  destroy(): void
 }
 
 export type AmmanClientOpts = { autoUnref?: boolean; ack?: boolean }
@@ -150,6 +151,18 @@ export class ConnectedAmmanClient implements AmmanClient {
     this.socket.disconnect()
   }
 
+  /**
+   * Disconnects this client preventing reconnects and allows the app to shut
+   * down. Only needed if you set `{ autoUnref: false }` for the opts.
+   */
+  destroy() {
+    // @ts-ignore it' private
+    if (typeof this.socket.destroy === 'function') {
+      // @ts-ignore it' private
+      this.socket.destroy()
+    }
+  }
+
   private static _instance: ConnectedAmmanClient | undefined
   static getInstance(url?: string, ammanClientOpts?: AmmanClientOpts) {
     if (ConnectedAmmanClient._instance != null)
@@ -176,4 +189,5 @@ export class DisconnectedAmmanClient implements AmmanClient {
     return Promise.resolve([])
   }
   disconnect() {}
+  destroy() {}
 }
