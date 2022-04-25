@@ -87,7 +87,7 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
   if (states == null) return
 
   let statesStr = ''
-  for (let i = states.length - 1; i >= 0; i--) {
+  for (let i = 0; i < states.length; i++) {
     const state = states[i]
     const rows: any[] = []
 
@@ -130,18 +130,19 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
         }) ?? []
     const diffRendered = diffRows.length > 0 ? table(diffRows) : undefined
 
+    const n = (i + 1).toString().padStart(2, '0')
     statesStr +=
-      `\n${bold('Account State')} ${time}` +
-      `\n${bold('-------------')}` +
-      `\n${table(rows)}`
+      `\n${bold('Account State')} ${n} ${time}` +
+      `\n${bold('----------------')}` +
+      `\n${table(rows)}\n`
     if (state.rendered != null) {
-      statesStr += `\n${state.rendered}`
+      statesStr += `${state.rendered}\n`
     }
 
     if (diffRendered != null) {
       // prettier-ignore
       statesStr +=
-        `\n\n${bold('Diffs')}` +
+        `\n${bold('Diffs')}` +
         `\n${bold('-----')}` +
         `\n${diffRendered}\n`
     }
