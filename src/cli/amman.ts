@@ -40,6 +40,13 @@ const commands = yargs(hideBin(process.argv))
           type: 'string',
           demandOption: false,
         })
+        .option('force', {
+            alias: 'f',
+            describe: 'Whether or not to force redownload the programs from on chain',
+            type: 'boolean',
+            default: false,
+          }
+        )
         .help('help', startHelp())
     }
   )
@@ -329,6 +336,7 @@ async function stopAmman() {
 
 function setupGracefulShutdown() {
   process.on('beforeExit', () => {
+    console.log('hi')
     disconnectAmman()
   })
 }

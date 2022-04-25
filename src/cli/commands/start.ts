@@ -6,15 +6,18 @@ import { canAccess } from '../../utils/fs'
 import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 import { pipeSolanaLogs } from '../utils/solana-logs'
 import { cliAmmanInstance } from '../utils'
+import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
 
 export type StartCommandArgs = {
-  config?: string
+  config?: string,
+  force?: boolean
 }
 
 export const DEFAULT_START_CONFIG: AmmanConfig = {
   validator: DEFAULT_VALIDATOR_CONFIG,
   relay: DEFAULT_RELAY_CONFIG,
   streamTransactionLogs: process.env.CI == null,
+  assetsFolder: DEFAULT_ASSETS_FOLDER,
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {
@@ -32,7 +35,13 @@ export async function handleStartCommand(args: StartCommandArgs) {
       `Running validator with ${config.validator.programs.length} custom program(s) preloaded`
     )
     logDebug(config.validator)
-    await initValidator(config.validator, config.relay, config.storage)
+    await initValidator(
+      config.validator,
+      config.relay,
+      config.storage,
+      config.assetsFolder,
+      args.force
+    )
 
     if (config.streamTransactionLogs) {
       pipeSolanaLogs(cliAmmanInstance())

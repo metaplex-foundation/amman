@@ -19,6 +19,7 @@ export type AmmanConfig = {
   relay?: RelayConfig
   storage?: StorageConfig
   streamTransactionLogs?: boolean
+  assetsFolder?: string
 }
 
 export type AmmanAccount = {

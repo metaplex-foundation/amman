@@ -1,5 +1,4 @@
 import {
-  getExecutableAddress,
   LOCALHOST,
   logError,
   logInfo,
@@ -22,6 +21,9 @@ import {
   MockStorageServer,
   StorageConfig,
 } from '../storage'
+import { getExecutableAddress, handleFetchPrograms, isValidUrl } from '../assets/local-programs'
+import { DEFAULT_ASSETS_FOLDER, PROGRAMS_FOLDER } from '../assets/types'
+import path from 'path'
 
 /**
  * @private
@@ -37,7 +39,6 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   limitLedgerSize: 1e4,
   verifyFees: false,
   detached: process.env.CI != null,
-  cloneCluster: 'https://api.metaplex.solana.com',
 }
 
 /**
@@ -46,7 +47,9 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
 export async function initValidator(
   validatorConfig: Partial<ValidatorConfig>,
   relayConfig: Partial<RelayConfig> = {},
-  storageConfig?: StorageConfig
+  storageConfig?: StorageConfig,
+  assetsFolder: string = DEFAULT_ASSETS_FOLDER,
+  force?: boolean,
 ) {
   const {
     killRunningValidators,
@@ -59,7 +62,6 @@ export async function initValidator(
     limitLedgerSize,
     verifyFees,
     detached,
-    cloneCluster,
   }: ValidatorConfig = { ...DEFAULT_VALIDATOR_CONFIG, ...validatorConfig }
   const {
     killRunningRelay,
@@ -87,22 +89,25 @@ export async function initValidator(
 
   const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
-  if (cloneCluster) {
-    args.push('-u')
-    args.push(cloneCluster)
-  }
+
+  const programFolder = path.resolve(process.cwd(),path.join(assetsFolder, PROGRAMS_FOLDER));
+  await handleFetchPrograms(programs, programFolder, force)
 
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
-      if (deployPath) {
+      if (isValidUrl(deployPath)) {
+        args.push('--account')
+        args.push(programId)
+        args.push(path.join(programFolder,`${programId}.json`))
+
+        const executableId = await getExecutableAddress(programId)
+        args.push('--account')
+        args.push(programId)
+        args.push(path.join(programFolder,`${executableId}.json`))
+      } else {
         args.push('--bpf-program')
         args.push(programId)
         args.push(deployPath)
-      } else if (cloneCluster) {
-        args.push('-c')
-        args.push(programId)
-        args.push('-c')
-        args.push(await getExecutableAddress(programId, cloneCluster))
       }
     }
   }

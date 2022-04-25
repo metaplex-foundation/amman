@@ -12,7 +12,7 @@ import { Commitment } from '@solana/web3.js'
 export type Program = {
   label?: string
   programId: string
-  deployPath?: string
+  deployPath: string
 }
 
 /**
@@ -56,5 +56,4 @@ export type ValidatorConfig = {
   limitLedgerSize: number
   verifyFees: boolean
   detached: boolean
-  cloneCluster?: string
 }
