@@ -21,7 +21,11 @@ import {
   MockStorageServer,
   StorageConfig,
 } from '../storage'
-import { getExecutableAddress, handleFetchPrograms, isValidUrl } from '../assets/local-programs'
+import {
+  getExecutableAddress,
+  handleFetchPrograms,
+  isValidUrl,
+} from '../assets/local-programs'
 import { DEFAULT_ASSETS_FOLDER, PROGRAMS_FOLDER } from '../assets/types'
 import path from 'path'
 
@@ -49,7 +53,7 @@ export async function initValidator(
   relayConfig: Partial<RelayConfig> = {},
   storageConfig?: StorageConfig,
   assetsFolder: string = DEFAULT_ASSETS_FOLDER,
-  force?: boolean,
+  force?: boolean
 ) {
   const {
     killRunningValidators,
@@ -90,7 +94,10 @@ export async function initValidator(
   const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
 
-  const programFolder = path.resolve(process.cwd(),path.join(assetsFolder, PROGRAMS_FOLDER));
+  const programFolder = path.resolve(
+    process.cwd(),
+    path.join(assetsFolder, PROGRAMS_FOLDER)
+  )
   await handleFetchPrograms(programs, programFolder, force)
 
   if (programs.length > 0) {
@@ -98,12 +105,12 @@ export async function initValidator(
       if (isValidUrl(deployPath)) {
         args.push('--account')
         args.push(programId)
-        args.push(path.join(programFolder,`${programId}.json`))
+        args.push(path.join(programFolder, `${programId}.json`))
 
         const executableId = await getExecutableAddress(programId)
         args.push('--account')
         args.push(programId)
-        args.push(path.join(programFolder,`${executableId}.json`))
+        args.push(path.join(programFolder, `${executableId}.json`))
       } else {
         args.push('--bpf-program')
         args.push(programId)

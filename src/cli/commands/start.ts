@@ -9,7 +9,7 @@ import { cliAmmanInstance } from '../utils'
 import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
 
 export type StartCommandArgs = {
-  config?: string,
+  config?: string
   force?: boolean
 }
 
