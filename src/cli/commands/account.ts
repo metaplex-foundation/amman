@@ -5,9 +5,12 @@ import { bold, dim } from 'ansi-colors'
 // @ts-ignore no types available, but it's a simpler function
 import hexdump from 'buffer-hexdump'
 
+import format from 'date-fns/format'
+import formatDistance from 'date-fns/formatDistance'
+
 import table from 'text-table'
-import { AccountProvider } from '../../accounts/providers'
 import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
+import { printableAccount } from '../../accounts/state'
 
 export async function handleAccountCommand(
   acc: string | undefined,
@@ -30,7 +33,11 @@ export async function handleAccountCommand(
     const len = accountInfo.data.length
     const sol = accountInfo.lamports / LAMPORTS_PER_SOL
 
-    const accountData = (await tryResolveAccountData(pubkey)) ?? ''
+    const accountStates = await tryResolveAccountStates(pubkey)
+    const rawData =
+      accountStates == null || accountStates.length === 0
+        ? `\n${hexdump(accountInfo.data)}`
+        : dim(' (raw data omitted)')
 
     const rendered = `
 ${bold('Public Key')}: ${address}
@@ -38,9 +45,8 @@ ${bold('Balance   ')}: ${sol} SOL
 ${bold('Owner     ')}: ${accountInfo.owner}
 ${bold('Executable')}: ${accountInfo.executable}
 ${bold('Rent Epoch')}: ${accountInfo.rentEpoch}
-Length: ${len} (0x${len.toString(16)}) bytes
-${hexdump(accountInfo.data)}
-${accountData}
+Length: ${len} (0x${len.toString(16)}) bytes${rawData}
+${accountStates}
 `
     rendereds.push(rendered)
   }
@@ -68,27 +74,78 @@ async function renderAllKnownAccounts(includeTxs: boolean) {
   const rows = []
   for (const [address, label] of Object.entries(accounts)) {
     if (!includeTxs && address.length > 44) continue
-    rows.push([bold(label), address])
+    rows.push([label, dim(address)])
   }
   const rendered = table(rows)
   amman.disconnect()
   return { connection: undefined, rendered }
 }
 
-async function tryResolveAccountData(pubkey: PublicKey) {
-  const accountProvider = AccountProvider.fromRecord({}, new Map())
-  const res = await accountProvider.syncAccountInformation(pubkey)
-  const pretty = res?.account?.pretty()
-  if (pretty == null) return
+async function tryResolveAccountStates(pubkey: PublicKey) {
+  const amman = cliAmmanInstance()
+  const states = await amman.ammanClient.fetchAccountStates(pubkey.toBase58())
+  if (states == null) return
 
-  const rows: any[] = []
+  let statesStr = ''
+  for (let i = 0; i < states.length; i++) {
+    const state = states[i]
+    const rows: any[] = []
 
-  for (const [key, value] of Object.entries(pretty)) {
-    rows.push([key, dim(value ?? 'null')])
+    const printable = printableAccount(state.account)
+    for (const [key, value] of Object.entries(printable)) {
+      rows.push([key, dim(value ?? 'null')])
+    }
+    const tdelta = formatDistance(state.timestamp, Date.now(), {
+      includeSeconds: true,
+      addSuffix: true,
+    })
+    const ts = format(state.timestamp, 'HH:mm:ss:SSS')
+    const time = dim(`${tdelta} at ${ts} in slot ${state.slot}`)
+
+    const diffRows: [string, string, string][] =
+      state.accountDiff
+        ?.map((x) => {
+          if (x.kind === 'E') {
+            return [x.path, x.lhs, x.rhs]
+          } else if (x.kind === 'N') {
+            return [x.path, '+', x.rhs]
+          } else if (x.kind === 'D') {
+            return [x.path, '-', x.lhs]
+          } else {
+            return [x.path, 'item at idx changed', x.index.toString()]
+          }
+        })
+        .map(([p, c, v]) => {
+          const sp: string =
+            p == null
+              ? ''
+              : Array.isArray(p)
+              ? p.join('.')
+              : typeof p === 'string'
+              ? p
+              : JSON.stringify(p)
+          const sc = typeof c === 'string' ? c : JSON.stringify(c)
+          const sv = typeof v === 'string' ? v : JSON.stringify(v)
+          return [sp, dim(sc), dim(sv)]
+        }) ?? []
+    const diffRendered = diffRows.length > 0 ? table(diffRows) : undefined
+
+    const n = (i + 1).toString().padStart(2, '0')
+    statesStr +=
+      `\n${bold('Account State')} ${n} ${time}` +
+      `\n${bold('----------------')}` +
+      `\n${table(rows)}\n`
+    if (state.rendered != null) {
+      statesStr += `${state.rendered}\n`
+    }
+
+    if (diffRendered != null) {
+      // prettier-ignore
+      statesStr +=
+        `\n${bold('Diffs')}` +
+        `\n${bold('-----')}` +
+        `\n${diffRendered}\n`
+    }
   }
-  return (
-    `\n${bold('Account Data')}` +
-    `\n${bold('------------')}` +
-    `\n${table(rows)}`
-  )
+  return statesStr
 }

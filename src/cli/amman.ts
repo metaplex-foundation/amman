@@ -148,6 +148,7 @@ const commands = yargs(hideBin(process.argv))
   )
 
 async function main() {
+  setupGracefulShutdown()
   const args = await commands.parse()
   const { _: cs } = args
   if (cs.length === 0) {
@@ -299,6 +300,7 @@ async function main() {
 async function disconnectAmman(connection?: Connection) {
   try {
     Amman.existingInstance?.disconnect()
+    Amman.existingInstance?.destroy()
   } catch (_) {}
   try {
     MockStorageServer.existingInstance?.stop()
@@ -317,14 +319,18 @@ async function stopAmman() {
     logInfo('Killed currently running solana-test-validator')
   } catch (_) {}
 
-  disconnectAmman()
-
   try {
     await killRunningServer(AMMAN_RELAY_PORT)
   } catch (_) {}
   try {
     await killRunningServer(AMMAN_STORAGE_PORT)
   } catch (_) {}
+}
+
+function setupGracefulShutdown() {
+  process.on('beforeExit', () => {
+    disconnectAmman()
+  })
 }
 
 main().catch((err: any) => {

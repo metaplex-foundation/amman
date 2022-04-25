@@ -11,11 +11,15 @@ import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
 import { isKeyLike, publicKeyString } from '../utils/keys'
 import { isAccount, isMint } from './types'
 
+const AMMAN_TRACE_UNRESOLVED_ACCOUNTS =
+  process.env.AMMAN_TRACE_UNRESOLVED_ACCOUNTS != null
+
 export const DEFAULT_MINT_DECIMALS = 9
 
 /** @private */
 export type HandleWatchedAccountChanged = (
   account: AmmanAccount,
+  slot: number,
   rendered?: string
 ) => void
 
@@ -46,10 +50,11 @@ export class AccountProvider {
    */
   readonly byByteSize: Map<number, AmmanAccountProvider[]> = new Map()
   readonly nonfixedProviders: AmmanAccountProvider[] = []
-  readonly connection: Connection = new Connection(LOCALHOST, 'singleGossip')
-  constructor(
+  readonly connection: Connection = new Connection(LOCALHOST, 'confirmed')
+
+  private constructor(
     providers: AmmanAccountProvider[],
-    readonly renderers: AmmanAccountRendererMap
+    private readonly renderers: AmmanAccountRendererMap
   ) {
     this._mapProviders(providers)
   }
@@ -83,41 +88,19 @@ export class AccountProvider {
       providersWithRender.length
     )
     logTrace({ providersBySize: this.byByteSize })
+    logTrace({ providersUnknownSize: this.nonfixedProviders })
   }
 
-  async watchAccount(
-    accountAddress: string,
-    onChanged: HandleWatchedAccountChanged
+  async tryResolveAccount(
+    publicKey: PublicKey,
+    accountInfo?: AccountInfo<Buffer>
   ) {
-    let publicKey: PublicKey
-    try {
-      publicKey = new PublicKey(accountAddress)
-    } catch (err) {
-      logError(
-        `Invalid account address ${accountAddress}. Unable to create PublicKey`
-      )
-      logError(err)
-      return
-    }
-    {
-      const res = await this.syncAccountInformation(publicKey)
-      if (res != null) {
-        onChanged(res.account, res.rendered)
-      }
-    }
+    accountInfo ??=
+      (await this.connection.getAccountInfo(publicKey)) ?? undefined
 
-    this.connection.onAccountChange(
-      publicKey,
-      async (accountInfo: AccountInfo<Buffer>) => {
-        const res = await this._getProviderAndResolveAccount(
-          accountInfo,
-          publicKey
-        )
-        if (res != null) {
-          onChanged(res.account, res.rendered)
-        }
-      }
-    )
+    return accountInfo != null
+      ? this._getProviderAndResolveAccount(accountInfo, publicKey)
+      : null
   }
 
   async syncAccountInformation(
@@ -176,10 +159,13 @@ export class AccountProvider {
   ) {
     const providers = this.byByteSize.get(accountInfo.data.byteLength)
     if (providers == null) {
-      logTrace('Unable to find a provider for %s', publicKey.toBase58())
+      logTrace(
+        'Unable to find a provider by byteSize for %s',
+        publicKey.toBase58()
+      )
       logTrace({
         size: accountInfo.data.byteLength,
-        allProviders: this.byByteSize,
+        allProvidersByByteSize: this.byByteSize,
       })
       return
     }
@@ -195,7 +181,9 @@ export class AccountProvider {
       try {
         return this._resolveAccount(provider, accountInfo)
       } catch (err) {
-        logTrace(err)
+        if (AMMAN_TRACE_UNRESOLVED_ACCOUNTS) {
+          logTrace(err)
+        }
       }
     }
   }
@@ -240,7 +228,9 @@ export class AccountProvider {
       ? Math.pow(10, account.decimals)
       : 1
     for (let [key, value] of Object.entries(account)) {
-      if (isKeyLike(value)) {
+      if (value == null) {
+        acc[key] = value
+      } else if (isKeyLike(value)) {
         const publicKeyStr = publicKeyString(value)
         const label = await this._tryResolveAddressRemote(publicKeyStr)
         acc[key] = label == null ? publicKeyStr : `${label} (${publicKeyStr})`
@@ -255,6 +245,10 @@ export class AccountProvider {
         }
       } else if (typeof value === 'number') {
         acc[key] = numeral(value).format('0,0')
+      } else if (typeof value.pretty === 'function') {
+        acc[key] = value.pretty()
+      } else if (typeof value === 'object') {
+        acc[key] = JSON.stringify(value)
       } else {
         acc[key] = value
       }

@@ -1,7 +1,7 @@
 export function createTimeout(
   ms: number,
-  msg: string,
+  rejectError: Error,
   reject: (reason: any) => void
 ) {
-  return setTimeout(() => reject(new Error(msg)), ms)
+  return setTimeout(() => reject(rejectError), ms)
 }
