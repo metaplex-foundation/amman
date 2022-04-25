@@ -3,11 +3,11 @@ import split from 'split2'
 import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import colors from 'ansi-colors'
 import { Amman } from '../../api'
-import { logTrace } from '../../utils'
+import { LOCALHOST, logTrace } from '../../utils'
 
 export async function pipeSolanaLogs(amman?: Amman) {
   const logger = new PrettyLogger(amman)
-  const child = spawn('solana', ['logs'], {
+  const child = spawn('solana', ['logs', '--url', LOCALHOST], {
     detached: false,
     stdio: 'pipe',
   })

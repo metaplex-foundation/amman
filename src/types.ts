@@ -3,6 +3,8 @@ import { RelayConfig } from './relay/types'
 import { StorageConfig } from './storage'
 import { ValidatorConfig } from './validator/types'
 
+export { RelayAccountState, AccountDiff } from './relay/types'
+
 /**
  * Amman Config
  *

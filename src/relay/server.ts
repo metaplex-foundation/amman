@@ -2,22 +2,23 @@ import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
-import {
-  AmmanAccount,
-  AmmanAccountProvider,
-  AmmanAccountRendererMap,
-} from '../types'
-import { logDebug, logTrace, safeJsonStringify } from '../utils'
+import { AccountStates } from '../accounts/state'
+import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
+import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { Program } from '../validator/types'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
-  MSG_WATCH_ACCOUNT_INFO,
-  MSG_UPDATE_ACCOUNT_INFO,
+  MSG_UPDATE_ACCOUNT_STATES,
   ACK_UPDATE_ADDRESS_LABELS,
+  MSG_REQUEST_ACCOUNT_STATES,
+  MSG_RESPOND_ACCOUNT_STATES,
+  MSG_REQUEST_AMMAN_VERSION,
+  MSG_RESPOND_AMMAN_VERSION,
 } from './consts'
+import { AMMAN_VERSION } from './types'
 
 /**
  * A simple socket.io server which communicates to the Amman Explorere as well as accepting connections
@@ -29,6 +30,7 @@ class RelayServer {
   constructor(
     readonly io: Server,
     readonly accountProvider: AccountProvider,
+    readonly accountStates: AccountStates,
     // Keyed pubkey:label
     private readonly allKnownLabels: Record<string, string> = {}
   ) {
@@ -39,9 +41,9 @@ class RelayServer {
     this.io.on('connection', (socket) => {
       const client = `${socket.id} from ${socket.client.conn.remoteAddress}`
       socket.on('disconnect', () =>
-        logDebug(`socket.io ${client} disconnected`)
+        logTrace(`socket.io ${client} disconnected`)
       )
-      logDebug(`socket.io ${client} connected`)
+      logTrace(`socket.io ${client} connected`)
       this.hookMessages(socket)
     })
   }
@@ -66,26 +68,17 @@ class RelayServer {
         }
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
       })
-      .on(MSG_WATCH_ACCOUNT_INFO, async (accountAddress: string) => {
-        this.accountProvider.watchAccount(
-          accountAddress,
-          (account: AmmanAccount, rendered?: string) => {
-            if (socket.disconnected) return
-            const pretty = account.pretty()
-            if (logTrace.enabled) {
-              logTrace(
-                `Sending account ${safeJsonStringify({
-                  pretty,
-                  rendered,
-                })} to ${socket.conn.remoteAddress}`
-              )
-            }
-            socket.broadcast.emit(MSG_UPDATE_ACCOUNT_INFO, {
-              accountAddress,
-              accountInfo: { pretty, rendered },
-            })
-          }
-        )
+      .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
+        const states = this.accountStates.get(pubkey)?.relayStates
+        if (states != null) {
+          socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
+        }
+        this.accountStates.on(`account-changed:${pubkey}`, (states) => {
+          socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
+        })
+      })
+      .on(MSG_REQUEST_AMMAN_VERSION, () => {
+        socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
   }
 }
@@ -97,6 +90,7 @@ class RelayServer {
 export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
+    accountStates: AccountStates,
     knownLabels: Record<string, string>
   ) {
     const server = createServer()
@@ -105,7 +99,12 @@ export class Relay {
         origin: '*',
       },
     })
-    const relayServer = new RelayServer(io, accountProvider, knownLabels)
+    const relayServer = new RelayServer(
+      io,
+      accountProvider,
+      accountStates,
+      knownLabels
+    )
     return { app: server, io, relayServer }
   }
 
@@ -126,6 +125,8 @@ export class Relay {
       accountProviders,
       accountRenderers
     )
+    AccountStates.createInstance(accountProvider.connection, accountProvider)
+
     const knownLabels = programs
       .filter((x) => x.label != null)
       .reduce((acc: Record<string, string>, x) => {
@@ -134,6 +135,7 @@ export class Relay {
       }, {})
     const { app, io, relayServer } = this.createApp(
       accountProvider,
+      AccountStates.instance,
       knownLabels
     )
     return new Promise((resolve, reject) => {

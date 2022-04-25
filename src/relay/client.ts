@@ -7,8 +7,11 @@ import {
   MSG_UPDATE_ADDRESS_LABELS,
   AMMAN_RELAY_URI,
   MSG_GET_KNOWN_ADDRESS_LABELS,
+  MSG_RESPOND_ACCOUNT_STATES,
+  MSG_REQUEST_ACCOUNT_STATES,
 } from './consts'
 import { createTimeout } from './timeout'
+import { RelayAccountState } from './types'
 
 /** @private */
 export type AmmanClient = {
@@ -16,16 +19,23 @@ export type AmmanClient = {
   clearTransactions(): void
   addAddressLabels(labels: Record<string, string>): Promise<void>
   fetchAddressLabels(): Promise<Record<string, string>>
+  fetchAccountStates(address: string): Promise<RelayAccountState[]>
   disconnect(): void
+  destroy(): void
 }
 
 export type AmmanClientOpts = { autoUnref?: boolean; ack?: boolean }
 
 const AMMAN_UNABLE_ADD_LABELS = 'Unable to connect to send address labels'
 const AMMAN_UNABLE_FETCH_LABELS = 'Unable to connect to fetch address labels'
-const AMMAN_NOT_RUNNING_ERROR = ', is amman running?\n'
-'If not please start one in a separate terminal via `amman start`.\n' +
-  'Alternatively do not set the `ack` option to `true` when instantiating the amman instance.'
+const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
+  'Unable to connect to fetch account states'
+const AMMAN_NOT_RUNNING_ERROR =
+  ', is amman running with the relay enabled?\n' +
+  'If not please start it as part of amman in a separate terminal via `amman start`\n' +
+  'Make sure to set `relay: { enabled: false }` in `.ammanrc.js`.\n' +
+  'Alternatively set environment var `CI=1` in your current terminal or\n' +
+  'instantiate amman via `const amman = Amnnan.instance({ connectClient: false })`'
 
 /** @private */
 export class ConnectedAmmanClient implements AmmanClient {
@@ -44,10 +54,12 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   clearAddressLabels() {
+    // TODO(thlorenz): this should ack to resolve a promise
     this.socket.emit(MSG_CLEAR_ADDRESS_LABELS)
   }
 
   clearTransactions() {
+    // TODO(thlorenz): this should ack to resolve a promise
     this.socket.emit(MSG_CLEAR_TRANSACTIONS)
   }
 
@@ -60,7 +72,7 @@ export class ConnectedAmmanClient implements AmmanClient {
       ? new Promise<void>((resolve, reject) => {
           const timeout = createTimeout(
             2000,
-            AMMAN_UNABLE_ADD_LABELS + AMMAN_NOT_RUNNING_ERROR,
+            new Error(AMMAN_UNABLE_ADD_LABELS + AMMAN_NOT_RUNNING_ERROR),
             reject
           )
           this.socket
@@ -85,7 +97,7 @@ export class ConnectedAmmanClient implements AmmanClient {
     return new Promise<Record<string, string>>((resolve, reject) => {
       const timeout = createTimeout(
         2000,
-        AMMAN_UNABLE_FETCH_LABELS + AMMAN_NOT_RUNNING_ERROR,
+        new Error(AMMAN_UNABLE_FETCH_LABELS + AMMAN_NOT_RUNNING_ERROR),
         reject
       )
       this.socket
@@ -102,12 +114,53 @@ export class ConnectedAmmanClient implements AmmanClient {
     })
   }
 
+  async fetchAccountStates(address: string) {
+    logTrace('Fetching account states for %s', address)
+    return new Promise<RelayAccountState[]>((resolve, reject) => {
+      const timeout = createTimeout(
+        2000,
+        new Error(AMMAN_UNABLE_FETCH_ACCOUNT_STATES + AMMAN_NOT_RUNNING_ERROR),
+        reject
+      )
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(
+          MSG_RESPOND_ACCOUNT_STATES,
+          (accountAddress: string, states: RelayAccountState[]) => {
+            clearTimeout(timeout)
+            logDebug(
+              'Got account states for address %s, %O',
+              accountAddress,
+              states
+            )
+            resolve(states)
+          }
+        )
+        .emit(MSG_REQUEST_ACCOUNT_STATES, address)
+    })
+  }
+
   /**
    * Disconnects this client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the opts.
    */
   disconnect() {
     this.socket.disconnect()
+  }
+
+  /**
+   * Disconnects this client preventing reconnects and allows the app to shut
+   * down. Only needed if you set `{ autoUnref: false }` for the opts.
+   */
+  destroy() {
+    // @ts-ignore it' private
+    if (typeof this.socket.destroy === 'function') {
+      // @ts-ignore it' private
+      this.socket.destroy()
+    }
   }
 
   private static _instance: ConnectedAmmanClient | undefined
@@ -132,5 +185,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
   fetchAddressLabels(): Promise<Record<string, string>> {
     return Promise.resolve({})
   }
+  fetchAccountStates(_address: string): Promise<RelayAccountState[]> {
+    return Promise.resolve([])
+  }
   disconnect() {}
+  destroy() {}
 }
