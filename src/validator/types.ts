@@ -42,8 +42,8 @@ export type Program = {
  * which allows `amman` to exit while the validator keeps running. This
  * defaults to `true` when run in CI.
  *
- * @property cloneCluster the RPC url for which the test validator should use when
- * cloning programs when the deployPath of the {@link Program} is undefined
+ * @property cloneCluster the RPC url which the test validator should use when
+ * cloning programs if they either aren't present or `--forceClone` is passed
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean

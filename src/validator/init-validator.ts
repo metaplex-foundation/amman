@@ -53,7 +53,7 @@ export async function initValidator(
   relayConfig: Partial<RelayConfig> = {},
   storageConfig?: StorageConfig,
   assetsFolder: string = DEFAULT_ASSETS_FOLDER,
-  force?: boolean
+  forceClone?: boolean
 ) {
   const {
     killRunningValidators,
@@ -98,7 +98,7 @@ export async function initValidator(
     process.cwd(),
     path.join(assetsFolder, PROGRAMS_FOLDER)
   )
-  await handleFetchPrograms(programs, programFolder, force)
+  await handleFetchPrograms(programs, programFolder, forceClone)
 
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {

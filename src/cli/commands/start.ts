@@ -10,7 +10,7 @@ import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
 
 export type StartCommandArgs = {
   config?: string
-  force?: boolean
+  forceClone?: boolean
 }
 
 export const DEFAULT_START_CONFIG: AmmanConfig = {
@@ -40,7 +40,7 @@ export async function handleStartCommand(args: StartCommandArgs) {
       config.relay,
       config.storage,
       config.assetsFolder,
-      args.force
+      args.forceClone
     )
 
     if (config.streamTransactionLogs) {
