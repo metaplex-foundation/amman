@@ -45,7 +45,6 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@metaplex-foundation/amman": "^0.5.0",
     "@metaplex-foundation/cusper": "^0.0.2",
     "@metaplex-foundation/js-next": "^0.5.1",
     "@solana/spl-token": "^0.2.0",
