@@ -6,7 +6,11 @@ import {
   sleep,
   tmpLedgerDir,
 } from '../utils'
-import { killRunningServer, resolveServerAddress } from '../utils/http'
+import {
+  isValidHttpUrl,
+  killRunningServer,
+  resolveServerAddress,
+} from '../utils/http'
 
 import http from 'http'
 import { execSync as exec, spawn } from 'child_process'
@@ -24,7 +28,6 @@ import {
 import {
   getExecutableAddress,
   handleFetchPrograms,
-  isValidUrl,
 } from '../assets/local-programs'
 import { DEFAULT_ASSETS_FOLDER, PROGRAMS_FOLDER } from '../assets/types'
 import path from 'path'
@@ -102,7 +105,7 @@ export async function initValidator(
 
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
-      if (isValidUrl(deployPath)) {
+      if (isValidHttpUrl(deployPath)) {
         args.push('--account')
         args.push(programId)
         args.push(path.join(programFolder, `${programId}.json`))

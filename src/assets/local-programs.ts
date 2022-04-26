@@ -4,6 +4,7 @@ import { spawnSync } from 'child_process'
 import { logError, logInfo } from '../utils'
 import { canAccess, ensureDirSync } from '../utils/fs'
 import path from 'path'
+import { isValidHttpUrl } from '../utils/http'
 
 export async function getExecutableAddress(programId: string): Promise<string> {
   const programPubkey = new PublicKey(programId)
@@ -12,15 +13,6 @@ export async function getExecutableAddress(programId: string): Promise<string> {
     new PublicKey('BPFLoaderUpgradeab1e11111111111111111111111')
   )
   return executableAddress.toString()
-}
-
-export function isValidUrl(url: string) {
-  try {
-    new URL(url)
-  } catch (_) {
-    return false
-  }
-  return true
 }
 
 export async function saveAccount(
@@ -50,7 +42,7 @@ export async function handleFetchPrograms(
   ensureDirSync(programFolder)
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
-      if (isValidUrl(deployPath)) {
+      if (isValidHttpUrl(deployPath)) {
         if (
           force ||
           !(await canAccess(path.join(programFolder, `${programId}.json`)))
