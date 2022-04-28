@@ -30,6 +30,7 @@ export type Address = {
   type: AddressType
   value: string
 }
+
 export function isPublicKeyAddress(
   address: Address
 ): address is { type: 'publicKey'; value: string } {

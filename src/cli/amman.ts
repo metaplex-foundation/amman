@@ -40,6 +40,13 @@ const commands = yargs(hideBin(process.argv))
           type: 'string',
           demandOption: false,
         })
+        .option('forceClone', {
+          alias: 'f',
+          describe:
+            'Whether or not to force updating the programs from on chain',
+          type: 'boolean',
+          default: false,
+        })
         .help('help', startHelp())
     }
   )
