@@ -33,7 +33,7 @@ const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
 const AMMAN_NOT_RUNNING_ERROR =
   ', is amman running with the relay enabled?\n' +
   'If not please start it as part of amman in a separate terminal via `amman start`\n' +
-  'Make sure to set `relay: { enabled: false }` in `.ammanrc.js`.\n' +
+  'Make sure to set `relay: { enabled: true }` in `.ammanrc.js`.\n' +
   'Alternatively set environment var `CI=1` in your current terminal or\n' +
   'instantiate amman via `const amman = Amnnan.instance({ connectClient: false })`'
 
