@@ -10,9 +10,9 @@ running validator.
 - [API](#api)
 - [CLI](#cli)
   - [Commands: start](#commands-start)
-- [Example configs](#example-configs)
-  - [Sample Validator/Relay/Storage Config](#sample-validatorrelaystorage-config)
-  - [Example config with remote programs](#example-config-with-remote-programs)
+- [Example Configs](#example-configs)
+  - [Validator/Relay/Storage Config with Defaults](#validatorrelaystorage-config-with-defaults)
+  - [Config with Remote Program](#config-with-remote-program)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -66,9 +66,9 @@ properties:
 - verifyFees: if true the validator is not considered fully started up until it charges transaction fees
 
 
-## Example configs
+## Example Configs
 
-### Sample Validator/Relay/Storage Config
+### Validator/Relay/Storage Config with Defaults
 
 Below is an example config with all values set to the defaults except for an added
 program and a `relay` and `storage` config.
@@ -113,7 +113,7 @@ module.exports = {
 }
 ```
 
-### Example config with remote programs
+### Config with Remote Program
 
 Below is an example of a config where the program is being pulled from a specific RPC endpoint. 
 
