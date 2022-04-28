@@ -10,7 +10,9 @@ running validator.
 - [API](#api)
 - [CLI](#cli)
   - [Commands: start](#commands-start)
-    - [Sample Validator/Relay/Storage Config](#sample-validatorrelaystorage-config)
+- [Example configs](#example-configs)
+  - [Sample Validator/Relay/Storage Config](#sample-validatorrelaystorage-config)
+  - [Example config with remote programs](#example-config-with-remote-programs)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -63,7 +65,10 @@ properties:
 - resetLedger: if true the ledger is reset to genesis at startup
 - verifyFees: if true the validator is not considered fully started up until it charges transaction fees
 
-#### Sample Validator/Relay/Storage Config
+
+## Example configs
+
+### Sample Validator/Relay/Storage Config
 
 Below is an example config with all values set to the defaults except for an added
 program and a `relay` and `storage` config.
@@ -95,7 +100,6 @@ module.exports = {
     resetLedger: true,
     verifyFees: false,
     detached: process.env.CI != null,
-    cloneCluster: 'https://api.metaplex.solana.com',
   },
   relay: {
     enabled: process.env.CI == null,
@@ -108,6 +112,27 @@ module.exports = {
   },
 }
 ```
+
+### Example config with remote programs
+
+Below is an example of a config where the program is being pulled from a specific RPC endpoint. 
+
+```js
+module.exports = {
+  validator: {
+    programs: [
+      {
+        label: 'Token Metadata Program',
+        programId:'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+        // Pulling the program from the following endpoint
+        deployPath: 'https://api.metaplex.solana.com'
+      },
+    ],
+  }
+}
+```
+
+
 
 ## LICENSE
 
