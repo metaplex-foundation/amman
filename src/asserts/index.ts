@@ -49,102 +49,129 @@ export function assertConfirmedTransaction(
 export function assertTransactionSummary(
   t: Assert,
   summary: TransactionSummary,
-  args: { fee?: number; msgRx?: RegExp[] } = {}
+  args: { fee?: number; msgRxs?: RegExp[]; failed?: boolean } = {}
 ) {
-  t.equal(
-    summary.transactionError,
-    null,
-    'transaction summary has no transaction error'
-  )
+  const { failed = false } = args
+  if (failed) {
+    t.ok(summary.transactionError, 'transaction summary has transaction error')
+  } else {
+    t.ok(
+      summary.transactionError == null,
+      'transaction summary has no transaction error'
+    )
+  }
   if (args.fee != null) {
     t.equal(summary.fee, args.fee, 'transaction summary fee matches')
   }
-  if (args.msgRx != null) {
-    for (const msgRx of args.msgRx) {
-      const hasMatch = summary.logMessages.some((x) => msgRx.test(x))
-      if (!hasMatch) {
-        console.error('Failed to find %s inside', msgRx.toString())
-        console.error(summary.logMessages.join('\n  '))
-      }
-
-      t.ok(
-        hasMatch,
-        `match '${msgRx.toString()}' in transaction summary log messages`
-      )
-    }
+  if (args.msgRxs != null) {
+    assertContainMessages(t, summary.logMessages, args.msgRxs)
   }
 }
 
 /**
- * Asserts details about the provided error.
+ * Asserts that the provided error contains specific information as part of the
+ * error message or the attached error logs.
+ *
+ * To check for they error type instead use {@link assertErrorMatches} instead.
  *
  * @param t
  * @param err error to verify
  * @param msgRxs list of {@link RegExp} which will be matched on the error _message_ or `err.logs`.
  * @category asserts
  */
-export function assertError(
-  t: Assert,
-  err: Error & { logs?: string[] },
-  msgRxs: RegExp[]
-) {
+export function assertError(t: Assert, err: Error, msgRxs: RegExp[]) {
   t.ok(err != null, 'error encountered')
+  const errWithLogs = err as Error & { logs?: string[] }
+  t.ok(errWithLogs.logs != null, 'error has logs')
   const errorMessages = err
     .toString()
     .split('\n')
-    .concat(err.logs ?? [])
+    .concat(errWithLogs.logs ?? [])
+  assertContainMessages(t, errorMessages, msgRxs)
+}
 
+/**
+ * Asserts that the provided logs contain specific messages.
+ *
+ * @param t
+ * @param logs containing messages to match
+ * @param msgRxs list of {@link RegExp} which will be matched on the {@link logs}.
+ * @category asserts
+ */
+export function assertContainMessages(
+  t: Assert,
+  logs: string[],
+  msgRxs: RegExp[]
+) {
   for (const msgRx of msgRxs) {
-    const hasMatch = errorMessages.some((x) => msgRx.test(x))
+    const hasMatch = logs.some((x) => msgRx.test(x))
     if (!hasMatch) {
       console.error('Failed to find %s inside', msgRx.toString())
-      console.error(errorMessages.join('\n  '))
+      console.error(logs.join('\n  '))
     }
 
-    t.ok(hasMatch, `match '${msgRx.toString()}' in error message`)
+    t.ok(hasMatch, `match '${msgRx.toString()}' in log messages`)
   }
 }
 
 /**
- * Asserts that the provided error matches the expected one by verifying the
- * error type and optionally the error message.
+ * Asserts that the provided error is defined and matches the provided
+ * requirements.
+ *
+ * If {@link opts.type} is provided the error needs to be of that type.
+ * If {@link opts.msgRx} is provided the error message needs match to it.
  *
  * @param t
  * @param err error to verify
- * @param ty the type of the error to expect
- * @param msgRx a {@link RegExp} that the error message is expected to match
+ * @param opts
+ * @param opts.type the type of the error to expect
+ * @param opts.msgRx a {@link RegExp} that the error message is expected to match
  */
-export function assertMatchesError<Err extends Function>(
+export function assertErrorMatches<Err extends Function>(
   t: Assert,
   err: MaybeErrorWithCode,
-  ty: Err,
-  msgRx?: RegExp
+  opts: { type?: Err; msgRx?: RegExp } = {}
 ) {
   if (err == null) {
-    t.fail(`Expected an error of type ${ty}`)
+    t.fail(`Expected an error`)
     return
   }
-  t.ok(err instanceof ty, ty.name)
-  if (msgRx != null) {
-    t.match(err.message, msgRx)
+  if (opts.type != null) {
+    t.ok(err instanceof opts.type, `error is of type ${opts.type.name}`)
+  }
+  if (opts.msgRx != null) {
+    t.match(
+      err.message,
+      opts.msgRx,
+      `error message matches ${opts.msgRx.toString()}`
+    )
   }
 }
 
 /**
  * Asserts that the provided {@link ConfirmedTransactionDetails} has an error
- * that matches the expected one by verifying the error type and optionally the
- * error message.
+ * that matches the provided requirements.
+ *
+ * Provide either an `Error` to {@link errOrRx} to verify the error type or a
+ * {@link RegExp} to only verify the error message.
+ * In order to verify both provide an `Error` to {@link errOrRx} and the {@link
+ * RegExp} via {@link msgRx}.
  *
  * @param t
  * @param res result of executing a transaction
- * @param ty the type of the error to expect
+ * @param errOrRx the type of the error to expect or the {@link msgRx} to match
  * @param msgRx a {@link RegExp} that the error message is expected to match
  */
 export function assertHasError<Err extends Function>(
   t: Assert,
   res: ConfirmedTransactionDetails,
-  ty: Err,
+  errOrRx: Err | RegExp,
   msgRx?: RegExp
 ) {
-  return assertMatchesError(t, res.txSummary.err, ty, msgRx)
+  const err = typeof errOrRx === 'function' ? errOrRx : undefined
+  const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
+  return assertErrorMatches(t, res.txSummary.loggedError, {
+    type: err,
+    msgRx: rx,
+  })
 }
