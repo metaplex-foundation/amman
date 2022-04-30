@@ -25,9 +25,23 @@ function transactionSummary(
   const slot = tx.slot
   const blockTime = tx.blockTime ?? 0
   const transactionError = tx.meta?.err
-  const err =
-    errorResolver?.errorFromProgramLogs(logMessages, true) ?? undefined
-  return { logMessages, fee, slot, blockTime, transactionError, err }
+  const errorLogs = (tx.meta?.err as { logs?: string[] })?.logs ?? []
+  const logs = [...errorLogs, ...logMessages]
+  // TODO(thlorenz): cusper needs to get smarter and allow passing in the programs we're actually using
+  // i.e. if TokenProgram is not in use it should fall thru to the SystemProgram error, i.e. for 0x0
+  // it currently resolves TokenLendingProgram error which is misleading.
+  // Alternatively it should include the originally parsed message as part of the error somehow so in case
+  // the error is incorrectly resolved we have that information.
+  const loggedError =
+    errorResolver?.errorFromProgramLogs(logs, true) ?? undefined
+  return {
+    logMessages,
+    fee,
+    slot,
+    blockTime,
+    transactionError,
+    loggedError,
+  }
 }
 
 export type TransactionLabelMapper = (label: string) => string

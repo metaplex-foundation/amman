@@ -39,7 +39,7 @@ export type TransactionSummary = {
   slot: number
   blockTime: number
   transactionError: TransactionError | null | undefined
-  err: MaybeErrorWithCode
+  loggedError: MaybeErrorWithCode
 }
 
 /**
