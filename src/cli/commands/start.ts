@@ -7,7 +7,7 @@ import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 import { pipeSolanaLogs } from '../utils/solana-logs'
 import { cliAmmanInstance } from '../utils'
 import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
-import extend from 'deep-extend';
+import extend from 'deep-extend'
 
 export type StartCommandArgs = {
   config?: string

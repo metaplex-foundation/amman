@@ -33,7 +33,11 @@ export async function saveAccount(
   if (executable) {
     logInfo(`Saving executable data for ${accountId} from cluster ${endpoint}`)
     const executableId = await getExecutableAddress(accountId)
-    spawnSync('solana', ['account', executableId, ...makeRemainingArgs(executableId)])
+    spawnSync('solana', [
+      'account',
+      executableId,
+      ...makeRemainingArgs(executableId),
+    ])
   }
 }
 
@@ -47,7 +51,9 @@ export async function handleFetchAccounts(
   if (accounts.length > 0) {
     for (const { accountId, cluster, executable } of accounts) {
       if (accountId == null || !isValidPublicKeyAddress(accountId)) {
-        throw new Error(`Account ID ${accountId} in accounts array from validator config is invalid`)
+        throw new Error(
+          `Account ID ${accountId} in accounts array from validator config is invalid`
+        )
       }
       if (
         force ||
