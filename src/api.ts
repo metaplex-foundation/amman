@@ -41,7 +41,7 @@ import { logDebug } from './utils/log'
  * ```js
  * export const amman = Amman.instance({
  *   knownLabels: { [PROGRAM_ADDRESS]: 'My Program' },
- *   logLabel: console.log,
+ *   log: console.log,
  * })
  * ```
  *

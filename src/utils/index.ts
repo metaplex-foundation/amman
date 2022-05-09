@@ -3,14 +3,9 @@ import { tmpdir } from 'os'
 import path from 'path'
 
 export * from './address'
+export * from './consts'
 export * from './guards'
 export * from './log'
-
-/**
- * URL at which a locally running solana test validator listens on by default
- * @category utils
- */
-export const LOCALHOST = 'http://127.0.0.1:8899/'
 
 /**
  * @private
