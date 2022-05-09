@@ -6,11 +6,7 @@ import {
   sleep,
   tmpLedgerDir,
 } from '../utils'
-import {
-  isValidHttpUrl,
-  killRunningServer,
-  resolveServerAddress,
-} from '../utils/http'
+import { killRunningServer, resolveServerAddress } from '../utils/http'
 
 import http from 'http'
 import { execSync as exec, spawn } from 'child_process'
@@ -27,10 +23,11 @@ import {
 } from '../storage'
 import {
   getExecutableAddress,
-  handleFetchPrograms,
-} from '../assets/local-programs'
-import { DEFAULT_ASSETS_FOLDER, PROGRAMS_FOLDER } from '../assets/types'
+  handleFetchAccounts,
+} from '../assets/local-accounts'
+import { ACCOUNTS_FOLDER, DEFAULT_ASSETS_FOLDER } from '../assets/types'
 import path from 'path'
+import { canAccess, canAccessSync } from '../utils/fs'
 
 /**
  * @private
@@ -38,6 +35,8 @@ import path from 'path'
 export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   killRunningValidators: true,
   programs: [],
+  accountsCluster: 'https://metaplex.devnet.rpcpool.com',
+  accounts: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
   commitment: 'singleGossip',
@@ -61,6 +60,8 @@ export async function initValidator(
   const {
     killRunningValidators,
     programs,
+    accountsCluster,
+    accounts,
     jsonRpcUrl,
     websocketUrl,
     commitment,
@@ -97,27 +98,45 @@ export async function initValidator(
   const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
 
-  const programFolder = path.resolve(
-    process.cwd(),
-    path.join(assetsFolder, PROGRAMS_FOLDER)
-  )
-  await handleFetchPrograms(programs, programFolder, forceClone)
-
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
-      if (isValidHttpUrl(deployPath)) {
-        args.push('--account')
-        args.push(programId)
-        args.push(path.join(programFolder, `${programId}.json`))
+      if (!canAccessSync(deployPath)) {
+        throw new Error(`Cannot access program deploy path of ${deployPath}`)
+      }
+      args.push('--bpf-program')
+      args.push(programId)
+      args.push(deployPath)
+    }
+  }
 
-        const executableId = await getExecutableAddress(programId)
-        args.push('--account')
-        args.push(programId)
-        args.push(path.join(programFolder, `${executableId}.json`))
-      } else {
-        args.push('--bpf-program')
-        args.push(programId)
-        args.push(deployPath)
+  if (accounts.length > 0) {
+    const accountsFolder = path.resolve(
+      process.cwd(),
+      path.join(assetsFolder, ACCOUNTS_FOLDER)
+    )
+    await handleFetchAccounts(
+      accountsCluster,
+      accounts,
+      accountsFolder,
+      forceClone
+    )
+    for (const { accountId, executable } of accounts) {
+      args.push('--account')
+      args.push(accountId)
+      args.push(path.join(accountsFolder, `${accountId}.json`))
+
+      if (executable) {
+        const executableId = await getExecutableAddress(accountId)
+        const executablePath = path.join(accountsFolder, `${executableId}.json`)
+        if (await canAccess(executablePath)) {
+          args.push('--account')
+          args.push(executableId)
+          args.push(executablePath)
+        } else {
+          logError(
+            `Can't find executable account info file for executable account ${accountId}`
+          )
+        }
       }
     }
   }
