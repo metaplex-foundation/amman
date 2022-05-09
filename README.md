@@ -134,8 +134,10 @@ module.exports = {
         {
           label: 'Random other account',
           programId:'4VLgNs1jXgdciSidxcaLKfrR9WjATkj6vmTm5yCwNwui',
-          // by default executable is false
-          // providing a cluster here will override the accountsCluster field
+          // By default executable is false and is not required to be in the config
+          // executable: false,
+          
+          // Providing a cluster here will override the accountsCluster field
           cluster: 'https://metaplex.devnet.rpcpool.com'
         }
       ]
