@@ -7,7 +7,7 @@ import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 import { pipeSolanaLogs } from '../utils/solana-logs'
 import { cliAmmanInstance } from '../utils'
 import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
-import extend from 'deep-extend'
+import deepExtend from 'deep-extend'
 
 export type StartCommandArgs = {
   config?: string
@@ -64,11 +64,11 @@ export async function handleStartCommand(args: StartCommandArgs) {
 async function resolveConfig({ config }: StartCommandArgs) {
   if (config == null) {
     const { config: localConfig, configPath } = await tryLoadLocalConfigRc()
-    return { config: extend(DEFAULT_START_CONFIG, localConfig), configPath }
+    return { config: deepExtend(DEFAULT_START_CONFIG, localConfig), configPath }
   } else {
     const configPath = path.resolve(config)
     return {
-      config: extend(DEFAULT_START_CONFIG, require(configPath)),
+      config: deepExtend(DEFAULT_START_CONFIG, require(configPath)),
       configPath,
     }
   }
