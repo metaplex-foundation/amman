@@ -16,6 +16,21 @@ export type Program = {
 }
 
 /**
+ * Definition of an account which the test-validator loads at startup from a remote cluster.
+ *
+ * @property label a human-readable label for the account.
+ * @property accountId the public key that the account is pulled from
+ * @property cluster cluster endpoint to pull the accounts from instead of the default accountsCluster
+ * @property executable whether or not the account is an executable program
+ */
+export type Account = {
+  label?: string
+  accountId: string
+  cluster?: string
+  executable?: boolean
+}
+
+/**
  * Configures the solana-test-validator started up by amman.
  *
  * @property killRunningValidators if true will kill any solana-test-validators
@@ -23,6 +38,11 @@ export type Program = {
  *
  * @property programs array of {@link Program} which should be loaded into the
  * test validator
+ *
+ * @property accountsCluster string the default cluster that remote accounts from the
+ * accounts array will be pulled from
+ *
+ * @property accounts array of {@link Account}
  *
  * @property jsonRpcUrl the URL at which the test validator should listen for
  * JSON RPC requests
@@ -41,13 +61,12 @@ export type Program = {
  * @property detached if `true` the `solana-test-validator` will run detached
  * which allows `amman` to exit while the validator keeps running. This
  * defaults to `true` when run in CI.
- *
- * @property cloneCluster the RPC url which the test validator should use when
- * cloning programs if they either aren't present or `--forceClone` is passed
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean
   programs: Program[]
+  accountsCluster: string
+  accounts: Account[]
   jsonRpcUrl: string
   websocketUrl: string
   commitment: Commitment

@@ -171,7 +171,7 @@ async function main() {
     case 'start': {
       const { needHelp } = await handleStartCommand(args as StartCommandArgs)
       if (needHelp) {
-        commands.showHelp()
+        logInfo('Rerun `amman --help` for more information')
       }
       break
     }

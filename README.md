@@ -12,7 +12,7 @@ running validator.
   - [Commands: start](#commands-start)
 - [Example Configs](#example-configs)
   - [Validator/Relay/Storage Config with Defaults](#validatorrelaystorage-config-with-defaults)
-  - [Config with Remote Program](#config-with-remote-program)
+  - [Config with Remote Accounts](#config-with-remote-accounts)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -59,6 +59,8 @@ properties:
 
 - killRunningValidators: if true will kill any solana-test-validators currently running on the system.
 - programs: bpf programs which should be loaded into the test validator
+- accountsCluster: default cluster to clone remote accounts from
+- accounts: array of remote accounts to load into the test validator
 - jsonRpcUrl: the URL at which the test validator should listen for JSON RPC requests
 - websocketUrl: for the RPC websocket
 - ledgerDir: where the solana test validator writes the ledger
@@ -113,21 +115,32 @@ module.exports = {
 }
 ```
 
-### Config with Remote Program
+### Config with Remote Accounts
 
-Below is an example of a config where the program is being pulled from a specific RPC endpoint. 
+Below is an example of a config where the accounts are being pulled from a specific RPC endpoint. 
 
 ```js
 module.exports = {
   validator: {
-    programs: [
-      {
-        label: 'Token Metadata Program',
-        programId:'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-        // Pulling the program from the following endpoint
-        deployPath: 'https://api.metaplex.solana.com'
-      },
-    ],
+    // By default Amman will pull the account data from the accountsCluster (can be overridden on a per account basis)
+    accountsCluster: 'https://api.metaplex.solana.com',
+    accounts: [
+        {
+          label: 'Token Metadata Program',
+          accountId:'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+          // marking executable as true will cause Amman to pull the executable data account as well automatically
+          executable: true,
+        },
+        {
+          label: 'Random other account',
+          programId:'4VLgNs1jXgdciSidxcaLKfrR9WjATkj6vmTm5yCwNwui',
+          // By default executable is false and is not required to be in the config
+          // executable: false,
+          
+          // Providing a cluster here will override the accountsCluster field
+          cluster: 'https://metaplex.devnet.rpcpool.com'
+        }
+      ]
   }
 }
 ```

@@ -1,2 +1,2 @@
 export const DEFAULT_ASSETS_FOLDER = './.amman'
-export const PROGRAMS_FOLDER = 'programs'
+export const ACCOUNTS_FOLDER = 'accounts'
