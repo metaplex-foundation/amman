@@ -31,6 +31,7 @@ import {
 } from '../assets/local-programs'
 import { DEFAULT_ASSETS_FOLDER, PROGRAMS_FOLDER } from '../assets/types'
 import path from 'path'
+import { canAccess } from '../utils/fs'
 
 /**
  * @private
@@ -102,7 +103,6 @@ export async function initValidator(
     path.join(assetsFolder, PROGRAMS_FOLDER)
   )
   await handleFetchPrograms(programs, programFolder, forceClone)
-
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
       if (isValidHttpUrl(deployPath)) {
@@ -111,9 +111,12 @@ export async function initValidator(
         args.push(path.join(programFolder, `${programId}.json`))
 
         const executableId = await getExecutableAddress(programId)
-        args.push('--account')
-        args.push(programId)
-        args.push(path.join(programFolder, `${executableId}.json`))
+        const executablePath = path.join(programFolder, `${executableId}.json`)
+        if (await canAccess(executablePath)){
+          args.push('--account')
+          args.push(executableId)
+          args.push(executablePath)
+        }
       } else {
         args.push('--bpf-program')
         args.push(programId)
