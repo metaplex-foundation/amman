@@ -109,17 +109,17 @@ export async function initValidator(
     }
   }
 
-  const accountsFolder = path.resolve(
-    process.cwd(),
-    path.join(assetsFolder, ACCOUNTS_FOLDER)
-  )
-  await handleFetchAccounts(
-    accountsCluster,
-    accounts,
-    accountsFolder,
-    forceClone
-  )
   if (accounts.length > 0) {
+    const accountsFolder = path.resolve(
+      process.cwd(),
+      path.join(assetsFolder, ACCOUNTS_FOLDER)
+    )
+    await handleFetchAccounts(
+      accountsCluster,
+      accounts,
+      accountsFolder,
+      forceClone
+    )
     for (const { accountId, executable } of accounts) {
       args.push('--account')
       args.push(accountId)
