@@ -133,7 +133,7 @@ export async function initValidator(
           args.push(executableId)
           args.push(executablePath)
         } else {
-          logInfo(
+          logError(
             `Can't find executable account info file for executable account ${accountId}`
           )
         }

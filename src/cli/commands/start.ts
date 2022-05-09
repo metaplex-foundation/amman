@@ -7,6 +7,7 @@ import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 import { pipeSolanaLogs } from '../utils/solana-logs'
 import { cliAmmanInstance } from '../utils'
 import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
+import extend from 'deep-extend';
 
 export type StartCommandArgs = {
   config?: string
@@ -23,7 +24,14 @@ export const DEFAULT_START_CONFIG: AmmanConfig = {
 export async function handleStartCommand(args: StartCommandArgs) {
   let config: AmmanConfig, configPath
   try {
-    ;({ config, configPath } = await resolveConfig(args))
+    try {
+      ;({ config, configPath } = await resolveConfig(args))
+    } catch (err) {
+      logError(
+        `Having trouble loading amman config from ${args.config} which resolved to ${configPath}`
+      )
+      return { needHelp: true }
+    }
     if (configPath != null) {
       logInfo('Loading config from %s', configPath)
     }
@@ -32,7 +40,7 @@ export async function handleStartCommand(args: StartCommandArgs) {
       process.exit(1)
     }
     logInfo(
-      `Running validator with ${config.validator.programs.length} custom program(s) preloaded`
+      `Running validator with ${config.validator.programs.length} custom program(s) and ${config.validator.accounts.length} remote account(s) preloaoded`
     )
     logDebug(config.validator)
     await initValidator(
@@ -49,9 +57,6 @@ export async function handleStartCommand(args: StartCommandArgs) {
     return { needHelp: false }
   } catch (err: any) {
     logError(err)
-    logError(
-      `Having trouble loading amman config from ${args.config} which resolved to ${configPath}`
-    )
     return { needHelp: true }
   }
 }
@@ -59,11 +64,11 @@ export async function handleStartCommand(args: StartCommandArgs) {
 async function resolveConfig({ config }: StartCommandArgs) {
   if (config == null) {
     const { config: localConfig, configPath } = await tryLoadLocalConfigRc()
-    return { config: { ...DEFAULT_START_CONFIG, ...localConfig }, configPath }
+    return { config: extend(DEFAULT_START_CONFIG, localConfig), configPath }
   } else {
     const configPath = path.resolve(config)
     return {
-      config: { ...DEFAULT_START_CONFIG, ...require(configPath) },
+      config: extend(DEFAULT_START_CONFIG, require(configPath)),
       configPath,
     }
   }

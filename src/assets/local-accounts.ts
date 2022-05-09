@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js'
 import { Account } from '../validator/types'
 import { spawnSync } from 'child_process'
-import { logError, logInfo } from '../utils'
+import { isValidPublicKeyAddress, logError, logInfo } from '../utils'
 import { canAccess, ensureDirSync } from '../utils/fs'
 import path from 'path'
 
@@ -20,7 +20,7 @@ export async function saveAccount(
   accountsFolder: string,
   executable = false
 ) {
-  const makeEndArgs = (id: string) => [
+  const makeRemainingArgs = (id: string) => [
     '-u',
     endpoint,
     '-o',
@@ -29,11 +29,11 @@ export async function saveAccount(
     'json',
   ]
   logInfo(`Saving account ${accountId} from cluster ${endpoint}`)
-  spawnSync('solana', ['account', accountId, ...makeEndArgs(accountId)])
+  spawnSync('solana', ['account', accountId, ...makeRemainingArgs(accountId)])
   if (executable) {
     logInfo(`Saving executable data for ${accountId} from cluster ${endpoint}`)
     const executableId = await getExecutableAddress(accountId)
-    spawnSync('solana', ['account', executableId, ...makeEndArgs(executableId)])
+    spawnSync('solana', ['account', executableId, ...makeRemainingArgs(executableId)])
   }
 }
 
@@ -46,9 +46,8 @@ export async function handleFetchAccounts(
   ensureDirSync(accountsFolder)
   if (accounts.length > 0) {
     for (const { accountId, cluster, executable } of accounts) {
-      if (!accountId || accountId.length !== 32) {
-        logError(`Account ID ${accountId} in accounts array from validator config is invalid`)
-        throw new Error("Invalid account ID in accounts array")
+      if (accountId == null || !isValidPublicKeyAddress(accountId)) {
+        throw new Error(`Account ID ${accountId} in accounts array from validator config is invalid`)
       }
       if (
         force ||
