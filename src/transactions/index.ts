@@ -1,12 +1,13 @@
-import { SendOptions } from '@solana/web3.js'
+import { ConfirmOptions } from '@solana/web3.js'
 
 export * from './types'
 
 /**
- * Default options for sending a transaction
+ * Default options for sending and confirming a transaction
  * @category transactions
  */
-export const defaultSendOptions: SendOptions = {
-  skipPreflight: false,
+export const defaultConfirmOptions: ConfirmOptions = {
+  skipPreflight: true,
   preflightCommitment: 'confirmed',
+  commitment: 'confirmed',
 }

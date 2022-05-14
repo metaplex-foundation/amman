@@ -12,6 +12,7 @@ import {
   TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
+import { Assert } from '../asserts'
 
 /** @private */
 export type ErrorFromProgramLogs = (logs: string[]) => MaybeErrorWithCode
@@ -40,6 +41,15 @@ export type TransactionSummary = {
   blockTime: number
   transactionError: TransactionError | null | undefined
   loggedError: MaybeErrorWithCode
+}
+
+export type ConfirmedTransactionAsserts = {
+  assertError<Err extends Function>(
+    t: Assert,
+    errOrRx: Err | RegExp,
+    msgRx?: RegExp
+  ): void
+  assertSuccess(t: Assert, msgRxs?: RegExp[]): void
 }
 
 /**
