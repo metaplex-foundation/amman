@@ -4,6 +4,8 @@ import {
   MaybeErrorWithCode,
   TransactionSummary,
 } from '../transactions'
+import { AMMAN_EXPLORER } from '../utils/consts'
+import { logError, logInfo } from '../utils/log'
 
 /**
  * The minimum methods that the first argument passed to assert functions like
@@ -20,6 +22,8 @@ export type Assert = {
 
 /**
  * Asserts details about a confirmed transaction
+ *
+ * @deprecated use {@link assertTransactionSuccess} or {@link assertTransactionError} instead
  *
  * @param t
  * @param tx the confirmed transaction to verify
@@ -41,6 +45,8 @@ export function assertConfirmedTransaction(
 /**
  * Asserts details about a {@link TransactionSummary}.
  *
+ * @deprecated use {@link assertTransactionSuccess} or {@link assertTransactionError} instead
+ *
  * @param t
  * @param summary transaction summary to verify
  * @param args specify what details should be verified
@@ -59,6 +65,9 @@ export function assertTransactionSummary(
       summary.transactionError == null,
       'transaction summary has no transaction error'
     )
+    if (summary.loggedError != null) {
+      t.fail(summary.loggedError.stack ?? summary.loggedError.toString())
+    }
   }
   if (args.fee != null) {
     t.equal(summary.fee, args.fee, 'transaction summary fee matches')
@@ -66,6 +75,63 @@ export function assertTransactionSummary(
   if (args.msgRxs != null) {
     assertContainMessages(t, summary.logMessages, args.msgRxs)
   }
+}
+
+// TODO(thlorenz): from RpcResponseAndContext<SignatureResult>,
+/**
+ * Asserts that a transaction completed successfully and optionally checks for
+ * messages in the transaction logs.
+ *
+ */
+export function assertTransactionSuccess(
+  t: Assert,
+  details: Omit<ConfirmedTransactionDetails, 'assertSuccess' | 'assertError'>,
+  msgRxs?: RegExp[]
+) {
+  const summary = details.txSummary
+  if (summary.loggedError != null) {
+    t.fail(summary.loggedError.stack ?? summary.loggedError.toString())
+    logError({ logs: summary.logMessages })
+    logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${details.txSignature}`)
+    return
+  }
+  t.ok(
+    summary.transactionError == null,
+    'transaction summary has no transaction error'
+  )
+  if (msgRxs != null) {
+    assertContainMessages(t, summary.logMessages, msgRxs)
+  }
+}
+
+// TODO(thlorenz): from RpcResponseAndContext<SignatureResult>,
+/**
+ * Asserts that the provided {@link ConfirmedTransactionDetails} has an error
+ * that matches the provided requirements.
+ *
+ * Provide either an `Error` to {@link errOrRx} to verify the error type or a
+ * {@link RegExp} to only verify the error message.
+ * In order to verify both provide an `Error` to {@link errOrRx} and the {@link
+ * RegExp} via {@link msgRx}.
+ *
+ * @param t
+ * @param details result of executing a transaction
+ * @param errOrRx the type of the error to expect or the {@link msgRx} to match
+ * @param msgRx a {@link RegExp} that the error message is expected to match
+ */
+export function assertTransactionError<Err extends Function>(
+  t: Assert,
+  details: Omit<ConfirmedTransactionDetails, 'assertSuccess' | 'assertError'>,
+  errOrRx: Err | RegExp,
+  msgRx?: RegExp
+) {
+  const err = typeof errOrRx === 'function' ? errOrRx : undefined
+  const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
+  return assertErrorMatches(t, details.txSummary.loggedError, {
+    type: err,
+    msgRx: rx,
+    txSignature: details.txSignature,
+  })
 }
 
 /**
@@ -130,10 +196,13 @@ export function assertContainMessages(
 export function assertErrorMatches<Err extends Function>(
   t: Assert,
   err: MaybeErrorWithCode,
-  opts: { type?: Err; msgRx?: RegExp } = {}
+  opts: { type?: Err; msgRx?: RegExp; txSignature?: string } = {}
 ) {
   if (err == null) {
     t.fail(`Expected an error`)
+    if (opts.txSignature != null) {
+      logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${opts.txSignature}`)
+    }
     return
   }
   if (opts.type != null) {
@@ -146,32 +215,4 @@ export function assertErrorMatches<Err extends Function>(
       `error message matches ${opts.msgRx.toString()}`
     )
   }
-}
-
-/**
- * Asserts that the provided {@link ConfirmedTransactionDetails} has an error
- * that matches the provided requirements.
- *
- * Provide either an `Error` to {@link errOrRx} to verify the error type or a
- * {@link RegExp} to only verify the error message.
- * In order to verify both provide an `Error` to {@link errOrRx} and the {@link
- * RegExp} via {@link msgRx}.
- *
- * @param t
- * @param res result of executing a transaction
- * @param errOrRx the type of the error to expect or the {@link msgRx} to match
- * @param msgRx a {@link RegExp} that the error message is expected to match
- */
-export function assertHasError<Err extends Function>(
-  t: Assert,
-  res: ConfirmedTransactionDetails,
-  errOrRx: Err | RegExp,
-  msgRx?: RegExp
-) {
-  const err = typeof errOrRx === 'function' ? errOrRx : undefined
-  const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
-  return assertErrorMatches(t, res.txSummary.loggedError, {
-    type: err,
-    msgRx: rx,
-  })
 }
