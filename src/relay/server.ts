@@ -6,7 +6,7 @@ import { AccountStates } from '../accounts/state'
 import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
 import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
-import { Program } from '../validator/types'
+import { Account, Program } from '../validator/types'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
@@ -32,7 +32,7 @@ class RelayServer {
     readonly accountProvider: AccountProvider,
     readonly accountStates: AccountStates,
     // Keyed pubkey:label
-    private readonly allKnownLabels: Record<string, string> = {}
+    private readonly allKnownLabels: Record<string, string> = {},
   ) {
     this.hookConnectionEvents()
   }
@@ -41,7 +41,7 @@ class RelayServer {
     this.io.on('connection', (socket) => {
       const client = `${socket.id} from ${socket.client.conn.remoteAddress}`
       socket.on('disconnect', () =>
-        logTrace(`socket.io ${client} disconnected`)
+        logTrace(`socket.io ${client} disconnected`),
       )
       logTrace(`socket.io ${client} connected`)
       this.hookMessages(socket)
@@ -91,7 +91,7 @@ export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
     accountStates: AccountStates,
-    knownLabels: Record<string, string>
+    knownLabels: Record<string, string>,
   ) {
     const server = createServer()
     const io = new Server(server, {
@@ -103,7 +103,7 @@ export class Relay {
       io,
       accountProvider,
       accountStates,
-      knownLabels
+      knownLabels,
     )
     return { app: server, io, relayServer }
   }
@@ -112,7 +112,8 @@ export class Relay {
     accountProviders: Record<string, AmmanAccountProvider>,
     accountRenderers: AmmanAccountRendererMap,
     programs: Program[],
-    killRunning: boolean = true
+    accounts: Account[],
+    killRunning: boolean = true,
   ): Promise<{
     app: HttpServer
     io: Server
@@ -123,20 +124,30 @@ export class Relay {
     }
     const accountProvider = AccountProvider.fromRecord(
       accountProviders,
-      accountRenderers
+      accountRenderers,
     )
     AccountStates.createInstance(accountProvider.connection, accountProvider)
 
-    const knownLabels = programs
+    const programLabels = programs
       .filter((x) => x.label != null)
       .reduce((acc: Record<string, string>, x) => {
         acc[x.programId] = x.label!
         return acc
       }, {})
+
+    const accountLabels = accounts
+      .filter((x) => x.label != null)
+      .reduce((acc: Record<string, string>, x) => {
+        acc[x.accountId] = x.label!
+        return acc
+      }, {})
+
+    const knownLabels = { ...programLabels, ...accountLabels }
+
     const { app, io, relayServer } = this.createApp(
       accountProvider,
       AccountStates.instance,
-      knownLabels
+      knownLabels,
     )
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {

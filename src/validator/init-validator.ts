@@ -120,11 +120,17 @@ export async function initValidator(
       accountsFolder,
       forceClone
     )
-    for (const { accountId, executable } of accounts) {
-      args.push('--account')
-      args.push(accountId)
-      args.push(path.join(accountsFolder, `${accountId}.json`))
-
+    for (const { accountId, executable, cluster } of accounts) {
+      const accountPath = path.join(accountsFolder, `${accountId}.json`)
+      if (await canAccess(accountPath)) {
+        args.push('--account')
+        args.push(accountId)
+        args.push(accountPath)
+      } else {
+        throw new Error(
+          `Can't find account info file for account ${accountId} cloned from cluster ${cluster ?? accountsCluster}! \nMake sure the account exists on that cluster and try again.`
+        )
+      }
       if (executable) {
         const executableId = await getExecutableAddress(accountId)
         const executablePath = path.join(accountsFolder, `${executableId}.json`)
@@ -168,6 +174,7 @@ export async function initValidator(
       accountProviders,
       accountRenderers,
       programs,
+      accounts,
       killRunningRelay
     )
       .then(({ app }) => {
