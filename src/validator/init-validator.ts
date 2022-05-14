@@ -128,7 +128,9 @@ export async function initValidator(
         args.push(accountPath)
       } else {
         throw new Error(
-          `Can't find account info file for account ${accountId} cloned from cluster ${cluster ?? accountsCluster}! \nMake sure the account exists on that cluster and try again.`
+          `Can't find account info file for account ${accountId} cloned from cluster ${
+            cluster ?? accountsCluster
+          }! \nMake sure the account exists on that cluster and try again.`
         )
       }
       if (executable) {

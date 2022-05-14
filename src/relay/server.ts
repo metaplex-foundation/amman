@@ -32,7 +32,7 @@ class RelayServer {
     readonly accountProvider: AccountProvider,
     readonly accountStates: AccountStates,
     // Keyed pubkey:label
-    private readonly allKnownLabels: Record<string, string> = {},
+    private readonly allKnownLabels: Record<string, string> = {}
   ) {
     this.hookConnectionEvents()
   }
@@ -41,7 +41,7 @@ class RelayServer {
     this.io.on('connection', (socket) => {
       const client = `${socket.id} from ${socket.client.conn.remoteAddress}`
       socket.on('disconnect', () =>
-        logTrace(`socket.io ${client} disconnected`),
+        logTrace(`socket.io ${client} disconnected`)
       )
       logTrace(`socket.io ${client} connected`)
       this.hookMessages(socket)
@@ -91,7 +91,7 @@ export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
     accountStates: AccountStates,
-    knownLabels: Record<string, string>,
+    knownLabels: Record<string, string>
   ) {
     const server = createServer()
     const io = new Server(server, {
@@ -103,7 +103,7 @@ export class Relay {
       io,
       accountProvider,
       accountStates,
-      knownLabels,
+      knownLabels
     )
     return { app: server, io, relayServer }
   }
@@ -113,7 +113,7 @@ export class Relay {
     accountRenderers: AmmanAccountRendererMap,
     programs: Program[],
     accounts: Account[],
-    killRunning: boolean = true,
+    killRunning: boolean = true
   ): Promise<{
     app: HttpServer
     io: Server
@@ -124,7 +124,7 @@ export class Relay {
     }
     const accountProvider = AccountProvider.fromRecord(
       accountProviders,
-      accountRenderers,
+      accountRenderers
     )
     AccountStates.createInstance(accountProvider.connection, accountProvider)
 
@@ -147,7 +147,7 @@ export class Relay {
     const { app, io, relayServer } = this.createApp(
       accountProvider,
       AccountStates.instance,
-      knownLabels,
+      knownLabels
     )
     return new Promise((resolve, reject) => {
       app.on('error', reject).listen(AMMAN_RELAY_PORT, () => {
