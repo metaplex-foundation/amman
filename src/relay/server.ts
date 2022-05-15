@@ -6,7 +6,7 @@ import { AccountStates } from '../accounts/state'
 import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
 import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
-import { Program } from '../validator/types'
+import { Account, Program } from '../validator/types'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
@@ -116,6 +116,7 @@ export class Relay {
     accountProviders: Record<string, AmmanAccountProvider>,
     accountRenderers: AmmanAccountRendererMap,
     programs: Program[],
+    accounts: Account[],
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -131,12 +132,22 @@ export class Relay {
     )
     AccountStates.createInstance(accountProvider.connection, accountProvider)
 
-    const knownLabels = programs
+    const programLabels = programs
       .filter((x) => x.label != null)
       .reduce((acc: Record<string, string>, x) => {
         acc[x.programId] = x.label!
         return acc
       }, {})
+
+    const accountLabels = accounts
+      .filter((x) => x.label != null)
+      .reduce((acc: Record<string, string>, x) => {
+        acc[x.accountId] = x.label!
+        return acc
+      }, {})
+
+    const knownLabels = { ...programLabels, ...accountLabels }
+
     const { app, io, relayServer } = this.createApp(
       accountProvider,
       AccountStates.instance,
