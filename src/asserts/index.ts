@@ -169,11 +169,13 @@ export function assertError(t: Assert, err: Error, msgRxs: RegExp[]) {
  * @param logs containing messages to match
  * @param msgRxs list of {@link RegExp} which will be matched on the {@link logs}.
  * @category asserts
+ * @private
  */
 export function assertContainMessages(
   t: Assert,
   logs: string[],
-  msgRxs: RegExp[]
+  msgRxs: RegExp[],
+  label: string = 'log messages'
 ) {
   for (const msgRx of msgRxs) {
     const hasMatch = logs.some((x) => msgRx.test(x))
@@ -182,7 +184,7 @@ export function assertContainMessages(
       console.error(logs.join('\n  '))
     }
 
-    t.ok(hasMatch, `match '${msgRx.toString()}' in log messages`)
+    t.ok(hasMatch, `match '${msgRx.toString()}' in ${label}`)
   }
 }
 

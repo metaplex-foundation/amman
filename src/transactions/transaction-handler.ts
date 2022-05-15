@@ -15,6 +15,7 @@ import { AddressLabels } from '../diagnostics/address-labels'
 import type { ErrorResolver } from '@metaplex-foundation/cusper'
 import {
   Assert,
+  assertContainMessages,
   assertTransactionError,
   assertTransactionSuccess,
 } from '../asserts'
@@ -117,9 +118,29 @@ ${this.errorStack}`
     msgRx?: RegExp
   ) {
     this.calledAssert = true
-    const details = await this
-    assertTransactionError(t, details, errOrRx, msgRx)
-    return details
+    try {
+      const details = await this
+      assertTransactionError(t, details, errOrRx, msgRx)
+      return details
+    } catch (err: any) {
+      // In case the transaction cannot be sent, i.e. if signature verification fails
+      // then resolving the transaction fails sync. However we want the user to not
+      // have to worry about how it fails and allow them to use the same API to expect
+      // errors.
+      const error = typeof errOrRx === 'function' ? errOrRx : undefined
+      const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
+      if (error != null) {
+        t.ok(err instanceof error, `error is of type ${error.name}`)
+      }
+      if (rx != null) {
+        assertContainMessages(
+          t,
+          err.toString().split('\n'),
+          [rx],
+          'error message'
+        )
+      }
+    }
   }
 
   /**
