@@ -47,8 +47,8 @@ export async function handleFetchAccounts(
   accountsFolder: string,
   force = false
 ) {
-  ensureDirSync(accountsFolder)
   if (accounts.length > 0) {
+    ensureDirSync(accountsFolder)
     for (const { accountId, cluster, executable } of accounts) {
       if (accountId == null || !isValidPublicKeyAddress(accountId)) {
         throw new Error(
