@@ -1,18 +1,15 @@
-import { strict as assert } from 'assert'
 import {
   ConfirmOptions,
   Connection,
   Keypair,
   Signer,
   Transaction,
-  TransactionResponse,
 } from '@solana/web3.js'
 import { defaultConfirmOptions } from '.'
 import {
   ConfirmedTransactionAsserts,
   ConfirmedTransactionDetails,
   TransactionHandler,
-  TransactionSummary,
 } from './types'
 import { AddressLabels } from '../diagnostics/address-labels'
 import type { ErrorResolver } from '@metaplex-foundation/cusper'
@@ -21,34 +18,7 @@ import {
   assertTransactionError,
   assertTransactionSuccess,
 } from '../asserts'
-
-function transactionSummary(
-  tx: TransactionResponse,
-  errorResolver?: ErrorResolver
-): TransactionSummary {
-  const logMessages = tx.meta?.logMessages ?? []
-  const fee = tx.meta?.fee
-  const slot = tx.slot
-  const blockTime = tx.blockTime ?? 0
-  const transactionError = tx.meta?.err
-  const errorLogs = (tx.meta?.err as { logs?: string[] })?.logs ?? []
-  const logs = [...errorLogs, ...logMessages]
-  // TODO(thlorenz): cusper needs to get smarter and allow passing in the programs we're actually using
-  // i.e. if TokenProgram is not in use it should fall thru to the SystemProgram error, i.e. for 0x0
-  // it currently resolves TokenLendingProgram error which is misleading.
-  // Alternatively it should include the originally parsed message as part of the error somehow so in case
-  // the error is incorrectly resolved we have that information.
-  const loggedError =
-    errorResolver?.errorFromProgramLogs(logs, true) ?? undefined
-  return {
-    logMessages,
-    fee,
-    slot,
-    blockTime,
-    transactionError,
-    loggedError,
-  }
-}
+import { fetchTransactionSummary } from './transaction-checker'
 
 export type TransactionLabelMapper = (label: string) => string
 const FAIL = '❌'
@@ -61,6 +31,7 @@ export class ConfirmedTransactionAssertablePromise
   implements ConfirmedTransactionAsserts
 {
   private calledAssert: boolean
+  private errorStack?: string
   constructor(
     executor: (
       resolve: (
@@ -73,24 +44,28 @@ export class ConfirmedTransactionAssertablePromise
     skippingPreflight: boolean
   ) {
     super(executor)
+    this.errorStack = new Error().stack?.split('\n').slice(2).join('\n')
     this.calledAssert = false
     if (skippingPreflight) {
       setImmediate(() => {
         if (!this.calledAssert) {
           throw new Error(
-            `When skipping preflight you need to call 'assertSuccess' or 'assertError' directly on the Promise
-that is returned by the amman TransactionHandler.
+            `
+## Problem
+
+When skipping preflight you need to call 'assertSuccess' or 'assertError' 
+directly on the Promise that is returned by the amman TransactionHandler.
+
 Otherwise transaction errors go unhandled. 
 
 NOTE: that when no 'skipPreflight' option is provided then it defaults to 'true'.
 
-Examples:
+## Examples:
 
   await txHandler.sendAndConfirmTransaction(
     tx,
     signers,
-  )
-  .assertSuccess(t)
+  ).assertSuccess(t)
 
   await txHandler.sendAndConfirmTransaction(
     tx,
@@ -100,16 +75,18 @@ Examples:
   .assertError(t, StakeDoesNotMatchError)
   .then((res: ConfirmedTransactionDetails) => console.log(res.txSignature))
 
+## Workaround
+
 Alternatively you can ignore this error by calling 'assertNone' on the returned Promise.
 
-Example:
+await txHandler.sendAndConfirmTransaction(
+  tx,
+  signers,
+).assertNone()
 
-  await txHandler.sendAndConfirmTransaction(
-    tx,
-    signers,
-  )
-  .assertNone()
-            `
+## Origin
+
+${this.errorStack}`
           )
         }
       })
@@ -219,14 +196,11 @@ export class PayerTransactionHandler implements TransactionHandler {
             txSignature,
             confirmOptions.commitment
           )
-          const txConfirmed = await this.connection.getTransaction(txSignature)
-
-          assert(
-            txConfirmed != null,
-            'confirmed transaction should not be null'
+          const { txSummary, txConfirmed } = await fetchTransactionSummary(
+            this.connection,
+            txSignature,
+            this.errorResolver
           )
-
-          const txSummary = transactionSummary(txConfirmed, this.errorResolver)
 
           const details: ConfirmedTransactionDetails = {
             txSignature,

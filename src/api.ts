@@ -21,6 +21,7 @@ import {
   AmmanMockStorageDriver,
   AmmanMockStorageDriverOptions,
 } from './storage'
+import { TransactionChecker } from './transactions/transaction-checker'
 import {
   PayerTransactionHandler,
   TransactionLabelMapper,
@@ -104,6 +105,14 @@ export class Amman {
   payerTransactionHandler(connection: Connection, payer: Keypair) {
     this.addr.addLabelIfUnknown('payer', payer.publicKey)
     return new PayerTransactionHandler(connection, payer, this.errorResolver)
+  }
+
+  /**
+   * If you cannot use the {@link payerTransactionHandler} then you can use this to verify
+   * the outcome of your transactions.
+   */
+  transactionChecker(connection: Connection) {
+    return new TransactionChecker(connection, this.errorResolver)
   }
 
   /**

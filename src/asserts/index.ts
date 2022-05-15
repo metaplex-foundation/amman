@@ -1,4 +1,4 @@
-import { TransactionResponse } from '@solana/web3.js'
+import { TransactionResponse, TransactionSignature } from '@solana/web3.js'
 import {
   ConfirmedTransactionDetails,
   MaybeErrorWithCode,
@@ -85,14 +85,18 @@ export function assertTransactionSummary(
  */
 export function assertTransactionSuccess(
   t: Assert,
-  details: Omit<ConfirmedTransactionDetails, 'assertSuccess' | 'assertError'>,
+  details: Pick<ConfirmedTransactionDetails, 'txSummary'> & {
+    txSignature?: TransactionSignature
+  },
   msgRxs?: RegExp[]
 ) {
   const summary = details.txSummary
   if (summary.loggedError != null) {
     t.fail(summary.loggedError.stack ?? summary.loggedError.toString())
     logError({ logs: summary.logMessages })
-    logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${details.txSignature}`)
+    if (details.txSignature != null) {
+      logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${details.txSignature}`)
+    }
     return
   }
   t.ok(
@@ -121,7 +125,9 @@ export function assertTransactionSuccess(
  */
 export function assertTransactionError<Err extends Function>(
   t: Assert,
-  details: Omit<ConfirmedTransactionDetails, 'assertSuccess' | 'assertError'>,
+  details: Pick<ConfirmedTransactionDetails, 'txSummary'> & {
+    txSignature?: TransactionSignature
+  },
   errOrRx: Err | RegExp,
   msgRx?: RegExp
 ) {

@@ -63,7 +63,7 @@ export type ConfirmedTransactionAsserts = {
  * @category transactions
  */
 export type ConfirmedTransactionDetails = {
-  txSignature: string
+  txSignature: TransactionSignature
   txRpcResponse: RpcResponseAndContext<SignatureResult>
   txConfirmed: TransactionResponse
   txSummary: TransactionSummary
