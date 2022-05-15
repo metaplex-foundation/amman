@@ -6,12 +6,14 @@ import { strict as assert } from 'assert'
 import { diff } from 'deep-diff'
 import EventEmitter from 'events'
 import { AccountDiff } from '../relay/types'
+import * as Diff from 'diff'
 
 export type AccountState = {
   account: AmmanAccount
   slot: number
   accountDiff?: AccountDiff
   rendered?: string
+  renderedDiff?: Diff.Change[]
 }
 
 class AccountStateTracker {
@@ -24,7 +26,16 @@ class AccountStateTracker {
       lastState == null
         ? undefined
         : diff(lastState.account.pretty(), state.account.pretty())
-    this.states.push({ ...state, accountDiff, timestamp: Date.now().valueOf() })
+    const processedState = {
+      ...state,
+      accountDiff,
+      timestamp: Date.now().valueOf(),
+    }
+    const renderedDiff = this.renderDiff(lastState, state)
+    if (renderedDiff != null) {
+      processedState.renderedDiff = renderedDiff
+    }
+    this.states.push(processedState)
   }
 
   get relayStates() {
@@ -32,6 +43,12 @@ class AccountStateTracker {
       account: account.pretty(),
       ...rest,
     }))
+  }
+
+  renderDiff(lastState: AccountState | null, state: AccountState) {
+    if (lastState?.rendered == null) return undefined
+    if (state.rendered == null) return undefined
+    return Diff.diffChars(lastState.rendered, state.rendered)
   }
 }
 
@@ -114,7 +131,7 @@ export function printableAccount(
       prettified[key] = (val as unknown as AmmanAccount).pretty()
     }
     if (typeof val === 'object') {
-      prettified[key] = JSON.stringify(val, null, 2)
+      prettified[key] = JSON.stringify(val)
     }
   }
   return { ...account, ...prettified }

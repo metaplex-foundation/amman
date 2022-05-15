@@ -46,5 +46,6 @@ export type RelayAccountState = {
   accountDiff?: AccountDiff
   slot: number
   rendered?: string
+  renderedDiff?: Diff.Change[]
   timestamp: number
 }
