@@ -43,6 +43,12 @@ await txHandler.sendAndConfirmTransaction(
   signers,
 ).assertNone()`
 
+/**
+ * A {@link Promise} that is returned by {@link PayerTransactionHandler} `sendAndConfirmTransaction`.
+ * Aside from regular promise functionality it includes `assert` methods that
+ * need to be called as part of `sendAndConfirmTransaction`.
+ * This way it is ensured that unexpected behavior does not go unnoticed.
+ */
 export class ConfirmedTransactionAssertablePromise
   extends Promise<ConfirmedTransactionDetails>
   implements ConfirmedTransactionAsserts
@@ -82,6 +88,8 @@ ${this.errorStack}`
    * Call this if you expect the transaction to complete successfully.
    *
    * @param msgRxs if provided it is verified that the logs match all these {@link RegExp}es
+   * @category transactions
+   * @category asserts
    */
   async assertSuccess(t: Assert, msgRxs?: RegExp[]) {
     this.calledAssert = true
@@ -91,11 +99,13 @@ ${this.errorStack}`
   }
 
   /**
-   * Call this if you expect the the result of sending and confirming the transaction
-   * to return with a transaction error.
+   * Call this if you expect the sending and confirming the transaction to
+   * return with a transaction error.
    *
    * @param errOrRx either the {@link Error} type expected or same as {@link msgRx}
    * @param msgRx if provided it is verified that the error string matches this {@link RegExp}
+   * @category transactions
+   * @category asserts
    */
   async assertError<Err extends Function>(
     t: Assert,
@@ -114,6 +124,8 @@ ${this.errorStack}`
    *
    * @param errOrRx either the {@link Error} type expected to be thrown or same as {@link msgRx}
    * @param msgRx if provided it is verified that the error string matches this {@link RegExp}
+   * @category transactions
+   * @category asserts
    */
   async assertThrows<Err extends Function>(
     t: Assert,
@@ -149,6 +161,8 @@ ${this.errorStack}`
    * This does not check for success or failure of the transaction.
    *
    * @param msgRxs it is verified that the logs match all these {@link RegExp}es
+   * @category transactions
+   * @category asserts
    */
   async assertLogs(t: Assert, msgRxs: RegExp[]) {
     this.calledAssert = true
@@ -165,6 +179,8 @@ ${this.errorStack}`
    * Call this to explicitly bypass any asserts but still skip preflight.
    * Use this with care as transaction errors may go unnoticed that way.
    * It is useful to capture the transaction result while diagnosing issues.
+   * @category transactions
+   * @category asserts
    */
   async assertNone() {
     this.calledAssert = true

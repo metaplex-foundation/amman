@@ -7,6 +7,7 @@ import {
 import { strict as assert } from 'assert'
 import {
   Assert,
+  assertContainMessages,
   assertTransactionError,
   assertTransactionSuccess,
 } from '../asserts'
@@ -23,6 +24,8 @@ export type TransactionCheckerAssertReturn = {
 /**
  * If you cannot use a builtin amman {@link TransactionHandler}, i.e. {@link PayerTransactionHandler}
  * then you can use this class to verify the outcome of your transactions.
+ * @category transactions
+ * @category asserts
  */
 export class TransactionChecker {
   constructor(
@@ -34,6 +37,8 @@ export class TransactionChecker {
    * Asserts that the transaction to completed successfully.
    *
    * @param msgRxs if provided it is verified that the logs match all these {@link RegExp}es
+   * @category transactions
+   * @category asserts
    */
   async assertSuccess(
     t: Assert,
@@ -50,15 +55,18 @@ export class TransactionChecker {
   }
 
   /**
-   * Asserts that the transaction to raised an error.
+   * Call this if you expect the sending and confirming the transaction to
+   * return with a transaction error.
    *
    * @param errOrRx either the {@link Error} type expected to be raised or same as {@link msgRx}
    * @param msgRx if provided it is verified that the error string matches this {@link RegExp}
+   * @category transactions
+   * @category asserts
    */
   async assertError<Err extends Function>(
     t: Assert,
     txSignature: TransactionSignature,
-    errOrRx: Err | RegExp,
+    errOrRx?: Err | RegExp,
     msgRx?: RegExp
   ) {
     const { txSummary, txConfirmed } = await fetchTransactionSummary(
@@ -69,8 +77,31 @@ export class TransactionChecker {
     assertTransactionError(t, { txSummary, txSignature }, errOrRx, msgRx)
     return { txSummary, txConfirmed }
   }
+
+  /**
+   * Call this if to assert that the log messages match a given set of regular expressions.
+   * This does not check for success or failure of the transaction.
+   *
+   * @param msgRxs it is verified that the logs match all these {@link RegExp}es
+   * @category transactions
+   * @category asserts
+   */
+  async assertLogs(
+    t: Assert,
+    txSignature: TransactionSignature,
+    msgRxs: RegExp[]
+  ) {
+    const { txSummary, txConfirmed } = await fetchTransactionSummary(
+      this.connection,
+      txSignature,
+      this.errorResolver
+    )
+    assertContainMessages(t, txSummary.logMessages, msgRxs, 'log messages')
+    return { txSummary, txConfirmed }
+  }
 }
 
+/** @private */
 export async function fetchTransactionSummary(
   connection: Connection,
   txSignature: TransactionSignature,
