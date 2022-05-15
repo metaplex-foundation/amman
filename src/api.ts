@@ -101,6 +101,7 @@ export class Amman {
 
   /**
    * Provides a {@link TransactionHandler} which uses the {@link payer} to sign transactions.
+   * @catetory transactions
    */
   payerTransactionHandler(
     connection: Connection,
@@ -118,6 +119,8 @@ export class Amman {
   /**
    * If you cannot use the {@link payerTransactionHandler} then you can use this to verify
    * the outcome of your transactions.
+   * @catetory transactions
+   * @catetory asserts
    */
   transactionChecker(connection: Connection, errorResolver?: ErrorResolver) {
     return new TransactionChecker(
