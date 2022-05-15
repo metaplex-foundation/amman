@@ -17,9 +17,29 @@ import { TransactionSummary } from './types'
  * @property summary obtained to execute the assert
  * @property processed transaction obtained to execute the assert
  **/
-export type TransactionCheckerAssertReturn = {
-  txSummary: TransactionSummary
-  txConfirmed: TransactionResponse
+export class TransactionCheckerAssertReturn {
+  readonly txSummary: TransactionSummary
+  readonly txConfirmed: TransactionResponse
+
+  constructor(args: {
+    txSummary: TransactionSummary
+    txConfirmed: TransactionResponse
+  }) {
+    this.txSummary = args.txSummary
+    this.txConfirmed = args.txConfirmed
+  }
+
+  get logs() {
+    return this.txSummary.logMessages
+  }
+
+  get loggedError() {
+    return this.txSummary.loggedError
+  }
+
+  get transactionMessage() {
+    return this.txConfirmed.transaction.message
+  }
 }
 /**
  * If you cannot use a builtin amman {@link TransactionHandler}, i.e. {@link PayerTransactionHandler}
@@ -51,7 +71,7 @@ export class TransactionChecker {
       this.errorResolver
     )
     assertTransactionSuccess(t, { txSummary, txSignature }, msgRxs)
-    return { txSummary, txConfirmed }
+    return new TransactionCheckerAssertReturn({ txSummary, txConfirmed })
   }
 
   /**
@@ -75,7 +95,7 @@ export class TransactionChecker {
       this.errorResolver
     )
     assertTransactionError(t, { txSummary, txSignature }, errOrRx, msgRx)
-    return { txSummary, txConfirmed }
+    return new TransactionCheckerAssertReturn({ txSummary, txConfirmed })
   }
 
   /**
@@ -97,7 +117,7 @@ export class TransactionChecker {
       this.errorResolver
     )
     assertContainMessages(t, txSummary.logMessages, msgRxs, 'log messages')
-    return { txSummary, txConfirmed }
+    return new TransactionCheckerAssertReturn({ txSummary, txConfirmed })
   }
 }
 
