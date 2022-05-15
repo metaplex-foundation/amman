@@ -128,16 +128,21 @@ export function assertTransactionError<Err extends Function>(
   details: Pick<ConfirmedTransactionDetails, 'txSummary'> & {
     txSignature?: TransactionSignature
   },
-  errOrRx: Err | RegExp,
+  errOrRx?: Err | RegExp,
   msgRx?: RegExp
 ) {
   const err = typeof errOrRx === 'function' ? errOrRx : undefined
   const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
-  return assertErrorMatches(t, details.txSummary.loggedError, {
-    type: err,
-    msgRx: rx,
-    txSignature: details.txSignature,
-  })
+  // Support checking for merly the existence of a transaction error
+  if (err == null && msgRx == null) {
+    t.ok(details.txSummary.transactionError != null, 'transaction failed')
+  } else {
+    assertErrorMatches(t, details.txSummary.loggedError, {
+      type: err,
+      msgRx: rx,
+      txSignature: details.txSignature,
+    })
+  }
 }
 
 /**

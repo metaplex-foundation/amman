@@ -12,7 +12,7 @@ import {
   TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
-import { Assert } from '../asserts'
+import { Assert, assertContainMessages } from '../asserts'
 
 /** @private */
 export type ErrorFromProgramLogs = (logs: string[]) => MaybeErrorWithCode
@@ -62,11 +62,31 @@ export type ConfirmedTransactionAsserts = {
  *
  * @category transactions
  */
-export type ConfirmedTransactionDetails = {
-  txSignature: TransactionSignature
-  txRpcResponse: RpcResponseAndContext<SignatureResult>
-  txConfirmed: TransactionResponse
-  txSummary: TransactionSummary
+export class ConfirmedTransactionDetails {
+  readonly txSignature: TransactionSignature
+  readonly txRpcResponse: RpcResponseAndContext<SignatureResult>
+  readonly txConfirmed: TransactionResponse
+  readonly txSummary: TransactionSummary
+  constructor(args: {
+    txSignature: TransactionSignature
+    txRpcResponse: RpcResponseAndContext<SignatureResult>
+    txConfirmed: TransactionResponse
+    txSummary: TransactionSummary
+  }) {
+    this.txSignature = args.txSignature
+    this.txRpcResponse = args.txRpcResponse
+    this.txConfirmed = args.txConfirmed
+    this.txSummary = args.txSummary
+  }
+
+  /**
+   * Call this if to assert that the log messages match a given set of regular expressions.
+   *
+   * @param msgRxs it is verified that the logs match all these {@link RegExp}es
+   */
+  async assertLogs(t: Assert, msgRxs: RegExp[]) {
+    assertContainMessages(t, this.txSummary.logMessages, msgRxs, 'log messages')
+  }
 }
 
 /**
