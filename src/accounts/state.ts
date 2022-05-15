@@ -57,7 +57,8 @@ export class AccountStates extends EventEmitter {
     if (res == null) return
 
     this.add(address, { ...res, slot })
-    this.emit(`account-changed:${address}`, this.get(address)?.relayStates)
+    const states = this.get(address)?.relayStates
+    this.emit(`account-changed:${address}`, states)
   }
 
   add(address: string, state: AccountState) {

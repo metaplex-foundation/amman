@@ -1,34 +1,16 @@
-import { strict as assert } from 'assert'
 import {
+  ConfirmOptions,
   Connection,
   Keypair,
-  SendOptions,
   Signer,
   Transaction,
-  TransactionResponse,
 } from '@solana/web3.js'
-import { defaultSendOptions } from '.'
-import {
-  ConfirmedTransactionDetails,
-  TransactionHandler,
-  TransactionSummary,
-} from './types'
+import { defaultConfirmOptions } from '.'
+import { ConfirmedTransactionDetails, TransactionHandler } from './types'
 import { AddressLabels } from '../diagnostics/address-labels'
 import type { ErrorResolver } from '@metaplex-foundation/cusper'
-
-function transactionSummary(
-  tx: TransactionResponse,
-  errorResolver?: ErrorResolver
-): TransactionSummary {
-  const logMessages = tx.meta?.logMessages ?? []
-  const fee = tx.meta?.fee
-  const slot = tx.slot
-  const blockTime = tx.blockTime ?? 0
-  const transactionError = tx.meta?.err
-  const err =
-    errorResolver?.errorFromProgramLogs(logMessages, true) ?? undefined
-  return { logMessages, fee, slot, blockTime, transactionError, err }
-}
+import { fetchTransactionSummary } from './transaction-checker'
+import { ConfirmedTransactionAssertablePromise } from './confirmed-transaction-assertable-promise'
 
 export type TransactionLabelMapper = (label: string) => string
 const FAIL = '❌'
@@ -65,37 +47,59 @@ export class PayerTransactionHandler implements TransactionHandler {
   /**
    * Sends and confirms the transaction {@link TransactionHandler['sendAndConfirmTransaction']}.
    */
-  async sendAndConfirmTransaction(
+  sendAndConfirmTransaction(
     transaction: Transaction,
     signers: Array<Signer>,
-    optionsOrLabel?: SendOptions | string,
+    optionsOrLabel?: ConfirmOptions | string,
     label?: string
-  ): Promise<ConfirmedTransactionDetails> {
-    transaction.recentBlockhash = (
-      await this.connection.getLatestBlockhash()
-    ).blockhash
-
+  ): ConfirmedTransactionAssertablePromise {
     const optionsIsLabel = typeof optionsOrLabel === 'string'
-    const options = optionsIsLabel ? undefined : optionsOrLabel
+    const options = optionsIsLabel ? {} : optionsOrLabel
     const addressLabel = optionsIsLabel ? optionsOrLabel : label
-    const txSignature = await this.connection.sendTransaction(
-      transaction,
-      [this.payer, ...signers],
-      options ?? defaultSendOptions
+
+    const confirmOptions = { ...defaultConfirmOptions, ...options }
+    return new ConfirmedTransactionAssertablePromise(
+      async (resolve, reject) => {
+        try {
+          transaction.recentBlockhash = (
+            await this.connection.getLatestBlockhash()
+          ).blockhash
+
+          const txSignature = await this.connection.sendTransaction(
+            transaction,
+            [this.payer, ...signers],
+            confirmOptions
+          )
+          if (addressLabel != null) {
+            AddressLabels.instance.addLabel(
+              this.transactionLabelMapper(addressLabel),
+              txSignature
+            )
+          }
+
+          const txRpcResponse = await this.connection.confirmTransaction(
+            txSignature,
+            confirmOptions.commitment
+          )
+          const { txSummary, txConfirmed } = await fetchTransactionSummary(
+            this.connection,
+            txSignature,
+            this.errorResolver
+          )
+
+          const details = new ConfirmedTransactionDetails({
+            txSignature,
+            txRpcResponse,
+            txConfirmed,
+            txSummary,
+          })
+
+          resolve(details)
+        } catch (err) {
+          reject(err)
+        }
+      },
+      confirmOptions.skipPreflight ?? false
     )
-    if (addressLabel != null) {
-      AddressLabels.instance.addLabel(
-        this.transactionLabelMapper(addressLabel),
-        txSignature
-      )
-    }
-
-    const txRpcResponse = await this.connection.confirmTransaction(txSignature)
-    const txConfirmed = await this.connection.getTransaction(txSignature)
-
-    assert(txConfirmed != null, 'confirmed transaction should not be null')
-
-    const txSummary = transactionSummary(txConfirmed, this.errorResolver)
-    return { txSignature, txRpcResponse, txConfirmed, txSummary }
   }
 }

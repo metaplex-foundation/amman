@@ -21,6 +21,7 @@ import {
   AmmanMockStorageDriver,
   AmmanMockStorageDriverOptions,
 } from './storage'
+import { TransactionChecker } from './transactions/transaction-checker'
 import {
   PayerTransactionHandler,
   TransactionLabelMapper,
@@ -41,7 +42,7 @@ import { logDebug } from './utils/log'
  * ```js
  * export const amman = Amman.instance({
  *   knownLabels: { [PROGRAM_ADDRESS]: 'My Program' },
- *   logLabel: console.log,
+ *   log: console.log,
  * })
  * ```
  *
@@ -100,10 +101,32 @@ export class Amman {
 
   /**
    * Provides a {@link TransactionHandler} which uses the {@link payer} to sign transactions.
+   * @catetory transactions
    */
-  payerTransactionHandler(connection: Connection, payer: Keypair) {
+  payerTransactionHandler(
+    connection: Connection,
+    payer: Keypair,
+    errorResolver?: ErrorResolver
+  ) {
     this.addr.addLabelIfUnknown('payer', payer.publicKey)
-    return new PayerTransactionHandler(connection, payer, this.errorResolver)
+    return new PayerTransactionHandler(
+      connection,
+      payer,
+      errorResolver ?? this.errorResolver
+    )
+  }
+
+  /**
+   * If you cannot use the {@link payerTransactionHandler} then you can use this to verify
+   * the outcome of your transactions.
+   * @catetory transactions
+   * @catetory asserts
+   */
+  transactionChecker(connection: Connection, errorResolver?: ErrorResolver) {
+    return new TransactionChecker(
+      connection,
+      errorResolver ?? this.errorResolver
+    )
   }
 
   /**

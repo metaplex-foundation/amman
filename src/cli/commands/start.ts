@@ -1,24 +1,15 @@
 import path from 'path'
 import { logDebug, logError, logInfo } from '../../utils'
-import { DEFAULT_VALIDATOR_CONFIG, initValidator } from '../../validator'
+import { initValidator } from '../../validator'
 import { AmmanConfig } from '../../types'
 import { canAccess } from '../../utils/fs'
-import { DEFAULT_RELAY_CONFIG } from '../../relay/types'
 import { pipeSolanaLogs } from '../utils/solana-logs'
 import { cliAmmanInstance } from '../utils'
-import { DEFAULT_ASSETS_FOLDER } from '../../assets/types'
-import deepExtend from 'deep-extend'
+import { completeConfig, DEFAULT_START_CONFIG } from '../../utils/config'
 
 export type StartCommandArgs = {
   config?: string
   forceClone?: boolean
-}
-
-export const DEFAULT_START_CONFIG: AmmanConfig = {
-  validator: DEFAULT_VALIDATOR_CONFIG,
-  relay: DEFAULT_RELAY_CONFIG,
-  streamTransactionLogs: process.env.CI == null,
-  assetsFolder: DEFAULT_ASSETS_FOLDER,
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {
@@ -64,11 +55,11 @@ export async function handleStartCommand(args: StartCommandArgs) {
 async function resolveConfig({ config }: StartCommandArgs) {
   if (config == null) {
     const { config: localConfig, configPath } = await tryLoadLocalConfigRc()
-    return { config: deepExtend(DEFAULT_START_CONFIG, localConfig), configPath }
+    return { config: completeConfig(localConfig), configPath }
   } else {
     const configPath = path.resolve(config)
     return {
-      config: deepExtend(DEFAULT_START_CONFIG, require(configPath)),
+      config: completeConfig(require(configPath)),
       configPath,
     }
   }

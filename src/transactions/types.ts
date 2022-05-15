@@ -12,6 +12,7 @@ import {
   TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
+import { Assert, assertContainMessages } from '../asserts'
 
 /** @private */
 export type ErrorFromProgramLogs = (logs: string[]) => MaybeErrorWithCode
@@ -39,7 +40,16 @@ export type TransactionSummary = {
   slot: number
   blockTime: number
   transactionError: TransactionError | null | undefined
-  err: MaybeErrorWithCode
+  loggedError: MaybeErrorWithCode
+}
+
+export type ConfirmedTransactionAsserts = {
+  assertError<Err extends Function>(
+    t: Assert,
+    errOrRx: Err | RegExp,
+    msgRx?: RegExp
+  ): void
+  assertSuccess(t: Assert, msgRxs?: RegExp[]): void
 }
 
 /**
@@ -52,11 +62,31 @@ export type TransactionSummary = {
  *
  * @category transactions
  */
-export type ConfirmedTransactionDetails = {
-  txSignature: string
-  txRpcResponse: RpcResponseAndContext<SignatureResult>
-  txConfirmed: TransactionResponse
-  txSummary: TransactionSummary
+export class ConfirmedTransactionDetails {
+  readonly txSignature: TransactionSignature
+  readonly txRpcResponse: RpcResponseAndContext<SignatureResult>
+  readonly txConfirmed: TransactionResponse
+  readonly txSummary: TransactionSummary
+  constructor(args: {
+    txSignature: TransactionSignature
+    txRpcResponse: RpcResponseAndContext<SignatureResult>
+    txConfirmed: TransactionResponse
+    txSummary: TransactionSummary
+  }) {
+    this.txSignature = args.txSignature
+    this.txRpcResponse = args.txRpcResponse
+    this.txConfirmed = args.txConfirmed
+    this.txSummary = args.txSummary
+  }
+
+  /**
+   * Call this if to assert that the log messages match a given set of regular expressions.
+   *
+   * @param msgRxs it is verified that the logs match all these {@link RegExp}es
+   */
+  async assertLogs(t: Assert, msgRxs: RegExp[]) {
+    assertContainMessages(t, this.txSummary.logMessages, msgRxs, 'log messages')
+  }
 }
 
 /**

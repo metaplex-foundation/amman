@@ -49,6 +49,7 @@ class RelayServer {
   }
 
   hookMessages(socket: Socket) {
+    const subscribedAccountStates = new Set<string>()
     socket
       .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
         if (logTrace.enabled) {
@@ -73,9 +74,12 @@ class RelayServer {
         if (states != null) {
           socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
         }
-        this.accountStates.on(`account-changed:${pubkey}`, (states) => {
-          socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
-        })
+        if (!subscribedAccountStates.has(pubkey)) {
+          subscribedAccountStates.add(pubkey)
+          this.accountStates.on(`account-changed:${pubkey}`, (states) => {
+            socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
+          })
+        }
       })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
