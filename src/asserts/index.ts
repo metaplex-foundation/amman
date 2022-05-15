@@ -77,7 +77,6 @@ export function assertTransactionSummary(
   }
 }
 
-// TODO(thlorenz): from RpcResponseAndContext<SignatureResult>,
 /**
  * Asserts that a transaction completed successfully and optionally checks for
  * messages in the transaction logs.
@@ -108,7 +107,6 @@ export function assertTransactionSuccess(
   }
 }
 
-// TODO(thlorenz): from RpcResponseAndContext<SignatureResult>,
 /**
  * Asserts that the provided {@link ConfirmedTransactionDetails} has an error
  * that matches the provided requirements.
