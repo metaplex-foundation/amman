@@ -1,7 +1,7 @@
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { LOCALHOST } from '../../utils'
 import { strict as assert } from 'assert'
-import { bold, dim } from 'ansi-colors'
+import { bold, dim, blueBright, green } from 'ansi-colors'
 // @ts-ignore no types available, but it's a simpler function
 import hexdump from 'buffer-hexdump'
 
@@ -123,7 +123,7 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
               ? p.join('.')
               : typeof p === 'string'
               ? p
-              : JSON.stringify(p)
+              : JSON.stringify(p, null, 2)
           const sc = typeof c === 'string' ? c : JSON.stringify(c)
           const sv = typeof v === 'string' ? v : JSON.stringify(v)
           return [sp, dim(sc), dim(sv)]
@@ -135,10 +135,6 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
       `\n${bold('Account State')} ${n} ${time}` +
       `\n${bold('----------------')}` +
       `\n${table(rows)}\n`
-    if (state.rendered != null) {
-      statesStr += `${state.rendered}\n`
-    }
-
     if (diffRendered != null) {
       // prettier-ignore
       statesStr +=
@@ -146,6 +142,36 @@ async function tryResolveAccountStates(pubkey: PublicKey) {
         `\n${bold('-----')}` +
         `\n${diffRendered}\n`
     }
+    if (state.rendered != null) {
+      // prettier-ignore
+      statesStr += 
+        `\n${bold('Rendered')}` +
+        `\n${bold('--------')}`
+      if (state.renderedDiff != null && state.renderedDiff.length > 0) {
+        statesStr += `\n${renderDiff(state.renderedDiff)}`
+      } else {
+        statesStr += `\n${state.rendered}`
+      }
+    }
   }
   return statesStr
+}
+
+function renderDiff(renderedDiff?: Diff.Change[]) {
+  if (renderedDiff == null || renderedDiff.length === 0) return
+  const before = renderedDiff
+    .map((x) => {
+      if (x.added) return ''
+      const fn = x.removed ? blueBright : undefined
+      return fn == null ? x.value : fn(x.value)
+    })
+    .join('')
+  const after = renderedDiff
+    .map((x) => {
+      if (x.removed) return ''
+      const fn = x.added ? green : undefined
+      return fn == null ? x.value : fn(x.value)
+    })
+    .join('')
+  return `\n${dim('# Before')}\n${before}\n${dim('# After')}\n${after}`
 }

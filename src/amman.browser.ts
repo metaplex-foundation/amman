@@ -4,6 +4,7 @@
  */
 export { LOCALHOST } from './utils/consts'
 export { identifySolanaAddress } from './utils/address'
+export { Change } from './accounts/state'
 export * from './types'
 export * from './relay/consts'
 export * from './relay/types'
