@@ -7,6 +7,7 @@ import { diff } from 'deep-diff'
 import EventEmitter from 'events'
 import { AccountDiff } from '../relay/types'
 import * as Diff from 'diff'
+export type { Change } from 'diff'
 
 export type AccountState = {
   account: AmmanAccount
