@@ -111,10 +111,7 @@ export class AccountProvider {
     logTrace(`Resolving account ${publicKey.toBase58()}`)
     let accountInfo: AccountInfo<Buffer> | null
     try {
-      accountInfo = await this.connection.getAccountInfo(
-        publicKey,
-        'singleGossip'
-      )
+      accountInfo = await this.connection.getAccountInfo(publicKey, 'confirmed')
     } catch (err) {
       logError(err)
       return

@@ -1,4 +1,10 @@
-import { Connection, Context, Logs, PublicKey } from '@solana/web3.js'
+import {
+  AccountInfo,
+  Connection,
+  Context,
+  Logs,
+  PublicKey,
+} from '@solana/web3.js'
 import { AmmanAccount } from '../types'
 import { logDebug } from '../utils/log'
 import { AccountProvider } from './providers'
@@ -58,19 +64,28 @@ export class AccountStates extends EventEmitter {
 
   private constructor(
     readonly connection: Connection,
-    readonly accountProvider: AccountProvider
+    readonly accountProvider: AccountProvider,
+    readonly loadedAccountInfos: Map<string, AccountInfo<Buffer>>
   ) {
     super()
     this.connection.onLogs('all', this._onLog, 'confirmed')
+    for (const [address, info] of this.loadedAccountInfos) {
+      this.update(address, 0, info)
+    }
   }
 
-  async update(address: string, slot: number) {
+  async update(
+    address: string,
+    slot: number,
+    accountInfo?: AccountInfo<Buffer>
+  ) {
     if (!this.states.has(address)) {
       this.states.set(address, new AccountStateTracker())
     }
 
     const res = await this.accountProvider.tryResolveAccount(
-      new PublicKey(address)
+      new PublicKey(address),
+      accountInfo
     )
     if (res == null) return
 
@@ -114,10 +129,15 @@ export class AccountStates extends EventEmitter {
 
   static createInstance(
     connection: Connection,
-    accountProvider: AccountProvider
+    accountProvider: AccountProvider,
+    loadedAccountInfos: Map<string, AccountInfo<Buffer>>
   ) {
     if (AccountStates._instance != null) return
-    AccountStates._instance = new AccountStates(connection, accountProvider)
+    AccountStates._instance = new AccountStates(
+      connection,
+      accountProvider,
+      loadedAccountInfos
+    )
     return AccountStates._instance
   }
 }

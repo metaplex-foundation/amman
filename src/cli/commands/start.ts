@@ -31,7 +31,7 @@ export async function handleStartCommand(args: StartCommandArgs) {
       process.exit(1)
     }
     logInfo(
-      `Running validator with ${config.validator.programs.length} custom program(s) and ${config.validator.accounts.length} remote account(s) preloaoded`
+      `Running validator with ${config.validator.programs.length} custom program(s) and ${config.validator.accounts.length} remote account(s) preloaded`
     )
     logDebug(config.validator)
     await initValidator(

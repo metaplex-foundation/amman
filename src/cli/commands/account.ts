@@ -11,9 +11,8 @@ import formatDistance from 'date-fns/formatDistance'
 import table from 'text-table'
 import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { printableAccount } from '../../accounts/state'
-import { AccountPersister } from '../../assets/persistence'
-import path from 'path'
-import { ACCOUNTS_FOLDER, DEFAULT_ASSETS_FOLDER } from '../../assets/types'
+import { AccountPersister } from '../../assets'
+import { fullAccountsDir } from '../../utils/config'
 
 export async function handleAccountCommand(
   acc: string | undefined,
@@ -45,10 +44,7 @@ export async function handleAccountCommand(
     assert(accountInfo != null, 'Account info should not be null')
 
     if (save) {
-      const accountsFolder = path.resolve(
-        process.cwd(),
-        path.join(DEFAULT_ASSETS_FOLDER, ACCOUNTS_FOLDER)
-      )
+      const accountsFolder = fullAccountsDir()
       const accountProviders = new AccountPersister(connection, accountsFolder)
       savedAccountPath = await accountProviders.saveAccountInfo(
         new PublicKey(addresses[0]),

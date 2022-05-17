@@ -1,8 +1,9 @@
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import path from 'path'
 import { promises as fs } from 'fs'
-import { strict as assert } from 'assert'
 import { ensureDir } from '../utils/fs'
+import { fullAccountsDir } from '../utils/config'
+import { strict as assert } from 'assert'
 
 export type PersistedAccountInfo = {
   pubkey: string
@@ -52,4 +53,44 @@ export class AccountPersister {
     assert(accountInfo != null, `Account not found at address ${address}`)
     return this.saveAccountInfo(address, accountInfo)
   }
+}
+
+export async function loadAccount(address: PublicKey, accountsFolder?: string) {
+  const accountPath = path.join(
+    accountsFolder ?? fullAccountsDir(),
+    `${address.toBase58()}.json`
+  )
+  const json = await fs.readFile(accountPath, 'utf8')
+  const persistedAccount: PersistedAccountInfo = JSON.parse(json)
+  return persistedAccount
+}
+
+export function accountInfoFromPersisted(persisted: PersistedAccountInfo): {
+  address: string
+  accountInfo: AccountInfo<Buffer>
+} {
+  const { executable, owner, data, lamports } = persisted.account
+  assert.equal(
+    data[1],
+    'base64',
+    'expected persisted account info data to be encoded as "base64"'
+  )
+  const accountInfo: AccountInfo<Buffer> = {
+    lamports,
+    data: Buffer.from(data[0], 'base64'),
+    owner: new PublicKey(owner),
+    executable,
+  }
+  return { address: persisted.pubkey, accountInfo }
+}
+
+export function mapPersistedAccountInfos(
+  persisteds: PersistedAccountInfo[]
+): Map<string, AccountInfo<Buffer>> {
+  const map = new Map()
+  for (const persisted of persisteds) {
+    const { address, accountInfo } = accountInfoFromPersisted(persisted)
+    map.set(address, accountInfo)
+  }
+  return map
 }

@@ -1,3 +1,4 @@
+import { AccountInfo } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
@@ -117,6 +118,7 @@ export class Relay {
     accountRenderers: AmmanAccountRendererMap,
     programs: Program[],
     accounts: Account[],
+    loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -130,7 +132,11 @@ export class Relay {
       accountProviders,
       accountRenderers
     )
-    AccountStates.createInstance(accountProvider.connection, accountProvider)
+    AccountStates.createInstance(
+      accountProvider.connection,
+      accountProvider,
+      loadedAccountInfos
+    )
 
     const programLabels = programs
       .filter((x) => x.label != null)
@@ -142,7 +148,8 @@ export class Relay {
     const accountLabels = accounts
       .filter((x) => x.label != null)
       .reduce((acc: Record<string, string>, x) => {
-        acc[x.accountId] = x.label!
+        const prefix = loadedAccountInfos.has(x.accountId) ? '💾 ' : ''
+        acc[x.accountId] = `${prefix}${x.label}`
         return acc
       }, {})
 

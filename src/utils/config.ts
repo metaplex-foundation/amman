@@ -1,4 +1,5 @@
-import { DEFAULT_ASSETS_FOLDER } from '../assets/types'
+import path from 'path'
+import { ACCOUNTS_FOLDER, DEFAULT_ASSETS_FOLDER } from '../assets/types'
 import { DEFAULT_RELAY_CONFIG } from '../relay/types'
 import { AmmanConfig } from '../types'
 import { DEFAULT_VALIDATOR_CONFIG } from '../validator'
@@ -27,4 +28,12 @@ export function completeConfig(config: Partial<AmmanConfig> = {}): AmmanConfig {
     assetsFolder = DEFAULT_ASSETS_FOLDER,
   } = config
   return { validator, relay, streamTransactionLogs, assetsFolder }
+}
+
+export function fullAccountsDir(assetsFolder?: string): string {
+  const assetsDir = path.resolve(
+    process.cwd(),
+    assetsFolder ?? DEFAULT_ASSETS_FOLDER
+  )
+  return path.join(assetsDir, ACCOUNTS_FOLDER)
 }

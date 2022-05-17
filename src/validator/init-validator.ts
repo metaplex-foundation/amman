@@ -21,13 +21,10 @@ import {
   MockStorageServer,
   StorageConfig,
 } from '../storage'
-import {
-  getExecutableAddress,
-  handleFetchAccounts,
-} from '../assets/local-accounts'
-import { ACCOUNTS_FOLDER, DEFAULT_ASSETS_FOLDER } from '../assets/types'
-import path from 'path'
-import { canAccess, canAccessSync } from '../utils/fs'
+import { DEFAULT_ASSETS_FOLDER } from '../assets/types'
+import { canAccessSync } from '../utils/fs'
+import { processAccounts } from './process-accounts'
+import { mapPersistedAccountInfos } from '../assets'
 
 /**
  * @private
@@ -95,7 +92,7 @@ export async function initValidator(
     commitment,
   })
 
-  const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
+  let args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
 
   if (programs.length > 0) {
@@ -109,45 +106,14 @@ export async function initValidator(
     }
   }
 
-  if (accounts.length > 0) {
-    const accountsFolder = path.resolve(
-      process.cwd(),
-      path.join(assetsFolder, ACCOUNTS_FOLDER)
-    )
-    await handleFetchAccounts(
-      accountsCluster,
-      accounts,
-      accountsFolder,
-      forceClone
-    )
-    for (const { accountId, executable, cluster } of accounts) {
-      const accountPath = path.join(accountsFolder, `${accountId}.json`)
-      if (await canAccess(accountPath)) {
-        args.push('--account')
-        args.push(accountId)
-        args.push(accountPath)
-      } else {
-        throw new Error(
-          `Can't find account info file for account ${accountId} cloned from cluster ${
-            cluster ?? accountsCluster
-          }! \nMake sure the account exists on that cluster and try again.`
-        )
-      }
-      if (executable) {
-        const executableId = await getExecutableAddress(accountId)
-        const executablePath = path.join(accountsFolder, `${executableId}.json`)
-        if (await canAccess(executablePath)) {
-          args.push('--account')
-          args.push(executableId)
-          args.push(executablePath)
-        } else {
-          logError(
-            `Can't find executable account info file for executable account ${accountId}`
-          )
-        }
-      }
-    }
-  }
+  const { accountsArgs, persistedAccountInfos } = await processAccounts(
+    accounts,
+    accountsCluster,
+    assetsFolder,
+    forceClone
+  )
+  args = [...args, ...accountsArgs]
+
   args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
 
   const cmd = `solana-test-validator ${args.join(' \\\n  ')}`
@@ -172,11 +138,13 @@ export async function initValidator(
 
   // Launch relay server in parallel
   if (relayEnabled) {
+    const accountInfos = mapPersistedAccountInfos(persistedAccountInfos)
     Relay.startServer(
       accountProviders,
       accountRenderers,
       programs,
       accounts,
+      accountInfos,
       killRunningRelay
     )
       .then(({ app }) => {
