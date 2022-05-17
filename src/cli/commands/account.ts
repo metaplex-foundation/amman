@@ -11,11 +11,19 @@ import formatDistance from 'date-fns/formatDistance'
 import table from 'text-table'
 import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { printableAccount } from '../../accounts/state'
+import { AccountPersister } from '../../assets/persistence'
+import path from 'path'
+import { ACCOUNTS_FOLDER, DEFAULT_ASSETS_FOLDER } from '../../assets/types'
 
 export async function handleAccountCommand(
   acc: string | undefined,
-  includeTxs: boolean = false
-) {
+  includeTxs: boolean,
+  save: boolean
+): Promise<{
+  connection?: Connection | undefined
+  rendered: string
+  savedAccountPath?: string | undefined
+}> {
   if (acc == null) return renderAllKnownAccounts(includeTxs)
 
   const amman = cliAmmanInstance()
@@ -23,13 +31,30 @@ export async function handleAccountCommand(
   if (addresses.length === 0) {
     throw new Error(`Account ${acc} could not be resolved to an address`)
   }
-
-  const connection = new Connection(LOCALHOST, 'singleGossip')
+  if (save && addresses.length > 1) {
+    throw new Error(
+      `Account ${acc} could not be resolved to exactly address and thus cannot be saved`
+    )
+  }
+  const connection = new Connection(LOCALHOST, 'confirmed')
   const rendereds = []
+  let savedAccountPath
   for (const address of addresses) {
     const pubkey = new PublicKey(address)
     const accountInfo = await connection.getAccountInfo(pubkey)
     assert(accountInfo != null, 'Account info should not be null')
+
+    if (save) {
+      const accountsFolder = path.resolve(
+        process.cwd(),
+        path.join(DEFAULT_ASSETS_FOLDER, ACCOUNTS_FOLDER)
+      )
+      const accountProviders = new AccountPersister(connection, accountsFolder)
+      savedAccountPath = await accountProviders.saveAccountInfo(
+        new PublicKey(addresses[0]),
+        accountInfo
+      )
+    }
     const len = accountInfo.data.length
     const sol = accountInfo.lamports / LAMPORTS_PER_SOL
 
@@ -59,8 +84,9 @@ ${accountStates}
       `\n${bold('NOTE')}: found ${rendereds.length}` +
       ` accounts labeled '${acc}' and printed all of them above`
   }
+
   amman.disconnect()
-  return { connection, rendered }
+  return { connection, rendered, savedAccountPath }
 }
 
 async function renderAllKnownAccounts(includeTxs: boolean) {

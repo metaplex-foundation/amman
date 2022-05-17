@@ -24,6 +24,7 @@ import { AMMAN_STORAGE_PORT, MockStorageServer } from '../storage'
 import { closeConnection } from './utils'
 import { Amman } from '../api'
 import { Connection } from '@solana/web3.js'
+import path from 'path'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------
@@ -118,6 +119,13 @@ const commands = yargs(hideBin(process.argv))
           alias: 't',
           describe:
             'If to include transactions in the shown labeled accounts when no label/address is provided',
+          type: 'boolean',
+          default: false,
+        })
+        .option('save', {
+          alias: 's',
+          describe:
+            'If set the account information is saved to a file inside ./.amman/accounts',
           type: 'boolean',
           default: false,
         })
@@ -249,22 +257,32 @@ async function main() {
     // -----------------
     case 'account': {
       const address = cs[1]
-      const { includeTx } = args
+      const { includeTx, save } = args
       assert(
         address == null || typeof address === 'string',
         'provided public key or label needs to be a string'
       )
       assert(
         !includeTx || address == null,
-        '--includeTx can only be used when noe address is provided'
+        '--includeTx can only be used when no address is provided'
+      )
+      assert(
+        !save || address != null,
+        '--save requires an account address or label to be provided'
       )
 
-      const { connection, rendered } = await handleAccountCommand(
-        address,
-        includeTx
-      )
+      const { connection, rendered, savedAccountPath } =
+        await handleAccountCommand(address, includeTx, save)
+
       console.log(rendered)
-      if (connection! != null) {
+
+      if (savedAccountPath != null) {
+        logInfo(
+          `Saved account to ./${path.relative(process.cwd(), savedAccountPath)}`
+        )
+      }
+
+      if (connection != null) {
         await closeConnection(connection, true)
       }
       disconnectAmman()
