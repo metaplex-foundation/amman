@@ -36,7 +36,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   accounts: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
-  commitment: 'singleGossip',
+  commitment: 'confirmed',
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
   limitLedgerSize: 1e4,
