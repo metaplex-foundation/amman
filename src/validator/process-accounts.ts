@@ -18,9 +18,8 @@ export async function processAccounts(
 ) {
   const persistedAccountInfos = []
   const accountsArgs = []
+  const accountsFolder = fullAccountsDir(assetsFolder)
   if (accounts.length > 0) {
-    const accountsFolder = fullAccountsDir(assetsFolder)
-
     await handleFetchAccounts(
       accountsCluster,
       accounts,
@@ -61,5 +60,5 @@ export async function processAccounts(
       }
     }
   }
-  return { accountsArgs, persistedAccountInfos }
+  return { accountsArgs, persistedAccountInfos, accountsFolder }
 }

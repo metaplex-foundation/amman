@@ -1,9 +1,10 @@
-import { AccountInfo } from '@solana/web3.js'
+import { AccountInfo, PublicKey } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
+import { AccountPersister } from '../assets'
 import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
 import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
@@ -18,6 +19,8 @@ import {
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_REQUEST_AMMAN_VERSION,
   MSG_RESPOND_AMMAN_VERSION,
+  MSG_REQUEST_ACCOUNT_SAVE,
+  MSG_RESPOND_ACCOUNT_SAVE,
 } from './consts'
 import { AMMAN_VERSION } from './types'
 
@@ -31,6 +34,7 @@ class RelayServer {
   constructor(
     readonly io: Server,
     readonly accountProvider: AccountProvider,
+    readonly accountPersister: AccountPersister,
     readonly accountStates: AccountStates,
     // Keyed pubkey:label
     private readonly allKnownLabels: Record<string, string> = {}
@@ -82,6 +86,14 @@ class RelayServer {
           })
         }
       })
+      .on(MSG_REQUEST_ACCOUNT_SAVE, async (pubkey: string) => {
+        try {
+          await this.accountPersister.saveAccount(new PublicKey(pubkey))
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey)
+        } catch (err) {
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, err)
+        }
+      })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
@@ -95,6 +107,7 @@ class RelayServer {
 export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
+    accountPersister: AccountPersister,
     accountStates: AccountStates,
     knownLabels: Record<string, string>
   ) {
@@ -107,6 +120,7 @@ export class Relay {
     const relayServer = new RelayServer(
       io,
       accountProvider,
+      accountPersister,
       accountStates,
       knownLabels
     )
@@ -119,6 +133,7 @@ export class Relay {
     programs: Program[],
     accounts: Account[],
     loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    accountsFolder: string,
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -136,6 +151,10 @@ export class Relay {
       accountProvider.connection,
       accountProvider,
       loadedAccountInfos
+    )
+    const accountPersister = new AccountPersister(
+      accountProvider.connection,
+      accountsFolder
     )
 
     const programLabels = programs
@@ -157,6 +176,7 @@ export class Relay {
 
     const { app, io, relayServer } = this.createApp(
       accountProvider,
+      accountPersister,
       AccountStates.instance,
       knownLabels
     )

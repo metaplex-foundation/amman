@@ -78,6 +78,9 @@ export async function initValidator(
     ...relayConfig,
   }
 
+  // -----------------
+  // Kill running validators
+  // -----------------
   if (killRunningValidators) {
     try {
       exec('pkill -f solana-test-validator')
@@ -86,6 +89,9 @@ export async function initValidator(
     } catch (err) {}
   }
 
+  // -----------------
+  // Setup Solana Config
+  // -----------------
   const { configPath, cleanupConfig } = await solanaConfig({
     websocketUrl,
     jsonRpcUrl,
@@ -94,7 +100,11 @@ export async function initValidator(
 
   let args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
+  args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
 
+  // -----------------
+  // Deploy Programs
+  // -----------------
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
       if (!canAccessSync(deployPath)) {
@@ -106,16 +116,16 @@ export async function initValidator(
     }
   }
 
-  const { accountsArgs, persistedAccountInfos } = await processAccounts(
-    accounts,
-    accountsCluster,
-    assetsFolder,
-    forceClone
-  )
+  // -----------------
+  // Add Accounts
+  // -----------------
+  const { accountsArgs, persistedAccountInfos, accountsFolder } =
+    await processAccounts(accounts, accountsCluster, assetsFolder, forceClone)
   args = [...args, ...accountsArgs]
 
-  args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
-
+  // -----------------
+  // Launch Validator
+  // -----------------
   const cmd = `solana-test-validator ${args.join(' \\\n  ')}`
   if (logTrace.enabled) {
     logTrace('Launching validator with the following command')
@@ -136,7 +146,9 @@ export async function initValidator(
     ledgerDir
   )
 
+  // -----------------
   // Launch relay server in parallel
+  // -----------------
   if (relayEnabled) {
     const accountInfos = mapPersistedAccountInfos(persistedAccountInfos)
     Relay.startServer(
@@ -145,6 +157,7 @@ export async function initValidator(
       programs,
       accounts,
       accountInfos,
+      accountsFolder,
       killRunningRelay
     )
       .then(({ app }) => {
@@ -157,7 +170,9 @@ export async function initValidator(
       })
   }
 
+  // -----------------
   // Launch Storage server in parallel as well
+  // -----------------
   const storageEnabled =
     storageConfig != null &&
     { ...DEFAULT_STORAGE_CONFIG, ...storageConfig }.enabled
@@ -182,6 +197,9 @@ export async function initValidator(
       })
   }
 
+  // -----------------
+  // Wait for validator to come up and cleanup
+  // -----------------
   await ensureValidatorIsUp(jsonRpcUrl, verifyFees)
   await cleanupConfig()
 
