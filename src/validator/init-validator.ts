@@ -25,6 +25,7 @@ import { DEFAULT_ASSETS_FOLDER, SnapshotConfig } from '../assets/types'
 import { canAccessSync } from '../utils/fs'
 import { processAccounts } from './process-accounts'
 import { mapPersistedAccountInfos } from '../assets'
+import { processSnapshot } from './process-snapshot'
 
 /**
  * @private
@@ -118,11 +119,18 @@ export async function initValidator(
   }
 
   // -----------------
-  // Add Accounts
+  // Add Cloned Accounts
   // -----------------
   const { accountsArgs, persistedAccountInfos, accountsFolder } =
     await processAccounts(accounts, accountsCluster, assetsFolder, forceClone)
   args = [...args, ...accountsArgs]
+
+  // -----------------
+  // Add Snapshotted Accounts
+  // -----------------
+  const { snapshotArgs, persistedSnapshotAccountInfos, snapshotAccounts } =
+    await processSnapshot(snapshotConfig)
+  args = [...args, ...snapshotArgs]
 
   // -----------------
   // Launch Validator
@@ -151,12 +159,15 @@ export async function initValidator(
   // Launch relay server in parallel
   // -----------------
   if (relayEnabled) {
-    const accountInfos = mapPersistedAccountInfos(persistedAccountInfos)
+    const accountInfos = mapPersistedAccountInfos([
+      ...persistedAccountInfos,
+      ...persistedSnapshotAccountInfos,
+    ])
     Relay.startServer(
       accountProviders,
       accountRenderers,
       programs,
-      accounts,
+      [...accounts, ...snapshotAccounts],
       accountInfos,
       accountsFolder,
       snapshotConfig.snapshotFolder,

@@ -198,8 +198,7 @@ export class Relay {
     const accountLabels = accounts
       .filter((x) => x.label != null)
       .reduce((acc: Record<string, string>, x) => {
-        const prefix = loadedAccountInfos.has(x.accountId) ? '💾 ' : ''
-        acc[x.accountId] = `${prefix}${x.label}`
+        acc[x.accountId] = x.label!
         return acc
       }, {})
 
