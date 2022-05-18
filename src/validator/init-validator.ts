@@ -21,7 +21,7 @@ import {
   MockStorageServer,
   StorageConfig,
 } from '../storage'
-import { DEFAULT_ASSETS_FOLDER } from '../assets/types'
+import { DEFAULT_ASSETS_FOLDER, SnapshotConfig } from '../assets/types'
 import { canAccessSync } from '../utils/fs'
 import { processAccounts } from './process-accounts'
 import { mapPersistedAccountInfos } from '../assets'
@@ -50,6 +50,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
 export async function initValidator(
   validatorConfig: Partial<ValidatorConfig>,
   relayConfig: Partial<RelayConfig> = {},
+  snapshotConfig: SnapshotConfig,
   storageConfig?: StorageConfig,
   assetsFolder: string = DEFAULT_ASSETS_FOLDER,
   forceClone?: boolean
@@ -158,6 +159,7 @@ export async function initValidator(
       accounts,
       accountInfos,
       accountsFolder,
+      snapshotConfig.snapshotFolder,
       killRunningRelay
     )
       .then(({ app }) => {

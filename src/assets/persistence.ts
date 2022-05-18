@@ -17,18 +17,21 @@ export type PersistedAccountInfo = {
 }
 
 export class AccountPersister {
-  constructor(
-    readonly connection: Connection,
-    readonly accountsFolder: string
-  ) {}
+  constructor(readonly targetDir: string, readonly connection?: Connection) {}
 
-  async saveAccountInfo(address: PublicKey, accountInfo: AccountInfo<Buffer>) {
+  async saveAccountInfo(
+    address: PublicKey,
+    accountInfo: AccountInfo<Buffer>,
+    subdir?: string,
+    label?: string
+  ) {
     assert(!accountInfo.executable, 'Can only save non-executable accounts')
 
-    await ensureDir(this.accountsFolder)
+    await ensureDir(this.targetDir)
+    const fulldir = subdir ? path.join(this.targetDir, subdir) : this.targetDir
     const accountPath = path.join(
-      this.accountsFolder,
-      `${address.toBase58()}.json`
+      fulldir,
+      `${label ?? address.toBase58()}.json`
     )
     const persistedAccount: PersistedAccountInfo = {
       pubkey: address.toBase58(),
@@ -45,20 +48,74 @@ export class AccountPersister {
     return accountPath
   }
 
-  async saveAccount(address: PublicKey) {
-    const accountInfo = await this.connection.getAccountInfo(
-      address,
-      'confirmed'
-    )
+  async saveAccount(
+    address: PublicKey,
+    connection?: Connection,
+    data?: Buffer
+  ) {
+    connection = this._requireConnection(connection, 'save Account')
+    const accountInfo = await connection.getAccountInfo(address, 'confirmed')
     assert(accountInfo != null, `Account not found at address ${address}`)
+    if (data != null) {
+      accountInfo.data = data
+    }
     return this.saveAccountInfo(address, accountInfo)
+  }
+
+  async snapshot(
+    snapshotLabel: string,
+    addresses: string[],
+    // Keyed pubkey:label
+    accountLabels: Record<string, string>,
+    maybeConnection?: Connection
+  ) {
+    const snapshotRoot = this.targetDir
+    const connection = this._requireConnection(maybeConnection, 'take snapshot')
+
+    const snapshotDir = path.join(snapshotRoot, snapshotLabel)
+    await ensureDir(snapshotDir)
+
+    await Promise.all(
+      addresses.map(async (address) => {
+        const accountInfo = await connection.getAccountInfo(
+          new PublicKey(address),
+          'confirmed'
+        )
+        if (accountInfo == null || accountInfo.executable) return
+
+        return this.saveAccountInfo(
+          new PublicKey(address),
+          accountInfo,
+          snapshotLabel,
+          accountLabels[address]
+        )
+      })
+    )
+
+    return snapshotDir
+  }
+
+  private _requireConnection(
+    connection: Connection | undefined,
+    task: string
+  ): Connection {
+    connection ??= this.connection
+    assert(
+      connection != null,
+      `Must instantiate persister with connection or provide it to ${task}`
+    )
+    return connection
   }
 }
 
-export async function loadAccount(address: PublicKey, accountsFolder?: string) {
+export async function loadAccount(
+  address: PublicKey,
+  sourceDir?: string,
+  label?: string
+) {
   const accountPath = path.join(
-    accountsFolder ?? fullAccountsDir(),
-    `${address.toBase58()}.json`
+    sourceDir ?? fullAccountsDir(),
+    `${label ?? address.toBase58()}.json`
   )
   const json = await fs.readFile(accountPath, 'utf8')
   const persistedAccount: PersistedAccountInfo = JSON.parse(json)

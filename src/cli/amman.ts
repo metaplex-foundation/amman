@@ -15,6 +15,7 @@ import {
   startHelp,
   runHelp,
   handleLogsCommand,
+  handleSnapshotCommand,
 } from './commands'
 import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
@@ -130,6 +131,22 @@ const commands = yargs(hideBin(process.argv))
           default: false,
         })
   )
+  // -----------------
+  // snapshot
+  // -----------------
+  .command(
+    'snapshot',
+    'Creates a snapshot of the current accounts known to amman',
+    (args) => {
+      args.positional('label', {
+        describe:
+          'The label to give to the snapshot. Default label is the account address.',
+        type: 'string',
+        demandOption: false,
+      })
+    }
+  )
+
   // -----------------
   // run
   // -----------------
@@ -285,6 +302,18 @@ async function main() {
       if (connection != null) {
         await closeConnection(connection, true)
       }
+      disconnectAmman()
+      break
+    }
+    // -----------------
+    // snapshot
+    // -----------------
+    case 'snapshot': {
+      const label = cs[1]?.toString()
+      const snapshotDir = await handleSnapshotCommand(label)
+      logInfo(
+        `Saved snapshot to ./${path.relative(process.cwd(), snapshotDir)}`
+      )
       disconnectAmman()
       break
     }

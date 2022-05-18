@@ -20,6 +20,7 @@ export const DEFAULT_MINT_DECIMALS = 9
 export type HandleWatchedAccountChanged = (
   account: AmmanAccount,
   slot: number,
+  data: Buffer,
   rendered?: string
 ) => void
 
@@ -100,13 +101,16 @@ export class AccountProvider {
 
     return accountInfo != null
       ? this._getProviderAndResolveAccount(accountInfo, publicKey)
-      : null
+      : undefined
   }
 
-  async syncAccountInformation(
-    publicKey: PublicKey
-  ): Promise<
-    { account: AmmanAccount; rendered: string | undefined } | undefined
+  async syncAccountInformation(publicKey: PublicKey): Promise<
+    | {
+        account: AmmanAccount | undefined
+        rendered: string | undefined
+        data: Buffer
+      }
+    | undefined
   > {
     logTrace(`Resolving account ${publicKey.toBase58()}`)
     let accountInfo: AccountInfo<Buffer> | null
@@ -126,7 +130,14 @@ export class AccountProvider {
   private async _getProviderAndResolveAccount(
     accountInfo: AccountInfo<Buffer>,
     publicKey: PublicKey
-  ) {
+  ): Promise<
+    | {
+        account: AmmanAccount | undefined
+        rendered: string | undefined
+        data: Buffer
+      }
+    | undefined
+  > {
     if (
       accountInfo.lamports === 0 ||
       accountInfo.executable ||
@@ -138,22 +149,26 @@ export class AccountProvider {
     let res = this._resolveFromProviderMatching(accountInfo, publicKey)
     if (res != null) {
       logTrace(res)
-      return res
+      return { ...res, data: accountInfo.data }
     }
 
     // No matching provider found, let's try the ones for non-fixed accounts or builtins from the token program
-    return (
+    res =
       this._tryResolveAccountFromProviders(
         this.nonfixedProviders,
         accountInfo
       ) ?? (await this._tryResolveAccountFromBuiltins(publicKey))
-    )
+    return {
+      account: res?.account,
+      rendered: res?.rendered,
+      data: accountInfo.data,
+    }
   }
 
   _resolveFromProviderMatching(
     accountInfo: AccountInfo<Buffer>,
     publicKey: PublicKey
-  ) {
+  ): { account: AmmanAccount; rendered: string | undefined } | undefined {
     const providers = this.byByteSize.get(accountInfo.data.byteLength)
     if (providers == null) {
       logTrace(
@@ -173,7 +188,7 @@ export class AccountProvider {
   private _tryResolveAccountFromProviders(
     providers: AmmanAccountProvider[],
     accountInfo: AccountInfo<Buffer>
-  ) {
+  ): { account: AmmanAccount; rendered: string | undefined } | undefined {
     for (const provider of providers) {
       try {
         return this._resolveAccount(provider, accountInfo)
@@ -205,7 +220,7 @@ export class AccountProvider {
   private _resolveAccount(
     provider: AmmanAccountProvider,
     accountInfo: AccountInfo<Buffer>
-  ) {
+  ): { account: AmmanAccount; rendered: string | undefined } {
     const [account] = provider.fromAccountInfo(accountInfo)
     const render = this.renderers.get(provider)
     const rendered = render != null ? render(account) : undefined

@@ -16,8 +16,9 @@ import * as Diff from 'diff'
 export type { Change } from 'diff'
 
 export type AccountState = {
-  account: AmmanAccount
+  account: AmmanAccount | undefined
   slot: number
+  data: Buffer
   accountDiff?: AccountDiff
   rendered?: string
   renderedDiff?: Diff.Change[]
@@ -30,7 +31,7 @@ class AccountStateTracker {
     const lastState =
       this.states.length > 0 ? this.states[this.states.length - 1] : null
     const accountDiff: AccountDiff | undefined =
-      lastState == null
+      lastState == null || lastState.account == null || state.account == null
         ? undefined
         : diff(lastState.account.pretty(), state.account.pretty())
     const processedState = {
@@ -46,16 +47,26 @@ class AccountStateTracker {
   }
 
   get relayStates() {
-    return this.states.map(({ account, ...rest }) => ({
-      account: account.pretty(),
-      ...rest,
-    }))
+    return this.states
+      .filter((state) => state.account != null)
+      .map(({ account, ...rest }) => ({
+        account: account!.pretty(),
+        ...rest,
+      }))
   }
 
   renderDiff(lastState: AccountState | null, state: AccountState) {
     if (lastState?.rendered == null) return undefined
     if (state.rendered == null) return undefined
     return Diff.diffChars(lastState.rendered, state.rendered)
+  }
+
+  accountStateForSlot(slot: number) {
+    return this.states.find((state) => state.slot === slot)
+  }
+
+  accountDataForSlot(slot: number) {
+    return this.accountStateForSlot(slot)?.data
   }
 }
 
@@ -102,6 +113,18 @@ export class AccountStates extends EventEmitter {
 
   get(address: string): AccountStateTracker | undefined {
     return this.states.get(address)
+  }
+
+  accountStateForSlot(address: string, slot: number) {
+    return this.get(address)?.accountStateForSlot(slot)
+  }
+
+  accountDataForSlot(address: string, slot: number): Buffer | undefined {
+    return this.get(address)?.accountDataForSlot(slot)
+  }
+
+  allAccountAddresses() {
+    return Array.from(this.states.keys())
   }
 
   private _onLog = async (logs: Logs, ctx: Context) => {

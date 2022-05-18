@@ -21,6 +21,8 @@ import {
   MSG_RESPOND_AMMAN_VERSION,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_SAVE,
+  MSG_REQUEST_SNAPSHOT,
+  MSG_RESPOND_SNAPSHOT,
 } from './consts'
 import { AMMAN_VERSION } from './types'
 
@@ -35,6 +37,7 @@ class RelayServer {
     readonly io: Server,
     readonly accountProvider: AccountProvider,
     readonly accountPersister: AccountPersister,
+    readonly snapshotPersister: AccountPersister,
     readonly accountStates: AccountStates,
     // Keyed pubkey:label
     private readonly allKnownLabels: Record<string, string> = {}
@@ -86,12 +89,33 @@ class RelayServer {
           })
         }
       })
-      .on(MSG_REQUEST_ACCOUNT_SAVE, async (pubkey: string) => {
+      .on(MSG_REQUEST_ACCOUNT_SAVE, async (pubkey: string, slot?: number) => {
         try {
-          await this.accountPersister.saveAccount(new PublicKey(pubkey))
-          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey)
+          let data
+          if (slot != null) {
+            data = this.accountStates.accountDataForSlot(pubkey, slot)
+          }
+          const accountPath = await this.accountPersister.saveAccount(
+            new PublicKey(pubkey),
+            this.accountProvider.connection,
+            data
+          )
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, { accountPath })
         } catch (err) {
-          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, err)
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, { err })
+        }
+      })
+      .on(MSG_REQUEST_SNAPSHOT, async (label: string) => {
+        try {
+          const addresses = this.accountStates.allAccountAddresses()
+          const snapshotDir = await this.snapshotPersister.snapshot(
+            label,
+            addresses,
+            this.allKnownLabels
+          )
+          socket.emit(MSG_RESPOND_SNAPSHOT, { snapshotDir })
+        } catch (err: any) {
+          socket.emit(MSG_RESPOND_SNAPSHOT, { err: err.toString() })
         }
       })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
@@ -108,6 +132,7 @@ export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
     accountPersister: AccountPersister,
+    snapshotPersister: AccountPersister,
     accountStates: AccountStates,
     knownLabels: Record<string, string>
   ) {
@@ -121,6 +146,7 @@ export class Relay {
       io,
       accountProvider,
       accountPersister,
+      snapshotPersister,
       accountStates,
       knownLabels
     )
@@ -134,6 +160,7 @@ export class Relay {
     accounts: Account[],
     loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
     accountsFolder: string,
+    snapshotRoot: string,
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -153,8 +180,12 @@ export class Relay {
       loadedAccountInfos
     )
     const accountPersister = new AccountPersister(
-      accountProvider.connection,
-      accountsFolder
+      accountsFolder,
+      accountProvider.connection
+    )
+    const snapshotPersister = new AccountPersister(
+      snapshotRoot,
+      accountProvider.connection
     )
 
     const programLabels = programs
@@ -174,9 +205,10 @@ export class Relay {
 
     const knownLabels = { ...programLabels, ...accountLabels }
 
-    const { app, io, relayServer } = this.createApp(
+    const { app, io, relayServer } = Relay.createApp(
       accountProvider,
       accountPersister,
+      snapshotPersister,
       AccountStates.instance,
       knownLabels
     )

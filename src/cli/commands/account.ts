@@ -11,8 +11,6 @@ import formatDistance from 'date-fns/formatDistance'
 import table from 'text-table'
 import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { printableAccount } from '../../accounts/state'
-import { AccountPersister } from '../../assets'
-import { fullAccountsDir } from '../../utils/config'
 
 export async function handleAccountCommand(
   acc: string | undefined,
@@ -44,11 +42,8 @@ export async function handleAccountCommand(
     assert(accountInfo != null, 'Account info should not be null')
 
     if (save) {
-      const accountsFolder = fullAccountsDir()
-      const accountProviders = new AccountPersister(connection, accountsFolder)
-      savedAccountPath = await accountProviders.saveAccountInfo(
-        new PublicKey(addresses[0]),
-        accountInfo
+      savedAccountPath = await amman.ammanClient.requestSaveAccount(
+        addresses[0]
       )
     }
     const len = accountInfo.data.length

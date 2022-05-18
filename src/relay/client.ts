@@ -1,3 +1,4 @@
+import { strict as assert } from 'assert'
 import io, { Socket } from 'socket.io-client'
 import { logDebug, logTrace } from '../utils'
 import {
@@ -9,6 +10,10 @@ import {
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_REQUEST_ACCOUNT_STATES,
+  MSG_RESPOND_SNAPSHOT,
+  MSG_REQUEST_SNAPSHOT,
+  MSG_REQUEST_ACCOUNT_SAVE,
+  MSG_RESPOND_ACCOUNT_SAVE,
 } from './consts'
 import { createTimeout } from './timeout'
 import { RelayAccountState } from './types'
@@ -20,6 +25,8 @@ export type AmmanClient = {
   addAddressLabels(labels: Record<string, string>): Promise<void>
   fetchAddressLabels(): Promise<Record<string, string>>
   fetchAccountStates(address: string): Promise<RelayAccountState[]>
+  requestSnapshot(label?: string): Promise<string>
+  requestSaveAccount(address: string): Promise<string>
   disconnect(): void
   destroy(): void
 }
@@ -30,6 +37,8 @@ const AMMAN_UNABLE_ADD_LABELS = 'Unable to connect to send address labels'
 const AMMAN_UNABLE_FETCH_LABELS = 'Unable to connect to fetch address labels'
 const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
   'Unable to connect to fetch account states'
+const AMMAN_UNABLE_SNAPSHOT_ACCOUNTS = 'Unable to connect to snapshot accounts'
+const AMMAN_UNABLE_SAVE_ACCOUNT = 'Unable to connect to save account'
 const AMMAN_NOT_RUNNING_ERROR =
   ', is amman running with the relay enabled?\n' +
   'If not please start it as part of amman in a separate terminal via `amman start`\n' +
@@ -143,6 +152,63 @@ export class ConnectedAmmanClient implements AmmanClient {
     })
   }
 
+  async requestSnapshot(label?: string): Promise<string> {
+    logTrace('Requesting snapshot')
+    label ??= new Date().toJSON().replace(/[:.]/g, '_')
+
+    return new Promise<string>((resolve, reject) => {
+      const timeout = createTimeout(
+        2000,
+        new Error(AMMAN_UNABLE_SNAPSHOT_ACCOUNTS + AMMAN_NOT_RUNNING_ERROR),
+        reject
+      )
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(
+          MSG_RESPOND_SNAPSHOT,
+          ({ err, snapshotDir }: { err?: string; snapshotDir?: string }) => {
+            clearTimeout(timeout)
+            if (err != null) return reject(new Error(err))
+            assert(snapshotDir != null, 'expected either error or snapshotDir')
+            logDebug('Completed snapshot at %s', snapshotDir)
+            resolve(snapshotDir)
+          }
+        )
+        .emit(MSG_REQUEST_SNAPSHOT, label)
+    })
+  }
+
+  async requestSaveAccount(address: string): Promise<string> {
+    logTrace('Requesting to save account "%s"', address)
+
+    return new Promise<string>((resolve, reject) => {
+      const timeout = createTimeout(
+        2000,
+        new Error(AMMAN_UNABLE_SAVE_ACCOUNT + AMMAN_NOT_RUNNING_ERROR),
+        reject
+      )
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(
+          MSG_RESPOND_ACCOUNT_SAVE,
+          ({ err, accountPath }: { err?: string; accountPath?: string }) => {
+            clearTimeout(timeout)
+            if (err != null) return reject(new Error(err))
+            assert(accountPath != null, 'expected either error or accountPath')
+            logDebug('Completed saving account at %s', accountPath)
+            resolve(accountPath)
+          }
+        )
+        .emit(MSG_REQUEST_ACCOUNT_SAVE, address)
+    })
+  }
+
   /**
    * Disconnects this client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the opts.
@@ -187,6 +253,12 @@ export class DisconnectedAmmanClient implements AmmanClient {
   }
   fetchAccountStates(_address: string): Promise<RelayAccountState[]> {
     return Promise.resolve([])
+  }
+  requestSnapshot(_label?: string): Promise<string> {
+    return Promise.resolve('')
+  }
+  requestSaveAccount(_address: string): Promise<string> {
+    return Promise.resolve('')
   }
   disconnect() {}
   destroy() {}

@@ -37,6 +37,7 @@ export async function handleStartCommand(args: StartCommandArgs) {
     await initValidator(
       config.validator,
       config.relay,
+      config.snapshot,
       config.storage,
       config.assetsFolder,
       args.forceClone
