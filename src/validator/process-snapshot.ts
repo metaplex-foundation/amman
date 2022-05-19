@@ -1,7 +1,9 @@
+import { Keypair } from '@solana/web3.js'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { PersistedAccountInfo, SnapshotConfig } from '../assets'
 import { logInfo, logTrace } from '../utils'
+import { canAccess } from '../utils/fs'
 import { Account } from './types'
 
 export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
@@ -11,20 +13,25 @@ export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
     accountPath: string
   })[]
   snapshotAccounts: Account[]
+  keypairs: Map<string, Keypair>
 }> {
-  if (snapshotConfig.loadSnapshot == null) {
+  if (snapshotConfig.load == null) {
     return {
       snapshotArgs: [],
       persistedSnapshotAccountInfos: [],
       snapshotAccounts: [],
+      keypairs: new Map(),
     }
   }
 
   const fullPathToSnapshotDir = path.join(
     snapshotConfig.snapshotFolder,
-    snapshotConfig.loadSnapshot
+    snapshotConfig.load
   )
 
+  // -----------------
+  // Accounts
+  // -----------------
   const snapshotArgs = []
   const files = (await fs.readdir(fullPathToSnapshotDir)).filter(
     (x) => path.extname(x) === '.json'
@@ -48,15 +55,6 @@ export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
     })
   )
 
-  logInfo(
-    `Loading ${
-      persistedSnapshotAccountInfos.length
-    } accounts from snapshot at ${path.relative(
-      process.cwd(),
-      fullPathToSnapshotDir
-    )}`
-  )
-
   const snapshotAccounts: Account[] = []
   for (const {
     label,
@@ -76,9 +74,44 @@ export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
     })
   }
 
+  // -----------------
+  // Keypairs
+  // -----------------
+  const keypairsDir = path.join(fullPathToSnapshotDir, 'keypairs')
+  const keypairs: Map<string, Keypair> = (await canAccess(keypairsDir))
+    ? await loadKeypairs(keypairsDir)
+    : new Map()
+
+  logInfo(
+    `Loading ${persistedSnapshotAccountInfos.length} accounts and ${
+      keypairs.size
+    } keypairs from snapshot at ${path.relative(
+      process.cwd(),
+      fullPathToSnapshotDir
+    )}`
+  )
+
   return {
     snapshotArgs,
     persistedSnapshotAccountInfos,
     snapshotAccounts,
+    keypairs,
   }
+}
+
+async function loadKeypairs(
+  keypairsDir: string
+): Promise<Map<string, Keypair>> {
+  const promises = (await fs.readdir(keypairsDir))
+    .filter((x) => path.extname(x) === '.json')
+    .map(async function (x: string): Promise<[string, Keypair]> {
+      const label = path.basename(x, '.json')
+      const fullPath = path.join(keypairsDir, x)
+      const json = JSON.parse(await fs.readFile(fullPath, 'utf8'))
+      const data = Uint8Array.from(json)
+      const keypair = Keypair.fromSecretKey(data)
+      return [label, keypair]
+    })
+  const keypairsArr: [string, Keypair][] = await Promise.all(promises)
+  return new Map(keypairsArr)
 }

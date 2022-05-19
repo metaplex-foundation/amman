@@ -90,14 +90,14 @@ export class AccountPersister {
     addresses: string[],
     // Keyed pubkey:label
     accountLabels: Record<string, string>,
-    keypairs: Map<string, Keypair>,
+    keypairs: Map<string, { keypair: Keypair; id: string }>,
     maybeConnection?: Connection
   ) {
     const snapshotRoot = this.targetDir
     const connection = this._requireConnection(maybeConnection, 'take snapshot')
 
     const snapshotDir = path.join(snapshotRoot, snapshotLabel)
-    await ensureDir(snapshotDir)
+    await ensureDir(snapshotDir, true)
 
     await Promise.all(
       addresses.map(async (address) => {
@@ -115,9 +115,8 @@ export class AccountPersister {
         )
       })
     )
-    // TODO(thlorenz): Remove duplicates, preferring labeled ones
     await Promise.all(
-      Array.from(keypairs.entries()).map(async ([id, keypair]) => {
+      Array.from(keypairs.values()).map(async ({ keypair, id }) => {
         return this.saveKeypair(id, keypair, snapshotLabel)
       })
     )

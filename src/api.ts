@@ -9,6 +9,8 @@ import {
   AddressLabels,
   GenKeypair,
   GenLabeledKeypair,
+  LoadKeypair,
+  LoadOrGenKeypair,
 } from './diagnostics/address-labels'
 import {
   AmmanClient,
@@ -76,6 +78,22 @@ export class Amman {
    */
   genLabeledKeypair: GenLabeledKeypair = (label: string) =>
     this.addr.genLabeledKeypair(label)
+
+  /**
+   * Loads a labeled {@link Keypair} from the relay.
+   * If a {@link Keypair} with that label is not found or the relay is not connected, then it
+   * returns `undefined`.
+   */
+  loadKeypair: LoadKeypair = async (label) => this.addr.loadKeypair(label)
+
+  /**
+   * Loads a labeled {@link Keypair} from the relay.
+   * If a {@link Keypair} with that label is not found or the relay is not connected, then it
+   * returns a newly generated keypair.
+   *
+   */
+  loadOrGenKeypair: LoadOrGenKeypair = async (label) =>
+    this.addr.loadOrGenKeypair(label)
 
   /**
    * Drops the specified amount of tokens to the provided public key.

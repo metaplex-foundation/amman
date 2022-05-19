@@ -49,6 +49,11 @@ const commands = yargs(hideBin(process.argv))
           type: 'boolean',
           default: false,
         })
+        .option('load', {
+          alias: 'l',
+          describe: 'Label of the snapshot to load from snapshots folder',
+          type: 'string',
+        })
         .help('help', startHelp())
     }
   )

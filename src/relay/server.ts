@@ -25,6 +25,8 @@ import {
   MSG_RESPOND_SNAPSHOT,
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_STORE_KEYPAIR,
+  MSG_REQUEST_LOAD_KEYPAIR,
+  MSG_RESPOND_LOAD_KEYPAIR,
 } from './consts'
 import { AMMAN_VERSION } from './types'
 
@@ -62,8 +64,6 @@ class RelayServer {
     const subscribedAccountStates = new Set<string>()
     socket
       .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
-        // TODO(thlorenz): look for keypairs that match the public keys
-        // and update their labels
         if (logTrace.enabled) {
           const labelCount = Object.keys(labels).length
           logTrace(`Got ${labelCount} labels, broadcasting ...`)
@@ -71,6 +71,7 @@ class RelayServer {
         for (const [key, val] of Object.entries(labels)) {
           this.allKnownLabels[key] = val
         }
+        this.accountStates.labelKeypairs(this.allKnownLabels)
         socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
         socket.emit(ACK_UPDATE_ADDRESS_LABELS)
       })
@@ -132,6 +133,10 @@ class RelayServer {
           socket.emit(MSG_RESPOND_STORE_KEYPAIR, err.toString())
         }
       })
+      .on(MSG_REQUEST_LOAD_KEYPAIR, (id: string) => {
+        const keypair = this.accountStates.getKeypairById(id)
+        socket.emit(MSG_RESPOND_LOAD_KEYPAIR, keypair?.secretKey)
+      })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
@@ -173,6 +178,7 @@ export class Relay {
     programs: Program[],
     accounts: Account[],
     loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    loadedKeypairs: Map<string, Keypair>,
     accountsFolder: string,
     snapshotRoot: string,
     killRunning: boolean = true
@@ -191,7 +197,8 @@ export class Relay {
     AccountStates.createInstance(
       accountProvider.connection,
       accountProvider,
-      loadedAccountInfos
+      loadedAccountInfos,
+      loadedKeypairs
     )
     const accountPersister = new AccountPersister(
       accountsFolder,

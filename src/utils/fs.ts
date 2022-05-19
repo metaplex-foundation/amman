@@ -64,7 +64,7 @@ export function ensureDirSync(dir: string) {
  * IF the directory doesn't exist it attempts to create it recursively.
  * @private
  */
-export async function ensureDir(dir: string) {
+export async function ensureDir(dir: string, rmrf = false) {
   if (!(await canAccess(dir))) {
     await fs.promises.mkdir(dir, { recursive: true })
     return
@@ -73,6 +73,11 @@ export async function ensureDir(dir: string) {
   const stat = await fs.promises.stat(dir)
   if (!stat.isDirectory()) {
     throw new Error(`'${dir}' is not a directory`)
+  }
+
+  if (rmrf) {
+    await fs.promises.rmdir(dir, { recursive: true })
+    await fs.promises.mkdir(dir, { recursive: true })
   }
 }
 

@@ -24,6 +24,14 @@ export type GenKeypair = () => [PublicKey, Keypair]
 export type GenLabeledKeypair = (
   label: string
 ) => Promise<[PublicKey, Keypair, string]>
+/** @private */
+export type LoadKeypair = (
+  label: string
+) => Promise<[PublicKey, Keypair] | undefined>
+/** @private */
+export type LoadOrGenKeypair = (
+  label: string
+) => Promise<[PublicKey, Keypair, string]>
 
 /**
  * Manages address labels in order to improve logging and provide them to tools
@@ -234,6 +242,29 @@ export class AddressLabels {
     const id = labelUsed ?? tuple[0].toBase58()
     await this.storeKeypair(tuple[1], id)
     return [...tuple, id]
+  }
+
+  /**
+   * Loads a labeled {@link Keypair} from the relay.
+   * If a {@link Keypair} with that label is not found or the relay is not connected, then it
+   * returns `undefined`.
+   */
+  loadKeypair: LoadKeypair = async (label) => {
+    const kp = await this.ammanClient.requestLoadKeypair(label)
+    return kp != null ? [kp.publicKey, kp] : undefined
+  }
+
+  /**
+   * Loads a labeled {@link Keypair} from the relay.
+   * If a {@link Keypair} with that label is not found or the relay is not connected, then it
+   * returns a newly generated keypair.
+   *
+   */
+  loadOrGenKeypair: LoadOrGenKeypair = async (label) => {
+    const loaded = await this.ammanClient.requestLoadKeypair(label)
+    return loaded != null
+      ? [loaded.publicKey, loaded, label]
+      : this.genLabeledKeypair(label)
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Keypair } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import io, { Socket } from 'socket.io-client'
-import { logDebug, logTrace } from '../utils'
+import { logDebug, logError, logTrace } from '../utils'
 import {
   ACK_UPDATE_ADDRESS_LABELS,
   MSG_CLEAR_ADDRESS_LABELS,
@@ -17,6 +17,8 @@ import {
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_STORE_KEYPAIR,
   MSG_REQUEST_STORE_KEYPAIR,
+  MSG_RESPOND_LOAD_KEYPAIR,
+  MSG_REQUEST_LOAD_KEYPAIR,
 } from './consts'
 import { createTimeout } from './timeout'
 import { RelayAccountState } from './types'
@@ -31,6 +33,7 @@ export type AmmanClient = {
   requestSnapshot(label?: string): Promise<string>
   requestSaveAccount(address: string): Promise<string>
   requestStoreKeypair(label: string, keypair: Keypair): Promise<void>
+  requestLoadKeypair(id: string): Promise<Keypair | undefined>
   disconnect(): void
   destroy(): void
 }
@@ -44,6 +47,7 @@ const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
 const AMMAN_UNABLE_SNAPSHOT_ACCOUNTS = 'Unable to connect to snapshot accounts'
 const AMMAN_UNABLE_SAVE_ACCOUNT = 'Unable to connect to save account'
 const AMMAN_UNABLE_STORE_KEYPAIR = 'Unable to connect to store keypair'
+const AMMAN_UNABLE_LOAD_KEYPAIR = 'Unable to connect to load keypair'
 const AMMAN_NOT_RUNNING_ERROR =
   ', is amman running with the relay enabled?\n' +
   'If not please start it as part of amman in a separate terminal via `amman start`\n' +
@@ -240,6 +244,35 @@ export class ConnectedAmmanClient implements AmmanClient {
     })
   }
 
+  async requestLoadKeypair(id: string): Promise<Keypair | undefined> {
+    logTrace('Requesting to load keypair with id "%s"', id)
+    return new Promise<Keypair | undefined>((resolve, reject) => {
+      const timeout = createTimeout(
+        2000,
+        new Error(AMMAN_UNABLE_LOAD_KEYPAIR + AMMAN_NOT_RUNNING_ERROR),
+        reject
+      )
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(MSG_RESPOND_LOAD_KEYPAIR, (secretKey: Uint8Array | undefined) => {
+          clearTimeout(timeout)
+          try {
+            resolve(
+              secretKey != null ? Keypair.fromSecretKey(secretKey) : undefined
+            )
+          } catch (err) {
+            logError('Failed to load keypair with id "%s"', id)
+            logError(err)
+            resolve(undefined)
+          }
+        })
+        .emit(MSG_REQUEST_LOAD_KEYPAIR, id)
+    })
+  }
+
   /**
    * Disconnects this client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the opts.
@@ -293,6 +326,10 @@ export class DisconnectedAmmanClient implements AmmanClient {
   }
   requestStoreKeypair(_label: string, _keypair: Keypair): Promise<void> {
     return Promise.resolve()
+  }
+
+  requestLoadKeypair(id: string): Promise<Keypair | undefined> {
+    return Promise.resolve(undefined)
   }
   disconnect() {}
   destroy() {}

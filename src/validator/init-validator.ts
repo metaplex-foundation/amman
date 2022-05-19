@@ -126,10 +126,14 @@ export async function initValidator(
   args = [...args, ...accountsArgs]
 
   // -----------------
-  // Add Snapshotted Accounts
+  // Add Snapshot
   // -----------------
-  const { snapshotArgs, persistedSnapshotAccountInfos, snapshotAccounts } =
-    await processSnapshot(snapshotConfig)
+  const {
+    snapshotArgs,
+    persistedSnapshotAccountInfos,
+    snapshotAccounts,
+    keypairs,
+  } = await processSnapshot(snapshotConfig)
   args = [...args, ...snapshotArgs]
 
   // -----------------
@@ -169,6 +173,7 @@ export async function initValidator(
       programs,
       [...accounts, ...snapshotAccounts],
       accountInfos,
+      keypairs,
       accountsFolder,
       snapshotConfig.snapshotFolder,
       killRunningRelay

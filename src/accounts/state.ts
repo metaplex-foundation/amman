@@ -73,17 +73,23 @@ class AccountStateTracker {
 
 export class AccountStates extends EventEmitter {
   readonly states: Map<string, AccountStateTracker> = new Map()
-  readonly keypairs: Map<string, Keypair> = new Map()
+  // address:{ keypair, id (label) }
+  readonly keypairs: Map<string, { keypair: Keypair; id: string }> = new Map()
 
   private constructor(
     readonly connection: Connection,
     readonly accountProvider: AccountProvider,
-    readonly loadedAccountInfos: Map<string, AccountInfo<Buffer>>
+    readonly loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    // label:Keypair
+    readonly loadedKeypairs: Map<string, Keypair>
   ) {
     super()
     this.connection.onLogs('all', this._onLog, 'confirmed')
     for (const [address, info] of this.loadedAccountInfos) {
       this.update(address, 0, info)
+    }
+    for (const [label, keypair] of this.loadedKeypairs) {
+      this.keypairs.set(keypair.publicKey.toBase58(), { keypair, id: label })
     }
   }
 
@@ -136,11 +142,32 @@ export class AccountStates extends EventEmitter {
   // Keypairs
   // -----------------
   storeKeypair(id: string, keypair: Keypair) {
-    this.keypairs.set(id, keypair)
+    this.keypairs.set(keypair.publicKey.toBase58(), { keypair, id })
+  }
+
+  labelKeypairs(
+    // Keyed pubkey:label
+    labels: Record<string, string>
+  ) {
+    for (const [key, label] of Object.entries(labels)) {
+      const entry = this.keypairs.get(key)
+      if (entry == null) continue
+      this.keypairs.set(key, { keypair: entry.keypair, id: label })
+    }
   }
 
   get allKeypairs() {
     return this.keypairs
+  }
+
+  getKeypairById(keypairId: string) {
+    for (const { keypair, id } of this.keypairs.values()) {
+      if (id === keypairId) return keypair
+    }
+  }
+
+  getKeypairByAddress(address: string) {
+    return this.keypairs.get(address)?.keypair
   }
 
   private _onLog = async (logs: Logs, ctx: Context) => {
@@ -169,13 +196,15 @@ export class AccountStates extends EventEmitter {
   static createInstance(
     connection: Connection,
     accountProvider: AccountProvider,
-    loadedAccountInfos: Map<string, AccountInfo<Buffer>>
+    loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    loadedKeypairs: Map<string, Keypair>
   ) {
     if (AccountStates._instance != null) return
     AccountStates._instance = new AccountStates(
       connection,
       accountProvider,
-      loadedAccountInfos
+      loadedAccountInfos,
+      loadedKeypairs
     )
     return AccountStates._instance
   }
