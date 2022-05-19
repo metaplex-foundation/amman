@@ -1,3 +1,4 @@
+import { Keypair } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import io, { Socket } from 'socket.io-client'
 import { logDebug, logTrace } from '../utils'
@@ -14,6 +15,8 @@ import {
   MSG_REQUEST_SNAPSHOT,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_SAVE,
+  MSG_RESPOND_STORE_KEYPAIR,
+  MSG_REQUEST_STORE_KEYPAIR,
 } from './consts'
 import { createTimeout } from './timeout'
 import { RelayAccountState } from './types'
@@ -27,6 +30,7 @@ export type AmmanClient = {
   fetchAccountStates(address: string): Promise<RelayAccountState[]>
   requestSnapshot(label?: string): Promise<string>
   requestSaveAccount(address: string): Promise<string>
+  requestStoreKeypair(label: string, keypair: Keypair): Promise<void>
   disconnect(): void
   destroy(): void
 }
@@ -39,6 +43,7 @@ const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
   'Unable to connect to fetch account states'
 const AMMAN_UNABLE_SNAPSHOT_ACCOUNTS = 'Unable to connect to snapshot accounts'
 const AMMAN_UNABLE_SAVE_ACCOUNT = 'Unable to connect to save account'
+const AMMAN_UNABLE_STORE_KEYPAIR = 'Unable to connect to store keypair'
 const AMMAN_NOT_RUNNING_ERROR =
   ', is amman running with the relay enabled?\n' +
   'If not please start it as part of amman in a separate terminal via `amman start`\n' +
@@ -209,6 +214,32 @@ export class ConnectedAmmanClient implements AmmanClient {
     })
   }
 
+  async requestStoreKeypair(id: string, keypair: Keypair): Promise<void> {
+    logTrace(
+      'Requesting to store keypair "%s" (%s)',
+      id,
+      keypair.publicKey.toBuffer()
+    )
+    return new Promise<void>((resolve, reject) => {
+      const timeout = createTimeout(
+        2000,
+        new Error(AMMAN_UNABLE_STORE_KEYPAIR + AMMAN_NOT_RUNNING_ERROR),
+        reject
+      )
+      this.socket
+        .on('error', (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
+        .on(MSG_RESPOND_STORE_KEYPAIR, (err?: any) => {
+          clearTimeout(timeout)
+          if (err != null) return reject(new Error(err))
+          resolve()
+        })
+        .emit(MSG_REQUEST_STORE_KEYPAIR, id, keypair.secretKey)
+    })
+  }
+
   /**
    * Disconnects this client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the opts.
@@ -259,6 +290,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
   }
   requestSaveAccount(_address: string): Promise<string> {
     return Promise.resolve('')
+  }
+  requestStoreKeypair(_label: string, _keypair: Keypair): Promise<void> {
+    return Promise.resolve()
   }
   disconnect() {}
   destroy() {}

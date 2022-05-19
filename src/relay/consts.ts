@@ -33,6 +33,11 @@ export const MSG_REQUEST_ACCOUNT_SAVE = 'request:account-save'
 export const MSG_RESPOND_ACCOUNT_SAVE = 'respond:account-save'
 
 /** @private */
+export const MSG_REQUEST_STORE_KEYPAIR = 'request:store-keypair'
+/** @private */
+export const MSG_RESPOND_STORE_KEYPAIR = 'respond:store-keypair'
+
+/** @private */
 export const MSG_REQUEST_AMMAN_VERSION = 'request:relay-version'
 /** @private */
 export const MSG_RESPOND_AMMAN_VERSION = 'respond:relay-version'

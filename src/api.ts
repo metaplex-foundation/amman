@@ -108,6 +108,7 @@ export class Amman {
     payer: Keypair,
     errorResolver?: ErrorResolver
   ) {
+    this.addr.storeKeypair(payer, 'payer')
     this.addr.addLabelIfUnknown('payer', payer.publicKey)
     return new PayerTransactionHandler(
       connection,

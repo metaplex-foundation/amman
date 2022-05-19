@@ -1,4 +1,4 @@
-import { AccountInfo, PublicKey } from '@solana/web3.js'
+import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
@@ -23,6 +23,8 @@ import {
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_REQUEST_SNAPSHOT,
   MSG_RESPOND_SNAPSHOT,
+  MSG_REQUEST_STORE_KEYPAIR,
+  MSG_RESPOND_STORE_KEYPAIR,
 } from './consts'
 import { AMMAN_VERSION } from './types'
 
@@ -60,6 +62,8 @@ class RelayServer {
     const subscribedAccountStates = new Set<string>()
     socket
       .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
+        // TODO(thlorenz): look for keypairs that match the public keys
+        // and update their labels
         if (logTrace.enabled) {
           const labelCount = Object.keys(labels).length
           logTrace(`Got ${labelCount} labels, broadcasting ...`)
@@ -111,11 +115,21 @@ class RelayServer {
           const snapshotDir = await this.snapshotPersister.snapshot(
             label,
             addresses,
-            this.allKnownLabels
+            this.allKnownLabels,
+            this.accountStates.allKeypairs
           )
           socket.emit(MSG_RESPOND_SNAPSHOT, { snapshotDir })
         } catch (err: any) {
           socket.emit(MSG_RESPOND_SNAPSHOT, { err: err.toString() })
+        }
+      })
+      .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {
+        try {
+          const keypair = Keypair.fromSecretKey(secretKey)
+          this.accountStates.storeKeypair(id, keypair)
+          socket.emit(MSG_RESPOND_STORE_KEYPAIR)
+        } catch (err: any) {
+          socket.emit(MSG_RESPOND_STORE_KEYPAIR, err.toString())
         }
       })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {

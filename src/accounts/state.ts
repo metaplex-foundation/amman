@@ -2,6 +2,7 @@ import {
   AccountInfo,
   Connection,
   Context,
+  Keypair,
   Logs,
   PublicKey,
 } from '@solana/web3.js'
@@ -72,6 +73,7 @@ class AccountStateTracker {
 
 export class AccountStates extends EventEmitter {
   readonly states: Map<string, AccountStateTracker> = new Map()
+  readonly keypairs: Map<string, Keypair> = new Map()
 
   private constructor(
     readonly connection: Connection,
@@ -85,6 +87,9 @@ export class AccountStates extends EventEmitter {
     }
   }
 
+  // -----------------
+  // Account States
+  // -----------------
   async update(
     address: string,
     slot: number,
@@ -125,6 +130,17 @@ export class AccountStates extends EventEmitter {
 
   allAccountAddresses() {
     return Array.from(this.states.keys())
+  }
+
+  // -----------------
+  // Keypairs
+  // -----------------
+  storeKeypair(id: string, keypair: Keypair) {
+    this.keypairs.set(id, keypair)
+  }
+
+  get allKeypairs() {
+    return this.keypairs
   }
 
   private _onLog = async (logs: Logs, ctx: Context) => {

@@ -12,13 +12,18 @@ import { mapLabel } from './address-label-mapper'
 import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
 
 /** @private */
-export type AddLabel = (label: string, key: KeyLike) => Promise<AddressLabels>
+export type AddLabel = (
+  label: string,
+  key: KeyLike
+) => Promise<string | undefined>
 /** @private */
 export type AddLabels = (labels: any) => Promise<AddressLabels>
 /** @private */
 export type GenKeypair = () => [PublicKey, Keypair]
 /** @private */
-export type GenLabeledKeypair = (label: string) => Promise<[PublicKey, Keypair]>
+export type GenLabeledKeypair = (
+  label: string
+) => Promise<[PublicKey, Keypair, string]>
 
 /**
  * Manages address labels in order to improve logging and provide them to tools
@@ -66,7 +71,7 @@ export class AddressLabels {
    */
   addLabel: AddLabel = async (label, key) => {
     const keyString = publicKeyString(key)
-    if (!isValidSolanaAddress(keyString)) return this
+    if (!isValidSolanaAddress(keyString)) return
 
     label = await this._nonCollidingLabel(mapLabel(label), keyString)
     this.logLabel(`🔑 ${label}: ${keyString}`)
@@ -74,7 +79,7 @@ export class AddressLabels {
     this.knownLabels[keyString] = label
 
     await this.ammanClient.addAddressLabels({ [keyString]: label })
-    return this
+    return label
   }
 
   /**
@@ -117,7 +122,7 @@ export class AddressLabels {
       label = await this._nonCollidingLabel(mapLabel(label), keyString)
       await this.addLabel(label, keyString)
     }
-    return this
+    return label
   }
 
   /**
@@ -194,6 +199,10 @@ export class AddressLabels {
     return this.knownLabels
   }
 
+  // -----------------
+  // Keypairs
+  // -----------------
+
   /**
    * Generates a keypair and returns its public key and the keypair itself as a
    * Tuple.
@@ -203,6 +212,11 @@ export class AddressLabels {
    */
   genKeypair: GenKeypair = () => {
     const kp = Keypair.generate()
+    // NOTE: that this may fail to reach the relay before the app exists
+    this.storeKeypair(kp).catch((err) => {
+      logError('Ran into some issue trying to store the generated keypair')
+      logError(err)
+    })
     return [kp.publicKey, kp]
   }
 
@@ -216,8 +230,22 @@ export class AddressLabels {
    */
   genLabeledKeypair: GenLabeledKeypair = async (label) => {
     const tuple = this.genKeypair()
-    await this.addLabel(label, tuple[0])
-    return tuple
+    const labelUsed = await this.addLabel(label, tuple[0])
+    const id = labelUsed ?? tuple[0].toBase58()
+    await this.storeKeypair(tuple[1], id)
+    return [...tuple, id]
+  }
+
+  /**
+   * Stores the keypair in the relay using the provided label or public key as id.
+   *
+   * @private
+   */
+  storeKeypair(keypair: Keypair, label?: string) {
+    return this.ammanClient.requestStoreKeypair(
+      label ?? keypair.publicKey.toBase58(),
+      keypair
+    )
   }
 
   /**

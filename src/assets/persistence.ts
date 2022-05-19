@@ -1,4 +1,4 @@
-import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
+import { AccountInfo, Connection, Keypair, PublicKey } from '@solana/web3.js'
 import path from 'path'
 import { promises as fs } from 'fs'
 import { ensureDir } from '../utils/fs'
@@ -19,6 +19,9 @@ export type PersistedAccountInfo = {
 export class AccountPersister {
   constructor(readonly targetDir: string, readonly connection?: Connection) {}
 
+  // -----------------
+  // Account Infos
+  // -----------------
   async saveAccountInfo(
     address: PublicKey,
     accountInfo: AccountInfo<Buffer>,
@@ -62,11 +65,32 @@ export class AccountPersister {
     return this.saveAccountInfo(address, accountInfo)
   }
 
+  // -----------------
+  // Keypairs
+  // -----------------
+  async saveKeypair(id: string, keypair: Keypair, subdir?: string) {
+    const fulldir = subdir
+      ? path.join(this.targetDir, subdir, 'keypairs')
+      : path.join(this.targetDir, 'keypairs')
+    await ensureDir(fulldir)
+    const keypairPath = path.join(fulldir, `${id}.json`)
+
+    await fs.writeFile(
+      keypairPath,
+      JSON.stringify(Buffer.from(keypair.secretKey).toJSON().data)
+    )
+    return keypairPath
+  }
+
+  // -----------------
+  // Snapshot
+  // -----------------
   async snapshot(
     snapshotLabel: string,
     addresses: string[],
     // Keyed pubkey:label
     accountLabels: Record<string, string>,
+    keypairs: Map<string, Keypair>,
     maybeConnection?: Connection
   ) {
     const snapshotRoot = this.targetDir
@@ -89,6 +113,12 @@ export class AccountPersister {
           snapshotLabel,
           accountLabels[address]
         )
+      })
+    )
+    // TODO(thlorenz): Remove duplicates, preferring labeled ones
+    await Promise.all(
+      Array.from(keypairs.entries()).map(async ([id, keypair]) => {
+        return this.saveKeypair(id, keypair, snapshotLabel)
       })
     )
 
