@@ -40,11 +40,11 @@ export class AmmanMockStorageDriver extends StorageDriver {
   constructor(
     metaplex: Metaplex,
     readonly storageId: string,
-    readonly uploadRoot: string,
     readonly costPerByte: BN,
     readonly logInfo: (...data: any[]) => void,
     readonly logDebug: (...data: any[]) => void,
-    readonly logTrace: (...data: any[]) => void
+    readonly logTrace: (...data: any[]) => void,
+    readonly uploadRoot?: string
   ) {
     super(metaplex)
     assertValidPathSegmentWithoutSpaces(
@@ -54,10 +54,6 @@ export class AmmanMockStorageDriver extends StorageDriver {
     this.storageDir = path.join(AMMAN_STORAGE_ROOT, storageId)
 
     ensureDirSync(this.storageDir)
-    assert(
-      canAccessSync(this.uploadRoot),
-      `uploadRoot '${uploadRoot}' must be accessible, but is not`
-    )
 
     this.baseUrl = AmmanMockStorageDriver.getStorageUri(storageId)
     this.logInfo(`Amman Storage Driver with '${storageId}' initialized`)
@@ -70,7 +66,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
 
   static readonly create = (
     storageId: string,
-    uploadRoot: string,
+    uploadRoot?: string,
     options: AmmanMockStorageDriverOptions = {}
   ): MetaplexPlugin => {
     const {
@@ -81,15 +77,15 @@ export class AmmanMockStorageDriver extends StorageDriver {
     } = options
     return {
       install: (metaplex: Metaplex) =>
-        metaplex.setStorage(
+        metaplex.setStorageDriver(
           new AmmanMockStorageDriver(
             metaplex,
             storageId,
-            uploadRoot,
             new BN(costPerByte),
             logInfo,
             logDebug,
-            logTrace
+            logTrace,
+            uploadRoot
           )
         ),
     }
@@ -112,9 +108,17 @@ export class AmmanMockStorageDriver extends StorageDriver {
     const fullDst = path.join(this.storageDir, resourceUri)
 
     // JSON files include inline metadata instead of referencing an image to upload
-    if (file.contentType === 'application/json') {
+    if (file.contentType === 'application/json' || file.buffer.byteLength > 0) {
       await fs.writeFile(fullDst, file.toBuffer())
     } else {
+      assert(
+        this.uploadRoot != null,
+        'uploadRoot needs to be set to load from file system'
+      )
+      assert(
+        canAccessSync(this.uploadRoot),
+        `uploadRoot '${this.uploadRoot}' must be accessible, but is not`
+      )
       // Copy from upload dir into storage
       const fullSrc = path.join(this.uploadRoot, file.fileName)
       await fs.copyFile(fullSrc, fullDst)
