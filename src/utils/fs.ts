@@ -76,7 +76,7 @@ export async function ensureDir(dir: string, rmrf = false) {
   }
 
   if (rmrf) {
-    await fs.promises.rmdir(dir, { recursive: true })
+    await fs.promises.rm(dir, { recursive: true })
     await fs.promises.mkdir(dir, { recursive: true })
   }
 }

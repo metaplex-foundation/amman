@@ -3,15 +3,13 @@ import http, { Server } from 'http'
 import path from 'path'
 import { AMMAN_STORAGE_PORT, AMMAN_STORAGE_ROOT, StorageConfig } from '.'
 import { logDebug, logError, logTrace } from '../utils'
-import { canRead, ensureDirCleaned, ensureDirSync } from '../utils/fs'
+import { canRead, ensureDir } from '../utils/fs'
 import { DEFAULT_STORAGE_CONFIG } from './types'
 
 export class MockStorageServer {
   server?: Server
 
-  constructor(readonly storageDir: string) {
-    ensureDirSync(this.storageDir)
-  }
+  private constructor(readonly storageDir: string) {}
 
   static _instance: MockStorageServer | undefined
   static get existingInstance() {
@@ -24,10 +22,7 @@ export class MockStorageServer {
         ...storageConfig,
       }
       const storageDir = path.join(AMMAN_STORAGE_ROOT, storageId)
-      if (clearOnStart) {
-        await ensureDirCleaned(storageDir)
-        logDebug(`MockStorageServer cleared ${storageDir}`)
-      }
+      await ensureDir(storageDir, clearOnStart)
       return (MockStorageServer._instance = new MockStorageServer(storageDir))
     } else {
       throw new Error('MockStorageServer instance can only be created once')
