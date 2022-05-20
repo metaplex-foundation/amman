@@ -71,7 +71,6 @@
     "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/deep-diff": "^1.0.1",
-    "@types/deep-extend": "^0.4.32",
     "@types/diff": "^5.0.2",
     "@types/node": "^16.11.12",
     "@types/numeral": "^2.0.2",
