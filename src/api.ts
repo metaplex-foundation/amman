@@ -158,9 +158,8 @@ export class Amman {
    */
   createMockStorageDriver = (
     storageId: string,
-    uploadRoot: string,
     options?: AmmanMockStorageDriverOptions
-  ) => AmmanMockStorageDriver.create(storageId, uploadRoot, options)
+  ) => AmmanMockStorageDriver.create(storageId, options)
 
   /**
    * Disconnects the amman relay client and allows the app to shut down.

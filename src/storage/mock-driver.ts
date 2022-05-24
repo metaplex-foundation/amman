@@ -13,7 +13,7 @@ import {
   logInfo as ammanLogInfo,
   logDebug as ammanLogDebug,
   logTrace as ammanLogTrace,
-} from '../utils'
+} from '../utils/log'
 import {
   assertValidPathSegmentWithoutSpaces,
   canAccessSync,
@@ -25,6 +25,7 @@ import { promises as fs } from 'fs'
 const DEFAULT_COST_PER_BYTE = new BN(1)
 
 export type AmmanMockStorageDriverOptions = {
+  uploadRoot?: string
   costPerByte?: BN | number
   logInfo?: (...data: any[]) => void
   logDebug?: (...data: any[]) => void
@@ -66,7 +67,6 @@ export class AmmanMockStorageDriver extends StorageDriver {
 
   static readonly create = (
     storageId: string,
-    uploadRoot?: string,
     options: AmmanMockStorageDriverOptions = {}
   ): MetaplexPlugin => {
     const {
@@ -74,9 +74,10 @@ export class AmmanMockStorageDriver extends StorageDriver {
       logInfo = ammanLogInfo,
       logDebug = ammanLogDebug,
       logTrace = ammanLogTrace,
+      uploadRoot,
     } = options
     return {
-      install: (metaplex: Metaplex) =>
+      install: (metaplex: /* Metaplex */ any) =>
         metaplex.setStorageDriver(
           new AmmanMockStorageDriver(
             metaplex,
@@ -113,7 +114,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
     } else {
       assert(
         this.uploadRoot != null,
-        'uploadRoot needs to be set to load from file system'
+        'uploadRoot needs to be set in options to load from file system'
       )
       assert(
         canAccessSync(this.uploadRoot),
