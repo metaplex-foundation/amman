@@ -6,10 +6,13 @@ import http, {
   STATUS_CODES,
 } from 'http'
 import path from 'path'
-import { AMMAN_STORAGE_PORT, AMMAN_STORAGE_ROOT, StorageConfig } from '.'
+import { AMMAN_STORAGE_PORT, StorageConfig } from '.'
 import { scopedLog } from '../utils/log'
 import { canRead, ensureDir } from '../utils/fs'
 import { DEFAULT_STORAGE_CONFIG } from './types'
+import { tmpdir } from 'os'
+
+export const AMMAN_STORAGE_ROOT = path.join(tmpdir(), 'amman-storage')
 
 const logError = scopedLog('error', 'mock-storage')
 const logDebug = scopedLog('debug', 'mock-storage')

@@ -15,17 +15,10 @@ import {
   logTrace as ammanLogTrace,
   logError,
 } from '../utils/log'
-import {
-  assertValidPathSegmentWithoutSpaces,
-  canAccessSync,
-  ensureDirSync,
-} from '../utils/fs'
-import {
-  AMMAN_STORAGE_ROOT,
-  AMMAN_STORAGE_UPLOAD_URI,
-  AMMAN_STORAGE_URI,
-} from './consts'
+import { canAccessSync } from '../utils/fs'
+import { AMMAN_STORAGE_UPLOAD_URI, AMMAN_STORAGE_URI } from './consts'
 import { promises as fs } from 'fs'
+import { assertValidPathSegmentWithoutSpaces } from '../utils/path'
 
 const DEFAULT_COST_PER_BYTE = new BN(1)
 
@@ -42,7 +35,6 @@ export class AmmanMockStorageDriver extends StorageDriver {
 
   readonly baseResourceUrl: string
   readonly baseUploadUrl: string
-  readonly storageDir: string
 
   constructor(
     metaplex: Metaplex,
@@ -58,16 +50,12 @@ export class AmmanMockStorageDriver extends StorageDriver {
       storageId,
       'please select a different storage id'
     )
-    this.storageDir = path.join(AMMAN_STORAGE_ROOT, storageId)
-
-    ensureDirSync(this.storageDir)
 
     this.baseResourceUrl = AmmanMockStorageDriver.getStorageUri(storageId)
     this.baseUploadUrl = AmmanMockStorageDriver.getUploadToStorageUri(storageId)
     this.logInfo(`Amman Storage Driver with '${storageId}' initialized`)
     this.logDebug({
       uploadRoot,
-      storageDir: this.storageDir,
       baseUrl: this.baseResourceUrl,
     })
   }
@@ -117,8 +105,6 @@ export class AmmanMockStorageDriver extends StorageDriver {
     const uploadUri = `${this.baseUploadUrl}/${resourceName}`
     const resourceUri = `${this.baseResourceUrl}/${resourceName}`
 
-    const fullDst = path.join(this.storageDir, resourceName)
-
     let buf: Buffer
     // JSON files include inline metadata instead of referencing an image to upload
     if (file.contentType === 'application/json' || file.buffer.byteLength > 0) {
@@ -138,9 +124,7 @@ export class AmmanMockStorageDriver extends StorageDriver {
     }
     await uploadBuffer(uploadUri, buf)
 
-    this.logDebug(
-      `Uploaded ${file.displayName}:${file.uniqueName} to ${fullDst}`
-    )
+    this.logDebug(`Uploaded ${file.displayName}:${file.uniqueName}`)
 
     this.cache[resourceUri] = file
 

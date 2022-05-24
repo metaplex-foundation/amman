@@ -102,8 +102,3 @@ export async function ensureDirCleaned(dir: string) {
   if (!canRead(dir)) return
   return fs.promises.rm(dir, { recursive: true })
 }
-
-/** @private */
-export function assertValidPathSegmentWithoutSpaces(p: string, msg?: string) {
-  assert(/^[a-zA-Z0-9_-]+$/.test(p), `Invalid path segment: ${p}. ${msg ?? ''}`)
-}
