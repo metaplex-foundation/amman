@@ -228,13 +228,13 @@ export function printableAccount(
         'words' in val &&
         'red' in val)
     ) {
-      prettified[key] = new BN(val).toString()
+      prettified[key] = new BN(val).toNumber()
     } else if (isKeyLike(val)) {
       prettified[key] = publicKeyString(val)
     } else if (Array.isArray(val)) {
       prettified[key] = val.map((val) => JSON.stringify(printableAccount(val)))
     } else if (typeof val === 'object') {
-      prettified[key] = JSON.stringify(printableAccount(val))
+      prettified[key] = JSON.stringify(printableAccount(val), null, 2)
     } else {
       prettified[key] = val
     }
