@@ -12,3 +12,7 @@ export const logError = logErrorDebug.enabled
 export const logInfo = logInfoDebug.enabled
   ? logInfoDebug
   : console.log.bind(console)
+
+export function scopedLog(level: string, scope: string) {
+  return debug(`amman:${scope}:${level}`)
+}
