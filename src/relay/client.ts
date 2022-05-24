@@ -11,8 +11,8 @@ import {
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_REQUEST_ACCOUNT_STATES,
-  MSG_RESPOND_SNAPSHOT,
-  MSG_REQUEST_SNAPSHOT,
+  MSG_RESPOND_SNAPSHOT_SAVE,
+  MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_STORE_KEYPAIR,
@@ -177,7 +177,7 @@ export class ConnectedAmmanClient implements AmmanClient {
           reject(err)
         })
         .on(
-          MSG_RESPOND_SNAPSHOT,
+          MSG_RESPOND_SNAPSHOT_SAVE,
           ({ err, snapshotDir }: { err?: string; snapshotDir?: string }) => {
             clearTimeout(timeout)
             if (err != null) return reject(new Error(err))
@@ -186,7 +186,7 @@ export class ConnectedAmmanClient implements AmmanClient {
             resolve(snapshotDir)
           }
         )
-        .emit(MSG_REQUEST_SNAPSHOT, label)
+        .emit(MSG_REQUEST_SNAPSHOT_SAVE, label)
     })
   }
 

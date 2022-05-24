@@ -23,9 +23,9 @@ export const MSG_REQUEST_ACCOUNT_STATES = 'request:account-states'
 export const MSG_RESPOND_ACCOUNT_STATES = 'respond:account-states'
 
 /** @private */
-export const MSG_REQUEST_SNAPSHOT = 'request:snapshot'
+export const MSG_REQUEST_SNAPSHOT_SAVE = 'request:snapshot-save'
 /** @private */
-export const MSG_RESPOND_SNAPSHOT = 'respond:snapshot'
+export const MSG_RESPOND_SNAPSHOT_SAVE = 'respond:snapshot-save'
 
 /** @private */
 export const MSG_REQUEST_ACCOUNT_SAVE = 'request:account-save'

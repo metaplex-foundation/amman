@@ -21,8 +21,8 @@ import {
   MSG_RESPOND_AMMAN_VERSION,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_SAVE,
-  MSG_REQUEST_SNAPSHOT,
-  MSG_RESPOND_SNAPSHOT,
+  MSG_REQUEST_SNAPSHOT_SAVE,
+  MSG_RESPOND_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_STORE_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
@@ -110,7 +110,7 @@ class RelayServer {
           socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, { err })
         }
       })
-      .on(MSG_REQUEST_SNAPSHOT, async (label: string) => {
+      .on(MSG_REQUEST_SNAPSHOT_SAVE, async (label: string) => {
         try {
           const addresses = this.accountStates.allAccountAddresses()
           const snapshotDir = await this.snapshotPersister.snapshot(
@@ -119,9 +119,9 @@ class RelayServer {
             this.allKnownLabels,
             this.accountStates.allKeypairs
           )
-          socket.emit(MSG_RESPOND_SNAPSHOT, { snapshotDir })
+          socket.emit(MSG_RESPOND_SNAPSHOT_SAVE, { snapshotDir })
         } catch (err: any) {
-          socket.emit(MSG_RESPOND_SNAPSHOT, { err: err.toString() })
+          socket.emit(MSG_RESPOND_SNAPSHOT_SAVE, { err: err.toString() })
         }
       })
       .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {
