@@ -21,9 +21,9 @@ export function canAccessSync(p: string) {
  * Ensures that a file or directory is accessible to the current user.
  * @private
  */
-export async function canAccess(p: string): Promise<boolean> {
+export async function canAccess(p: string, flag = R_OK): Promise<boolean> {
   try {
-    await fs.promises.access(p, R_OK)
+    await fs.promises.access(p, flag)
     return true
   } catch (e) {
     return false
@@ -56,6 +56,28 @@ export function ensureDirSync(dir: string) {
   const stat = fs.statSync(dir)
   if (!stat.isDirectory()) {
     throw new Error(`'${dir}' is not a directory`)
+  }
+}
+
+/**
+ * Ensures that a directory is accessible to the current user.
+ * IF the directory doesn't exist it attempts to create it recursively.
+ * @private
+ */
+export async function ensureDir(dir: string, rmrf = false) {
+  if (!(await canAccess(dir))) {
+    await fs.promises.mkdir(dir, { recursive: true })
+    return
+  }
+  // dir already exists, make sure it isn't a file
+  const stat = await fs.promises.stat(dir)
+  if (!stat.isDirectory()) {
+    throw new Error(`'${dir}' is not a directory`)
+  }
+
+  if (rmrf) {
+    await fs.promises.rm(dir, { recursive: true })
+    await fs.promises.mkdir(dir, { recursive: true })
   }
 }
 

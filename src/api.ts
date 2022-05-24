@@ -9,6 +9,8 @@ import {
   AddressLabels,
   GenKeypair,
   GenLabeledKeypair,
+  LoadKeypair,
+  LoadOrGenKeypair,
 } from './diagnostics/address-labels'
 import {
   AmmanClient,
@@ -78,6 +80,22 @@ export class Amman {
     this.addr.genLabeledKeypair(label)
 
   /**
+   * Loads a labeled {@link Keypair} from the relay.
+   * If a {@link Keypair} with that label is not found or the relay is not connected, then it
+   * returns `undefined`.
+   */
+  loadKeypair: LoadKeypair = async (label) => this.addr.loadKeypair(label)
+
+  /**
+   * Loads a labeled {@link Keypair} from the relay.
+   * If a {@link Keypair} with that label is not found or the relay is not connected, then it
+   * returns a newly generated keypair.
+   *
+   */
+  loadOrGenKeypair: LoadOrGenKeypair = async (label) =>
+    this.addr.loadOrGenKeypair(label)
+
+  /**
    * Drops the specified amount of tokens to the provided public key.
    *
    * @param connection to solana JSON RPC node
@@ -108,6 +126,7 @@ export class Amman {
     payer: Keypair,
     errorResolver?: ErrorResolver
   ) {
+    this.addr.storeKeypair(payer, 'payer')
     this.addr.addLabelIfUnknown('payer', payer.publicKey)
     return new PayerTransactionHandler(
       connection,
@@ -139,9 +158,8 @@ export class Amman {
    */
   createMockStorageDriver = (
     storageId: string,
-    uploadRoot: string,
     options?: AmmanMockStorageDriverOptions
-  ) => AmmanMockStorageDriver.create(storageId, uploadRoot, options)
+  ) => AmmanMockStorageDriver.create(storageId, options)
 
   /**
    * Disconnects the amman relay client and allows the app to shut down.

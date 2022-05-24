@@ -1,8 +1,10 @@
+import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
 import { AddressInfo } from 'net'
 import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
+import { AccountPersister } from '../assets'
 import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
 import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
@@ -17,6 +19,14 @@ import {
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_REQUEST_AMMAN_VERSION,
   MSG_RESPOND_AMMAN_VERSION,
+  MSG_REQUEST_ACCOUNT_SAVE,
+  MSG_RESPOND_ACCOUNT_SAVE,
+  MSG_REQUEST_SNAPSHOT_SAVE,
+  MSG_RESPOND_SNAPSHOT_SAVE,
+  MSG_REQUEST_STORE_KEYPAIR,
+  MSG_RESPOND_STORE_KEYPAIR,
+  MSG_REQUEST_LOAD_KEYPAIR,
+  MSG_RESPOND_LOAD_KEYPAIR,
 } from './consts'
 import { AMMAN_VERSION } from './types'
 
@@ -30,6 +40,8 @@ class RelayServer {
   constructor(
     readonly io: Server,
     readonly accountProvider: AccountProvider,
+    readonly accountPersister: AccountPersister,
+    readonly snapshotPersister: AccountPersister,
     readonly accountStates: AccountStates,
     // Keyed pubkey:label
     private readonly allKnownLabels: Record<string, string> = {}
@@ -59,6 +71,7 @@ class RelayServer {
         for (const [key, val] of Object.entries(labels)) {
           this.allKnownLabels[key] = val
         }
+        this.accountStates.labelKeypairs(this.allKnownLabels)
         socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
         socket.emit(ACK_UPDATE_ADDRESS_LABELS)
       })
@@ -81,6 +94,49 @@ class RelayServer {
           })
         }
       })
+      .on(MSG_REQUEST_ACCOUNT_SAVE, async (pubkey: string, slot?: number) => {
+        try {
+          let data
+          if (slot != null) {
+            data = this.accountStates.accountDataForSlot(pubkey, slot)
+          }
+          const accountPath = await this.accountPersister.saveAccount(
+            new PublicKey(pubkey),
+            this.accountProvider.connection,
+            data
+          )
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, { accountPath })
+        } catch (err) {
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, { err })
+        }
+      })
+      .on(MSG_REQUEST_SNAPSHOT_SAVE, async (label: string) => {
+        try {
+          const addresses = this.accountStates.allAccountAddresses()
+          const snapshotDir = await this.snapshotPersister.snapshot(
+            label,
+            addresses,
+            this.allKnownLabels,
+            this.accountStates.allKeypairs
+          )
+          socket.emit(MSG_RESPOND_SNAPSHOT_SAVE, { snapshotDir })
+        } catch (err: any) {
+          socket.emit(MSG_RESPOND_SNAPSHOT_SAVE, { err: err.toString() })
+        }
+      })
+      .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {
+        try {
+          const keypair = Keypair.fromSecretKey(secretKey)
+          this.accountStates.storeKeypair(id, keypair)
+          socket.emit(MSG_RESPOND_STORE_KEYPAIR)
+        } catch (err: any) {
+          socket.emit(MSG_RESPOND_STORE_KEYPAIR, err.toString())
+        }
+      })
+      .on(MSG_REQUEST_LOAD_KEYPAIR, (id: string) => {
+        const keypair = this.accountStates.getKeypairById(id)
+        socket.emit(MSG_RESPOND_LOAD_KEYPAIR, keypair?.secretKey)
+      })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
@@ -94,6 +150,8 @@ class RelayServer {
 export class Relay {
   private static createApp(
     accountProvider: AccountProvider,
+    accountPersister: AccountPersister,
+    snapshotPersister: AccountPersister,
     accountStates: AccountStates,
     knownLabels: Record<string, string>
   ) {
@@ -106,6 +164,8 @@ export class Relay {
     const relayServer = new RelayServer(
       io,
       accountProvider,
+      accountPersister,
+      snapshotPersister,
       accountStates,
       knownLabels
     )
@@ -117,6 +177,10 @@ export class Relay {
     accountRenderers: AmmanAccountRendererMap,
     programs: Program[],
     accounts: Account[],
+    loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    loadedKeypairs: Map<string, Keypair>,
+    accountsFolder: string,
+    snapshotRoot: string,
     killRunning: boolean = true
   ): Promise<{
     app: HttpServer
@@ -130,7 +194,20 @@ export class Relay {
       accountProviders,
       accountRenderers
     )
-    AccountStates.createInstance(accountProvider.connection, accountProvider)
+    AccountStates.createInstance(
+      accountProvider.connection,
+      accountProvider,
+      loadedAccountInfos,
+      loadedKeypairs
+    )
+    const accountPersister = new AccountPersister(
+      accountsFolder,
+      accountProvider.connection
+    )
+    const snapshotPersister = new AccountPersister(
+      snapshotRoot,
+      accountProvider.connection
+    )
 
     const programLabels = programs
       .filter((x) => x.label != null)
@@ -148,8 +225,10 @@ export class Relay {
 
     const knownLabels = { ...programLabels, ...accountLabels }
 
-    const { app, io, relayServer } = this.createApp(
+    const { app, io, relayServer } = Relay.createApp(
       accountProvider,
+      accountPersister,
+      snapshotPersister,
       AccountStates.instance,
       knownLabels
     )

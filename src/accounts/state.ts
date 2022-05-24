@@ -1,4 +1,11 @@
-import { Connection, Context, Logs, PublicKey } from '@solana/web3.js'
+import {
+  AccountInfo,
+  Connection,
+  Context,
+  Keypair,
+  Logs,
+  PublicKey,
+} from '@solana/web3.js'
 import { AmmanAccount } from '../types'
 import { logDebug } from '../utils/log'
 import { AccountProvider } from './providers'
@@ -7,11 +14,14 @@ import { diff } from 'deep-diff'
 import EventEmitter from 'events'
 import { AccountDiff } from '../relay/types'
 import * as Diff from 'diff'
+import { isKeyLike, publicKeyString } from '../utils/keys'
+import BN from 'bn.js'
 export type { Change } from 'diff'
 
 export type AccountState = {
-  account: AmmanAccount
+  account: AmmanAccount | undefined
   slot: number
+  data: Buffer
   accountDiff?: AccountDiff
   rendered?: string
   renderedDiff?: Diff.Change[]
@@ -24,7 +34,7 @@ class AccountStateTracker {
     const lastState =
       this.states.length > 0 ? this.states[this.states.length - 1] : null
     const accountDiff: AccountDiff | undefined =
-      lastState == null
+      lastState == null || lastState.account == null || state.account == null
         ? undefined
         : diff(lastState.account.pretty(), state.account.pretty())
     const processedState = {
@@ -40,10 +50,12 @@ class AccountStateTracker {
   }
 
   get relayStates() {
-    return this.states.map(({ account, ...rest }) => ({
-      account: account.pretty(),
-      ...rest,
-    }))
+    return this.states
+      .filter((state) => state.account != null)
+      .map(({ account, data, ...rest }) => ({
+        account: account!.pretty(),
+        ...rest,
+      }))
   }
 
   renderDiff(lastState: AccountState | null, state: AccountState) {
@@ -51,26 +63,53 @@ class AccountStateTracker {
     if (state.rendered == null) return undefined
     return Diff.diffChars(lastState.rendered, state.rendered)
   }
+
+  accountStateForSlot(slot: number) {
+    return this.states.find((state) => state.slot === slot)
+  }
+
+  accountDataForSlot(slot: number) {
+    return this.accountStateForSlot(slot)?.data
+  }
 }
 
 export class AccountStates extends EventEmitter {
   readonly states: Map<string, AccountStateTracker> = new Map()
+  // address:{ keypair, id (label) }
+  readonly keypairs: Map<string, { keypair: Keypair; id: string }> = new Map()
 
   private constructor(
     readonly connection: Connection,
-    readonly accountProvider: AccountProvider
+    readonly accountProvider: AccountProvider,
+    readonly loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    // label:Keypair
+    readonly loadedKeypairs: Map<string, Keypair>
   ) {
     super()
     this.connection.onLogs('all', this._onLog, 'confirmed')
+    for (const [address, info] of this.loadedAccountInfos) {
+      this.update(address, 0, info)
+    }
+    for (const [label, keypair] of this.loadedKeypairs) {
+      this.keypairs.set(keypair.publicKey.toBase58(), { keypair, id: label })
+    }
   }
 
-  async update(address: string, slot: number) {
+  // -----------------
+  // Account States
+  // -----------------
+  async update(
+    address: string,
+    slot: number,
+    accountInfo?: AccountInfo<Buffer>
+  ) {
     if (!this.states.has(address)) {
       this.states.set(address, new AccountStateTracker())
     }
 
     const res = await this.accountProvider.tryResolveAccount(
-      new PublicKey(address)
+      new PublicKey(address),
+      accountInfo
     )
     if (res == null) return
 
@@ -87,6 +126,50 @@ export class AccountStates extends EventEmitter {
 
   get(address: string): AccountStateTracker | undefined {
     return this.states.get(address)
+  }
+
+  accountStateForSlot(address: string, slot: number) {
+    return this.get(address)?.accountStateForSlot(slot)
+  }
+
+  accountDataForSlot(address: string, slot: number): Buffer | undefined {
+    return this.get(address)?.accountDataForSlot(slot)
+  }
+
+  allAccountAddresses() {
+    return Array.from(this.states.keys())
+  }
+
+  // -----------------
+  // Keypairs
+  // -----------------
+  storeKeypair(id: string, keypair: Keypair) {
+    this.keypairs.set(keypair.publicKey.toBase58(), { keypair, id })
+  }
+
+  labelKeypairs(
+    // Keyed pubkey:label
+    labels: Record<string, string>
+  ) {
+    for (const [key, label] of Object.entries(labels)) {
+      const entry = this.keypairs.get(key)
+      if (entry == null) continue
+      this.keypairs.set(key, { keypair: entry.keypair, id: label })
+    }
+  }
+
+  get allKeypairs() {
+    return this.keypairs
+  }
+
+  getKeypairById(keypairId: string) {
+    for (const { keypair, id } of this.keypairs.values()) {
+      if (id === keypairId) return keypair
+    }
+  }
+
+  getKeypairByAddress(address: string) {
+    return this.keypairs.get(address)?.keypair
   }
 
   private _onLog = async (logs: Logs, ctx: Context) => {
@@ -114,10 +197,17 @@ export class AccountStates extends EventEmitter {
 
   static createInstance(
     connection: Connection,
-    accountProvider: AccountProvider
+    accountProvider: AccountProvider,
+    loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
+    loadedKeypairs: Map<string, Keypair>
   ) {
     if (AccountStates._instance != null) return
-    AccountStates._instance = new AccountStates(connection, accountProvider)
+    AccountStates._instance = new AccountStates(
+      connection,
+      accountProvider,
+      loadedAccountInfos,
+      loadedKeypairs
+    )
     return AccountStates._instance
   }
 }
@@ -131,9 +221,23 @@ export function printableAccount(
     if (typeof (val as unknown as AmmanAccount).pretty === 'function') {
       prettified[key] = (val as unknown as AmmanAccount).pretty()
     }
-    if (typeof val === 'object') {
-      prettified[key] = JSON.stringify(val)
+    if (
+      BN.isBN(val) ||
+      (typeof val === 'object' &&
+        'negative' in val &&
+        'words' in val &&
+        'red' in val)
+    ) {
+      prettified[key] = new BN(val).toNumber()
+    } else if (isKeyLike(val)) {
+      prettified[key] = publicKeyString(val)
+    } else if (Array.isArray(val)) {
+      prettified[key] = val.map((val) => JSON.stringify(printableAccount(val)))
+    } else if (typeof val === 'object') {
+      prettified[key] = JSON.stringify(printableAccount(val), null, 2)
+    } else {
+      prettified[key] = val
     }
   }
-  return { ...account, ...prettified }
+  return prettified
 }

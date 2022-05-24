@@ -14,8 +14,13 @@ import { printableAccount } from '../../accounts/state'
 
 export async function handleAccountCommand(
   acc: string | undefined,
-  includeTxs: boolean = false
-) {
+  includeTxs: boolean,
+  save: boolean
+): Promise<{
+  connection?: Connection | undefined
+  rendered: string
+  savedAccountPath?: string | undefined
+}> {
   if (acc == null) return renderAllKnownAccounts(includeTxs)
 
   const amman = cliAmmanInstance()
@@ -23,13 +28,24 @@ export async function handleAccountCommand(
   if (addresses.length === 0) {
     throw new Error(`Account ${acc} could not be resolved to an address`)
   }
-
-  const connection = new Connection(LOCALHOST, 'singleGossip')
+  if (save && addresses.length > 1) {
+    throw new Error(
+      `Account ${acc} could not be resolved to exactly address and thus cannot be saved`
+    )
+  }
+  const connection = new Connection(LOCALHOST, 'confirmed')
   const rendereds = []
+  let savedAccountPath
   for (const address of addresses) {
     const pubkey = new PublicKey(address)
     const accountInfo = await connection.getAccountInfo(pubkey)
     assert(accountInfo != null, 'Account info should not be null')
+
+    if (save) {
+      savedAccountPath = await amman.ammanClient.requestSaveAccount(
+        addresses[0]
+      )
+    }
     const len = accountInfo.data.length
     const sol = accountInfo.lamports / LAMPORTS_PER_SOL
 
@@ -59,8 +75,9 @@ ${accountStates}
       `\n${bold('NOTE')}: found ${rendereds.length}` +
       ` accounts labeled '${acc}' and printed all of them above`
   }
+
   amman.disconnect()
-  return { connection, rendered }
+  return { connection, rendered, savedAccountPath }
 }
 
 async function renderAllKnownAccounts(includeTxs: boolean) {

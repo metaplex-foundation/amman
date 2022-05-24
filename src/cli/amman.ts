@@ -15,6 +15,7 @@ import {
   startHelp,
   runHelp,
   handleLogsCommand,
+  handleSnapshotCommand,
 } from './commands'
 import { execSync as exec } from 'child_process'
 import { AMMAN_RELAY_PORT } from '../relay'
@@ -24,6 +25,7 @@ import { AMMAN_STORAGE_PORT, MockStorageServer } from '../storage'
 import { closeConnection } from './utils'
 import { Amman } from '../api'
 import { Connection } from '@solana/web3.js'
+import path from 'path'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------
@@ -46,6 +48,11 @@ const commands = yargs(hideBin(process.argv))
             'Whether or not to force updating the programs from on chain',
           type: 'boolean',
           default: false,
+        })
+        .option('load', {
+          alias: 'l',
+          describe: 'Label of the snapshot to load from snapshots folder',
+          type: 'string',
         })
         .help('help', startHelp())
     }
@@ -121,7 +128,30 @@ const commands = yargs(hideBin(process.argv))
           type: 'boolean',
           default: false,
         })
+        .option('save', {
+          alias: 's',
+          describe:
+            'If set the account information is saved to a file inside ./.amman/accounts',
+          type: 'boolean',
+          default: false,
+        })
   )
+  // -----------------
+  // snapshot
+  // -----------------
+  .command(
+    'snapshot',
+    'Creates a snapshot of the current accounts known to amman',
+    (args) => {
+      args.positional('label', {
+        describe:
+          'The label to give to the snapshot. Default label is the account address.',
+        type: 'string',
+        demandOption: false,
+      })
+    }
+  )
+
   // -----------------
   // run
   // -----------------
@@ -249,24 +279,46 @@ async function main() {
     // -----------------
     case 'account': {
       const address = cs[1]
-      const { includeTx } = args
+      const { includeTx, save } = args
       assert(
         address == null || typeof address === 'string',
         'provided public key or label needs to be a string'
       )
       assert(
         !includeTx || address == null,
-        '--includeTx can only be used when noe address is provided'
+        '--includeTx can only be used when no address is provided'
+      )
+      assert(
+        !save || address != null,
+        '--save requires an account address or label to be provided'
       )
 
-      const { connection, rendered } = await handleAccountCommand(
-        address,
-        includeTx
-      )
+      const { connection, rendered, savedAccountPath } =
+        await handleAccountCommand(address, includeTx, save)
+
       console.log(rendered)
-      if (connection! != null) {
+
+      if (savedAccountPath != null) {
+        logInfo(
+          `Saved account to ./${path.relative(process.cwd(), savedAccountPath)}`
+        )
+      }
+
+      if (connection != null) {
         await closeConnection(connection, true)
       }
+      disconnectAmman()
+      break
+    }
+    // -----------------
+    // snapshot
+    // -----------------
+    case 'snapshot': {
+      const label = cs[1]?.toString()
+      const snapshotDir = await handleSnapshotCommand(label)
+      logInfo(
+        `Saved snapshot to ./${path.relative(process.cwd(), snapshotDir)}`
+      )
       disconnectAmman()
       break
     }

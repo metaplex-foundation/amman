@@ -10,6 +10,7 @@ import { completeConfig, DEFAULT_START_CONFIG } from '../../utils/config'
 export type StartCommandArgs = {
   config?: string
   forceClone?: boolean
+  load?: string
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {
@@ -31,12 +32,13 @@ export async function handleStartCommand(args: StartCommandArgs) {
       process.exit(1)
     }
     logInfo(
-      `Running validator with ${config.validator.programs.length} custom program(s) and ${config.validator.accounts.length} remote account(s) preloaoded`
+      `Running validator with ${config.validator.programs.length} custom program(s) and ${config.validator.accounts.length} remote account(s) preloaded`
     )
     logDebug(config.validator)
     await initValidator(
       config.validator,
       config.relay,
+      { ...config.snapshot, load: args.load },
       config.storage,
       config.assetsFolder,
       args.forceClone

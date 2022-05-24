@@ -21,13 +21,11 @@ import {
   MockStorageServer,
   StorageConfig,
 } from '../storage'
-import {
-  getExecutableAddress,
-  handleFetchAccounts,
-} from '../assets/local-accounts'
-import { ACCOUNTS_FOLDER, DEFAULT_ASSETS_FOLDER } from '../assets/types'
-import path from 'path'
-import { canAccess, canAccessSync } from '../utils/fs'
+import { DEFAULT_ASSETS_FOLDER, SnapshotConfig } from '../assets/types'
+import { canAccessSync } from '../utils/fs'
+import { processAccounts } from './process-accounts'
+import { mapPersistedAccountInfos } from '../assets'
+import { processSnapshot } from './process-snapshot'
 
 /**
  * @private
@@ -39,7 +37,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
   accounts: [],
   jsonRpcUrl: LOCALHOST,
   websocketUrl: '',
-  commitment: 'singleGossip',
+  commitment: 'confirmed',
   ledgerDir: tmpLedgerDir(),
   resetLedger: true,
   limitLedgerSize: 1e4,
@@ -53,6 +51,7 @@ export const DEFAULT_VALIDATOR_CONFIG: ValidatorConfig = {
 export async function initValidator(
   validatorConfig: Partial<ValidatorConfig>,
   relayConfig: Partial<RelayConfig> = {},
+  snapshotConfig: SnapshotConfig,
   storageConfig?: StorageConfig,
   assetsFolder: string = DEFAULT_ASSETS_FOLDER,
   forceClone?: boolean
@@ -81,6 +80,9 @@ export async function initValidator(
     ...relayConfig,
   }
 
+  // -----------------
+  // Kill running validators
+  // -----------------
   if (killRunningValidators) {
     try {
       exec('pkill -f solana-test-validator')
@@ -89,15 +91,22 @@ export async function initValidator(
     } catch (err) {}
   }
 
+  // -----------------
+  // Setup Solana Config
+  // -----------------
   const { configPath, cleanupConfig } = await solanaConfig({
     websocketUrl,
     jsonRpcUrl,
     commitment,
   })
 
-  const args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
+  let args = ['--quiet', '-C', configPath, '--ledger', ledgerDir]
   if (resetLedger) args.push('-r')
+  args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
 
+  // -----------------
+  // Deploy Programs
+  // -----------------
   if (programs.length > 0) {
     for (const { programId, deployPath } of programs) {
       if (!canAccessSync(deployPath)) {
@@ -109,47 +118,27 @@ export async function initValidator(
     }
   }
 
-  if (accounts.length > 0) {
-    const accountsFolder = path.resolve(
-      process.cwd(),
-      path.join(assetsFolder, ACCOUNTS_FOLDER)
-    )
-    await handleFetchAccounts(
-      accountsCluster,
-      accounts,
-      accountsFolder,
-      forceClone
-    )
-    for (const { accountId, executable, cluster } of accounts) {
-      const accountPath = path.join(accountsFolder, `${accountId}.json`)
-      if (await canAccess(accountPath)) {
-        args.push('--account')
-        args.push(accountId)
-        args.push(accountPath)
-      } else {
-        throw new Error(
-          `Can't find account info file for account ${accountId} cloned from cluster ${
-            cluster ?? accountsCluster
-          }! \nMake sure the account exists on that cluster and try again.`
-        )
-      }
-      if (executable) {
-        const executableId = await getExecutableAddress(accountId)
-        const executablePath = path.join(accountsFolder, `${executableId}.json`)
-        if (await canAccess(executablePath)) {
-          args.push('--account')
-          args.push(executableId)
-          args.push(executablePath)
-        } else {
-          logError(
-            `Can't find executable account info file for executable account ${accountId}`
-          )
-        }
-      }
-    }
-  }
-  args.push(...['--limit-ledger-size', limitLedgerSize.toString()])
+  // -----------------
+  // Add Cloned Accounts
+  // -----------------
+  const { accountsArgs, persistedAccountInfos, accountsFolder } =
+    await processAccounts(accounts, accountsCluster, assetsFolder, forceClone)
+  args = [...args, ...accountsArgs]
 
+  // -----------------
+  // Add Snapshot
+  // -----------------
+  const {
+    snapshotArgs,
+    persistedSnapshotAccountInfos,
+    snapshotAccounts,
+    keypairs,
+  } = await processSnapshot(snapshotConfig)
+  args = [...args, ...snapshotArgs]
+
+  // -----------------
+  // Launch Validator
+  // -----------------
   const cmd = `solana-test-validator ${args.join(' \\\n  ')}`
   if (logTrace.enabled) {
     logTrace('Launching validator with the following command')
@@ -170,13 +159,23 @@ export async function initValidator(
     ledgerDir
   )
 
+  // -----------------
   // Launch relay server in parallel
+  // -----------------
   if (relayEnabled) {
+    const accountInfos = mapPersistedAccountInfos([
+      ...persistedAccountInfos,
+      ...persistedSnapshotAccountInfos,
+    ])
     Relay.startServer(
       accountProviders,
       accountRenderers,
       programs,
-      accounts,
+      [...accounts, ...snapshotAccounts],
+      accountInfos,
+      keypairs,
+      accountsFolder,
+      snapshotConfig.snapshotFolder,
       killRunningRelay
     )
       .then(({ app }) => {
@@ -189,7 +188,9 @@ export async function initValidator(
       })
   }
 
+  // -----------------
   // Launch Storage server in parallel as well
+  // -----------------
   const storageEnabled =
     storageConfig != null &&
     { ...DEFAULT_STORAGE_CONFIG, ...storageConfig }.enabled
@@ -214,6 +215,9 @@ export async function initValidator(
       })
   }
 
+  // -----------------
+  // Wait for validator to come up and cleanup
+  // -----------------
   await ensureValidatorIsUp(jsonRpcUrl, verifyFees)
   await cleanupConfig()
 

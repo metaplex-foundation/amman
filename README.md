@@ -97,7 +97,7 @@ module.exports = {
     ],
     jsonRpcUrl: LOCALHOST,
     websocketUrl: '',
-    commitment: 'singleGossip',
+    commitment: 'confirmed',
     ledgerDir: tmpLedgerDir(),
     resetLedger: true,
     verifyFees: false,
