@@ -1,5 +1,6 @@
 import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
+import BN from 'bn.js'
 import numeral from 'numeral'
 import { Amman } from '../api'
 import {
@@ -257,6 +258,14 @@ export class AccountProvider {
         }
       } else if (typeof value === 'number') {
         acc[key] = numeral(value).format('0,0')
+      } else if (
+        BN.isBN(value) ||
+        (typeof value === 'object' &&
+          'negative' in value &&
+          'words' in value &&
+          'red' in value)
+      ) {
+        acc[key] = new BN(value).toNumber()
       } else if (typeof value.pretty === 'function') {
         acc[key] = value.pretty()
       } else if (typeof value === 'object') {

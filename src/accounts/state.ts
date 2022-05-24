@@ -14,6 +14,8 @@ import { diff } from 'deep-diff'
 import EventEmitter from 'events'
 import { AccountDiff } from '../relay/types'
 import * as Diff from 'diff'
+import { isKeyLike, publicKeyString } from '../utils/keys'
+import BN from 'bn.js'
 export type { Change } from 'diff'
 
 export type AccountState = {
@@ -50,7 +52,7 @@ class AccountStateTracker {
   get relayStates() {
     return this.states
       .filter((state) => state.account != null)
-      .map(({ account, ...rest }) => ({
+      .map(({ account, data, ...rest }) => ({
         account: account!.pretty(),
         ...rest,
       }))
@@ -219,9 +221,23 @@ export function printableAccount(
     if (typeof (val as unknown as AmmanAccount).pretty === 'function') {
       prettified[key] = (val as unknown as AmmanAccount).pretty()
     }
-    if (typeof val === 'object') {
-      prettified[key] = JSON.stringify(val)
+    if (
+      BN.isBN(val) ||
+      (typeof val === 'object' &&
+        'negative' in val &&
+        'words' in val &&
+        'red' in val)
+    ) {
+      prettified[key] = new BN(val).toString()
+    } else if (isKeyLike(val)) {
+      prettified[key] = publicKeyString(val)
+    } else if (Array.isArray(val)) {
+      prettified[key] = val.map((val) => JSON.stringify(printableAccount(val)))
+    } else if (typeof val === 'object') {
+      prettified[key] = JSON.stringify(printableAccount(val))
+    } else {
+      prettified[key] = val
     }
   }
-  return { ...account, ...prettified }
+  return prettified
 }
