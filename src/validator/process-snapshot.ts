@@ -1,7 +1,12 @@
 import { Keypair } from '@solana/web3.js'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { PersistedAccountInfo, SnapshotConfig } from '../assets'
+import {
+  PersistedAccountInfo,
+  SnapshotConfig,
+  SNAPSHOT_ACCOUNTS_DIR,
+  SNAPSHOT_KEYPAIRS_DIR,
+} from '../assets'
 import { logInfo, logTrace } from '../utils'
 import { canAccess } from '../utils/fs'
 import { Account } from './types'
@@ -33,12 +38,16 @@ export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
   // Accounts
   // -----------------
   const snapshotArgs = []
-  const files = (await fs.readdir(fullPathToSnapshotDir)).filter(
+  const fullPathToAccountsDir = path.join(
+    fullPathToSnapshotDir,
+    SNAPSHOT_ACCOUNTS_DIR
+  )
+  const files = (await fs.readdir(fullPathToAccountsDir)).filter(
     (x) => path.extname(x) === '.json'
   )
   const persistedSnapshotAccountInfos = await Promise.all(
     files.map(async (x) => {
-      const accountPath = path.join(fullPathToSnapshotDir, x)
+      const accountPath = path.join(fullPathToAccountsDir, x)
 
       const json = await fs.readFile(accountPath, 'utf8')
       const label = path.basename(x, '.json')
@@ -77,7 +86,7 @@ export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
   // -----------------
   // Keypairs
   // -----------------
-  const keypairsDir = path.join(fullPathToSnapshotDir, 'keypairs')
+  const keypairsDir = path.join(fullPathToSnapshotDir, SNAPSHOT_KEYPAIRS_DIR)
   const keypairs: Map<string, Keypair> = (await canAccess(keypairsDir))
     ? await loadKeypairs(keypairsDir)
     : new Map()

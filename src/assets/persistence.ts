@@ -4,6 +4,7 @@ import { promises as fs } from 'fs'
 import { ensureDir } from '../utils/fs'
 import { fullAccountsDir } from '../utils/config'
 import { strict as assert } from 'assert'
+import { SNAPSHOT_ACCOUNTS_DIR, SNAPSHOT_KEYPAIRS_DIR } from './consts'
 
 export type PersistedAccountInfo = {
   pubkey: string
@@ -30,8 +31,9 @@ export class AccountPersister {
   ) {
     assert(!accountInfo.executable, 'Can only save non-executable accounts')
 
-    await ensureDir(this.targetDir)
     const fulldir = subdir ? path.join(this.targetDir, subdir) : this.targetDir
+    await ensureDir(fulldir)
+
     const accountPath = path.join(
       fulldir,
       `${label ?? address.toBase58()}.json`
@@ -70,8 +72,8 @@ export class AccountPersister {
   // -----------------
   async saveKeypair(id: string, keypair: Keypair, subdir?: string) {
     const fulldir = subdir
-      ? path.join(this.targetDir, subdir, 'keypairs')
-      : path.join(this.targetDir, 'keypairs')
+      ? path.join(this.targetDir, subdir, SNAPSHOT_KEYPAIRS_DIR)
+      : path.join(this.targetDir, SNAPSHOT_KEYPAIRS_DIR)
     await ensureDir(fulldir)
     const keypairPath = path.join(fulldir, `${id}.json`)
 
@@ -107,10 +109,11 @@ export class AccountPersister {
         )
         if (accountInfo == null || accountInfo.executable) return
 
+        const subdir = path.join(snapshotLabel, SNAPSHOT_ACCOUNTS_DIR)
         return this.saveAccountInfo(
           new PublicKey(address),
           accountInfo,
-          snapshotLabel,
+          subdir,
           accountLabels[address]
         )
       })
