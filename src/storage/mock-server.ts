@@ -44,6 +44,10 @@ export class MockStorageServer {
   start(): Promise<Server> {
     this.server = http
       .createServer(async (req, res) => {
+        if (req.method?.toLowerCase() === 'options') {
+          writeStatusHead(res, 200)
+          return res.end('OK')
+        }
         const url = req.url?.trim()
         if (url == null || url.length === 0) {
           return fail(res, 'Url is required')
@@ -69,10 +73,11 @@ export class MockStorageServer {
         const resource = path.join(AMMAN_STORAGE_ROOT, resourceName)
         if (!(await canRead(resource))) {
           logError(`failed to find ${resource}`)
-          res.writeHead(404).end()
+          writeStatusHead(res, 404)
+          res.end()
         } else {
           logDebug(`serving ${resource}`)
-          writeCorsHeaders(res)
+          writeStatusHead(res, 200)
           fs.createReadStream(resource).pipe(res)
         }
       })
@@ -97,16 +102,17 @@ export class MockStorageServer {
 // -----------------
 // Helpers
 // -----------------
-function writeCorsHeaders(res: ServerResponse) {
-  res.writeHead(200, {
+function writeStatusHead(res: ServerResponse, status: number) {
+  res.writeHead(status, {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, DELETE, PUT',
+    'Access-Control-Allow-Headers': '*',
     'Access-Control-Max-Age': 2592000, // 30 days
   })
 }
 
 function fail(res: ServerResponse, msg: string, statusCode = 422) {
-  res.writeHead(statusCode)
+  writeStatusHead(res, statusCode)
   res.end(`${STATUS_CODES[statusCode]}: ${msg}`)
 }
 
@@ -135,7 +141,7 @@ function handleUpload(
   req.on('end', () => {
     dstStream.close(() => {
       if (!failed) {
-        writeCorsHeaders(res)
+        writeStatusHead(res, 200)
         res.end()
       }
     })
