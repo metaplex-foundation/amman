@@ -1,11 +1,13 @@
 {
   "scripts": {
+    "build": "(cd ./amman-core && yarn build) && (cd ./amman && yarn build)",
     "doc": "(cd ./amman && yarn doc);",
     "doc:update": "./sh/update-docs"
   },
   "workspaces": {
     "packages": [
-      "amman"
+      "amman",
+      "amman-core"
     ]
   },
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",

@@ -6,11 +6,12 @@ import http, {
   STATUS_CODES,
 } from 'http'
 import path from 'path'
-import { AMMAN_STORAGE_PORT, StorageConfig } from '.'
+import { StorageConfig } from '.'
 import { scopedLog } from '../utils/log'
 import { canRead, ensureDir } from '../utils/fs'
 import { DEFAULT_STORAGE_CONFIG } from './types'
 import { tmpdir } from 'os'
+import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-core'
 
 export const AMMAN_STORAGE_ROOT = path.join(tmpdir(), 'amman-storage')
 

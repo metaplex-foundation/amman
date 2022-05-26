@@ -16,7 +16,6 @@ import { ValidatorConfig } from './types'
 import { Relay } from '../relay/server'
 import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 import {
-  AMMAN_STORAGE_PORT,
   DEFAULT_STORAGE_CONFIG,
   MockStorageServer,
   StorageConfig,
@@ -26,6 +25,7 @@ import { canAccessSync } from '../utils/fs'
 import { processAccounts } from './process-accounts'
 import { mapPersistedAccountInfos } from '../assets'
 import { processSnapshot } from './process-snapshot'
+import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-core'
 
 /**
  * @private

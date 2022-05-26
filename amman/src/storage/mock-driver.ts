@@ -5,6 +5,10 @@ import type {
 } from '@metaplex-foundation/js-next'
 import { SolAmount } from '@metaplex-foundation/js-next'
 import { StorageDriver } from './storage-driver'
+import {
+  AMMAN_STORAGE_UPLOAD_URI,
+  AMMAN_STORAGE_URI,
+} from '@metaplex-foundation/amman-core'
 
 import { strict as assert } from 'assert'
 import BN from 'bn.js'
@@ -16,7 +20,6 @@ import {
   logError,
 } from '../utils/log'
 import { canAccessSync } from '../utils/fs'
-import { AMMAN_STORAGE_UPLOAD_URI, AMMAN_STORAGE_URI } from './consts'
 import { promises as fs } from 'fs'
 import { assertValidPathSegmentWithoutSpaces } from '../utils/path'
 
