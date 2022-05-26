@@ -1,10 +1,10 @@
-import {
-  StorageDriver,
+import type {
   Metaplex,
   MetaplexFile,
   MetaplexPlugin,
-  SolAmount,
 } from '@metaplex-foundation/js-next'
+import { SolAmount } from '@metaplex-foundation/js-next'
+import { StorageDriver } from './storage-driver'
 
 import { strict as assert } from 'assert'
 import BN from 'bn.js'
@@ -30,6 +30,7 @@ export type AmmanMockStorageDriverOptions = {
   logTrace?: (...data: any[]) => void
 }
 
+// @ts-ignore
 export class AmmanMockStorageDriver extends StorageDriver {
   private cache: Record<string, MetaplexFile> = {}
 
