@@ -1,16 +1,14 @@
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { LOCALHOST } from '@metaplex-foundation/amman-client'
-import { strict as assert } from 'assert'
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { bold, dim, blueBright, green } from 'ansi-colors'
+import { strict as assert } from 'assert'
 // @ts-ignore no types available, but it's a simpler function
 import hexdump from 'buffer-hexdump'
-
 import format from 'date-fns/format'
 import formatDistance from 'date-fns/formatDistance'
-
 import table from 'text-table'
-import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { printableAccount } from '../../accounts/state'
+import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 
 export async function handleAccountCommand(
   acc: string | undefined,

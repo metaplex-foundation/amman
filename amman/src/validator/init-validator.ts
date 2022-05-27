@@ -1,15 +1,11 @@
-import { logError, logInfo, logTrace, sleep, tmpLedgerDir } from '../utils'
-import { killRunningServer, resolveServerAddress } from '../utils/http'
 import {
   LOCALHOST,
   AMMAN_STORAGE_PORT,
 } from '@metaplex-foundation/amman-client'
-
-import http from 'http'
 import { execSync as exec, spawn } from 'child_process'
-import { solanaConfig } from './prepare-config'
-import { ensureValidatorIsUp } from './ensure-validator-up'
-import { ValidatorConfig } from './types'
+import http from 'http'
+import { mapPersistedAccountInfos } from '../assets'
+import { DEFAULT_ASSETS_FOLDER, SnapshotConfig } from '../assets/types'
 import { Relay } from '../relay/server'
 import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 import {
@@ -17,11 +13,14 @@ import {
   MockStorageServer,
   StorageConfig,
 } from '../storage'
-import { DEFAULT_ASSETS_FOLDER, SnapshotConfig } from '../assets/types'
+import { logError, logInfo, logTrace, sleep, tmpLedgerDir } from '../utils'
 import { canAccessSync } from '../utils/fs'
+import { killRunningServer, resolveServerAddress } from '../utils/http'
+import { ensureValidatorIsUp } from './ensure-validator-up'
+import { solanaConfig } from './prepare-config'
 import { processAccounts } from './process-accounts'
-import { mapPersistedAccountInfos } from '../assets'
 import { processSnapshot } from './process-snapshot'
+import { ValidatorConfig } from './types'
 
 /**
  * @private

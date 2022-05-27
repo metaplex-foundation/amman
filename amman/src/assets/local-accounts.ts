@@ -1,10 +1,10 @@
+import { isValidPublicKeyAddress } from '@metaplex-foundation/amman-client'
 import { PublicKey } from '@solana/web3.js'
-import { Account } from '../validator/types'
 import { spawnSync } from 'child_process'
+import path from 'path'
 import { logError, logInfo } from '../utils'
 import { canAccess, ensureDirSync } from '../utils/fs'
-import path from 'path'
-import { isValidPublicKeyAddress } from '@metaplex-foundation/amman-client'
+import { Account } from '../validator/types'
 
 export async function getExecutableAddress(programId: string): Promise<string> {
   const programPubkey = new PublicKey(programId)

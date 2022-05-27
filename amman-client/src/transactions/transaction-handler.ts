@@ -1,3 +1,4 @@
+import type { ErrorResolver } from '@metaplex-foundation/cusper'
 import {
   ConfirmOptions,
   Connection,
@@ -5,12 +6,11 @@ import {
   Signer,
   Transaction,
 } from '@solana/web3.js'
-import { defaultConfirmOptions } from './consts'
-import { ConfirmedTransactionDetails, TransactionHandler } from './types'
 import { AddressLabels } from '../diagnostics/address-labels'
-import type { ErrorResolver } from '@metaplex-foundation/cusper'
-import { fetchTransactionSummary } from './transaction-checker'
 import { ConfirmedTransactionAssertablePromise } from './confirmed-transaction-assertable-promise'
+import { defaultConfirmOptions } from './consts'
+import { fetchTransactionSummary } from './transaction-checker'
+import { ConfirmedTransactionDetails, TransactionHandler } from './types'
 
 export type TransactionLabelMapper = (label: string) => string
 const FAIL = '❌'

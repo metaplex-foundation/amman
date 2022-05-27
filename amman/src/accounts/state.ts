@@ -1,4 +1,9 @@
 import {
+  AccountDiff,
+  isKeyLike,
+  publicKeyString,
+} from '@metaplex-foundation/amman-client'
+import {
   AccountInfo,
   Connection,
   Context,
@@ -6,19 +11,15 @@ import {
   Logs,
   PublicKey,
 } from '@solana/web3.js'
+import { strict as assert } from 'assert'
+import BN from 'bn.js'
+import { diff } from 'deep-diff'
+import * as Diff from 'diff'
+import EventEmitter from 'events'
 import { AmmanAccount } from '../types'
 import { logDebug } from '../utils/log'
 import { AccountProvider } from './providers'
-import { strict as assert } from 'assert'
-import { diff } from 'deep-diff'
-import EventEmitter from 'events'
-import BN from 'bn.js'
-import {
-  AccountDiff,
-  isKeyLike,
-  publicKeyString,
-} from '@metaplex-foundation/amman-client'
-import * as Diff from 'diff'
+
 export type { Change } from 'diff'
 
 export type AccountState = {

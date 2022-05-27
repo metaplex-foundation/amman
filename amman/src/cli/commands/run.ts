@@ -1,9 +1,10 @@
+import { dim } from 'ansi-colors'
 import { strict as assert } from 'assert'
-import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
 import { exec as execCb } from 'child_process'
 import { promisify } from 'util'
-import { dim } from 'ansi-colors'
 import { logDebug, logError } from '../../utils'
+import { cliAmmanInstance, resolveAccountAddresses } from '../utils'
+
 const exec = promisify(execCb)
 
 export const LABEL_INDICATOR = '+'

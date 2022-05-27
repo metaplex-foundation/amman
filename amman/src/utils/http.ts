@@ -1,6 +1,6 @@
 // @ts-ignore (no declaration file)
-import portPids from 'port-pid'
 import http from 'http'
+import portPids from 'port-pid'
 import { logDebug, logError, logInfo, sleep } from '../utils'
 
 /** private */

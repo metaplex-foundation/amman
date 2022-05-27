@@ -1,7 +1,7 @@
-import fs from 'fs'
+import { Keypair } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import { R_OK } from 'constants'
-import { Keypair } from '@solana/web3.js'
+import fs from 'fs'
 import { logError } from '.'
 
 /**

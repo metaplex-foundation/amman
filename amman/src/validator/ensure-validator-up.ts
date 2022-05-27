@@ -6,8 +6,8 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js'
-import { logDebug } from '../utils'
 import waitOn from 'wait-on'
+import { logDebug } from '../utils'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 

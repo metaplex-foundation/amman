@@ -1,11 +1,11 @@
 import path from 'path'
-import { logDebug, logError, logInfo } from '../../utils'
-import { initValidator } from '../../validator'
 import { AmmanConfig } from '../../types'
-import { canAccess } from '../../utils/fs'
-import { pipeSolanaLogs } from '../utils/solana-logs'
-import { cliAmmanInstance } from '../utils'
+import { logDebug, logError, logInfo } from '../../utils'
 import { completeConfig, DEFAULT_START_CONFIG } from '../../utils/config'
+import { canAccess } from '../../utils/fs'
+import { initValidator } from '../../validator'
+import { cliAmmanInstance } from '../utils'
+import { pipeSolanaLogs } from '../utils/solana-logs'
 
 export type StartCommandArgs = {
   config?: string

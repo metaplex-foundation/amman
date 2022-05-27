@@ -1,14 +1,3 @@
-import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
-import { createServer, Server as HttpServer } from 'http'
-import { AddressInfo } from 'net'
-import { Server, Socket } from 'socket.io'
-import { AccountProvider } from '../accounts/providers'
-import { AccountStates } from '../accounts/state'
-import { AccountPersister } from '../assets'
-import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
-import { logDebug, logTrace } from '../utils'
-import { killRunningServer } from '../utils/http'
-import { Account, Program } from '../validator/types'
 import {
   AMMAN_RELAY_PORT,
   MSG_GET_KNOWN_ADDRESS_LABELS,
@@ -28,6 +17,17 @@ import {
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_KEYPAIR,
 } from '@metaplex-foundation/amman-client'
+import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
+import { createServer, Server as HttpServer } from 'http'
+import { AddressInfo } from 'net'
+import { Server, Socket } from 'socket.io'
+import { AccountProvider } from '../accounts/providers'
+import { AccountStates } from '../accounts/state'
+import { AccountPersister } from '../assets'
+import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
+import { logDebug, logTrace } from '../utils'
+import { killRunningServer } from '../utils/http'
+import { Account, Program } from '../validator/types'
 import { AMMAN_VERSION } from './types'
 
 /**

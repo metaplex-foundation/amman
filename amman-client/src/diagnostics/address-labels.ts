@@ -7,7 +7,7 @@ import {
   isSignatureAddress,
   isValidSolanaAddress,
 } from '../utils/address'
-import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
+import { KeyLike, isKeyLike, publicKeyString } from '../utils/keys'
 import { logError } from '../utils/log'
 import { mapLabel } from './address-label-mapper'
 

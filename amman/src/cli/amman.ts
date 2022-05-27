@@ -1,8 +1,18 @@
 #!/usr/bin/env node
-
-import yargs from 'yargs/yargs'
-import { hideBin } from 'yargs/helpers'
+import {
+  AMMAN_RELAY_PORT,
+  AMMAN_STORAGE_PORT,
+} from '@metaplex-foundation/amman-client'
+import { Connection } from '@solana/web3.js'
 import { strict as assert } from 'assert'
+import { execSync as exec } from 'child_process'
+import path from 'path'
+import { hideBin } from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+import { Amman } from '../api'
+import { MockStorageServer } from '../storage'
+import { assertCommitment, commitments, logError, logInfo } from '../utils'
+import { killRunningServer } from '../utils/http'
 import {
   airdropHelp,
   handleAccountCommand,
@@ -17,18 +27,7 @@ import {
   handleLogsCommand,
   handleSnapshotCommand,
 } from './commands'
-import { execSync as exec } from 'child_process'
-import {
-  AMMAN_RELAY_PORT,
-  AMMAN_STORAGE_PORT,
-} from '@metaplex-foundation/amman-client'
-import { assertCommitment, commitments, logError, logInfo } from '../utils'
-import { killRunningServer } from '../utils/http'
-import { MockStorageServer } from '../storage'
 import { closeConnection } from './utils'
-import { Amman } from '../api'
-import { Connection } from '@solana/web3.js'
-import path from 'path'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------

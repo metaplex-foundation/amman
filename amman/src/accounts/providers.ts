@@ -1,3 +1,8 @@
+import {
+  LOCALHOST,
+  isKeyLike,
+  publicKeyString,
+} from '@metaplex-foundation/amman-client'
 import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
@@ -9,11 +14,6 @@ import {
   AmmanAccountRendererMap,
 } from '../types'
 import { logDebug, logError, logTrace } from '../utils'
-import {
-  LOCALHOST,
-  isKeyLike,
-  publicKeyString,
-} from '@metaplex-foundation/amman-client'
 import { isAccount, isMint } from './types'
 
 const AMMAN_TRACE_UNRESOLVED_ACCOUNTS =

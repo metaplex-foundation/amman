@@ -1,9 +1,9 @@
 import { AccountInfo, Connection, Keypair, PublicKey } from '@solana/web3.js'
-import path from 'path'
-import { promises as fs } from 'fs'
-import { ensureDir } from '../utils/fs'
-import { fullAccountsDir } from '../utils/config'
 import { strict as assert } from 'assert'
+import { promises as fs } from 'fs'
+import path from 'path'
+import { fullAccountsDir } from '../utils/config'
+import { ensureDir } from '../utils/fs'
 import { SNAPSHOT_ACCOUNTS_DIR, SNAPSHOT_KEYPAIRS_DIR } from './consts'
 
 export type PersistedAccountInfo = {
