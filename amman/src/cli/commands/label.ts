@@ -1,5 +1,5 @@
+import { Amman } from '@metaplex-foundation/amman-client'
 import { strict as assert } from 'assert'
-import { Amman } from '../../api'
 
 export async function handleLabelCommand(labels: string[]) {
   const record: Record<string, string> = labels.reduce(

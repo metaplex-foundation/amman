@@ -1,8 +1,7 @@
-import { LOCALHOST } from '@metaplex-foundation/amman-client'
+import { Amman, LOCALHOST } from '@metaplex-foundation/amman-client'
 import colors from 'ansi-colors'
 import { spawn } from 'child_process'
 import split from 'split2'
-import { Amman } from '../../api'
 import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import { logTrace } from '../../utils'
 

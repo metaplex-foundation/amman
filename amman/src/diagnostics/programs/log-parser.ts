@@ -1,6 +1,6 @@
 // https://github.com/solana-labs/solana/blob/cd09390367d2ac66e2269a39cd40c4b3097c6732/explorer/src/utils/program-logs.ts
+import { Amman } from '@metaplex-foundation/amman-client'
 import { TransactionError } from '@solana/web3.js'
-import { Amman } from '../../api'
 import { getTransactionInstructionError } from './program-err'
 import { Cluster, programLabel } from './program-names'
 

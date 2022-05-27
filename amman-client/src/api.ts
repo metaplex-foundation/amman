@@ -1,21 +1,4 @@
-import {
-  AddressLabels,
-  GenKeypair,
-  GenLabeledKeypair,
-  LoadKeypair,
-  LoadOrGenKeypair,
-  TransactionChecker,
-  PayerTransactionHandler,
-  TransactionLabelMapper,
-} from '@metaplex-foundation/amman-client'
-import {
-  AMMAN_RELAY_URI,
-  AmmanClient,
-  AmmanClientOpts,
-  ConnectedAmmanClient,
-  DisconnectedAmmanClient,
-} from '@metaplex-foundation/amman-client'
-import type { ErrorResolver } from '@metaplex-foundation/cusper'
+import { ErrorResolver } from '@metaplex-foundation/cusper'
 import {
   Connection,
   Keypair,
@@ -23,9 +6,24 @@ import {
   PublicKey,
 } from '@solana/web3.js'
 import {
-  AmmanMockStorageDriver,
-  AmmanMockStorageDriverOptions,
-} from './storage'
+  AddressLabels,
+  GenKeypair,
+  GenLabeledKeypair,
+  LoadKeypair,
+  LoadOrGenKeypair,
+} from './diagnostics/address-labels'
+import {
+  AmmanClient,
+  AmmanClientOpts,
+  ConnectedAmmanClient,
+  DisconnectedAmmanClient,
+} from './relay/client'
+import { AMMAN_RELAY_URI } from './relay/consts'
+import { TransactionChecker } from './transactions/transaction-checker'
+import {
+  PayerTransactionHandler,
+  TransactionLabelMapper,
+} from './transactions/transaction-handler'
 import { logDebug } from './utils/log'
 
 /**
@@ -154,10 +152,13 @@ export class Amman {
    *
    * @category storage
    */
+  // TODO(thlorenz): add mock storage
+  /*
   createMockStorageDriver = (
     storageId: string,
     options?: AmmanMockStorageDriverOptions
   ) => AmmanMockStorageDriver.create(storageId, options)
+  */
 
   /**
    * Disconnects the amman relay client and allows the app to shut down.

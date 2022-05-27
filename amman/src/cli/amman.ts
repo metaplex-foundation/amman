@@ -2,6 +2,7 @@
 import {
   AMMAN_RELAY_PORT,
   AMMAN_STORAGE_PORT,
+  Amman,
 } from '@metaplex-foundation/amman-client'
 import { Connection } from '@solana/web3.js'
 import { strict as assert } from 'assert'
@@ -9,7 +10,6 @@ import { execSync as exec } from 'child_process'
 import path from 'path'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
-import { Amman } from '../api'
 import { MockStorageServer } from '../storage'
 import { assertCommitment, commitments, logError, logInfo } from '../utils'
 import { killRunningServer } from '../utils/http'

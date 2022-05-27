@@ -1,5 +1,5 @@
-// @ts-ignore (no declaration file)
 import http from 'http'
+// @ts-ignore (no declaration file)
 import portPids from 'port-pid'
 import { logDebug, logError, logInfo, sleep } from '../utils'
 

@@ -1,5 +1,4 @@
 export { tmpLedgerDir } from './utils'
 export { Change } from './accounts/state'
-export * from './api'
 export * from './storage/mock-driver'
 export * from './types'

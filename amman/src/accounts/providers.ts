@@ -2,12 +2,12 @@ import {
   LOCALHOST,
   isKeyLike,
   publicKeyString,
+  Amman,
 } from '@metaplex-foundation/amman-client'
 import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
 import numeral from 'numeral'
-import { Amman } from '../api'
 import {
   AmmanAccount,
   AmmanAccountProvider,
