@@ -19,9 +19,9 @@ import {
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
-  RelayAccountState,
-} from '@metaplex-foundation/amman-common'
+} from './consts'
 import { createTimeout } from './timeout'
+import { RelayAccountState } from './types'
 
 /** @private */
 export type AmmanClient = {

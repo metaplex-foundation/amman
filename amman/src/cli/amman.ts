@@ -18,7 +18,10 @@ import {
   handleSnapshotCommand,
 } from './commands'
 import { execSync as exec } from 'child_process'
-import { AMMAN_RELAY_PORT } from '@metaplex-foundation/amman-common'
+import {
+  AMMAN_RELAY_PORT,
+  AMMAN_STORAGE_PORT,
+} from '@metaplex-foundation/amman-client'
 import { assertCommitment, commitments, logError, logInfo } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { MockStorageServer } from '../storage'
@@ -26,7 +29,6 @@ import { closeConnection } from './utils'
 import { Amman } from '../api'
 import { Connection } from '@solana/web3.js'
 import path from 'path'
-import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-common'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------

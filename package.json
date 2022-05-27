@@ -1,7 +1,6 @@
 {
   "scripts": {
-    "build": "yarn build:common && yarn build:client && yarn build:amman",
-    "build:common": "tsc -p amman-common/tsconfig.json",
+    "build": "yarn build:client && yarn build:amman",
     "build:client": "tsc -p amman-client/tsconfig.json",
     "build:amman": "tsc -p amman/tsconfig.json",
     "doc": "(cd ./amman && yarn doc);",
@@ -10,7 +9,6 @@
   "workspaces": {
     "packages": [
       "amman",
-      "amman-common",
       "amman-client"
     ]
   },

@@ -15,7 +15,7 @@ import EventEmitter from 'events'
 import * as Diff from 'diff'
 import { isKeyLike, publicKeyString } from '../utils/keys'
 import BN from 'bn.js'
-import { AccountDiff } from '@metaplex-foundation/amman-common'
+import { AccountDiff } from '@metaplex-foundation/amman-client'
 export type { Change } from 'diff'
 
 export type AccountState = {

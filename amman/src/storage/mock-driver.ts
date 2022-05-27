@@ -8,7 +8,7 @@ import { StorageDriver } from './storage-driver'
 import {
   AMMAN_STORAGE_UPLOAD_URI,
   AMMAN_STORAGE_URI,
-} from '@metaplex-foundation/amman-common'
+} from '@metaplex-foundation/amman-client'
 
 import { strict as assert } from 'assert'
 import BN from 'bn.js'

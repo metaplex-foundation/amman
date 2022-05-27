@@ -27,7 +27,7 @@ import {
   MSG_RESPOND_STORE_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_KEYPAIR,
-} from '@metaplex-foundation/amman-common'
+} from '@metaplex-foundation/amman-client'
 import { AMMAN_VERSION } from './types'
 
 /**

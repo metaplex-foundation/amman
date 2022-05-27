@@ -12,8 +12,8 @@ import {
   LoadKeypair,
   LoadOrGenKeypair,
 } from './diagnostics/address-labels'
-import { AMMAN_RELAY_URI } from '@metaplex-foundation/amman-common'
 import {
+  AMMAN_RELAY_URI,
   AmmanClient,
   AmmanClientOpts,
   ConnectedAmmanClient,

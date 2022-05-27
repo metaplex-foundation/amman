@@ -7,7 +7,7 @@ import { ValidatorConfig } from './validator/types'
 export {
   RelayAccountState,
   AccountDiff,
-} from '@metaplex-foundation/amman-common'
+} from '@metaplex-foundation/amman-client'
 
 /**
  * Amman Config

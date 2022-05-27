@@ -43,13 +43,13 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@metaplex-foundation/amman-common": "^0.0.0",
     "@solana/web3.js": "^1.35.0",
     "debug": "^4.3.3",
     "socket.io-client": "^4.4.1"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
+    "@types/deep-diff": "^1.0.1",
     "doctoc": "^2.1.0",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
