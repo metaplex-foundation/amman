@@ -47,12 +47,12 @@
     "@solana/spl-token-registry": "^0.2.2405",
     "@solana/web3.js": "^1.35.0",
     "debug": "^4.3.3",
-    "deep-diff": "^1.0.2",
     "socket.io-client": "^4.4.1"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
     "@types/deep-diff": "^1.0.1",
+    "@types/diff": "^5.0.2",
     "doctoc": "^2.1.0",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
