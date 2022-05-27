@@ -64,6 +64,7 @@
     "yargs": "^17.3.0"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/bn.js": "^5.1.0",
     "@types/debug": "^4.1.7",
     "@types/deep-diff": "^1.0.1",
