@@ -11,7 +11,7 @@ import { scopedLog } from '../utils/log'
 import { canRead, ensureDir } from '../utils/fs'
 import { DEFAULT_STORAGE_CONFIG } from './types'
 import { tmpdir } from 'os'
-import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-core'
+import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-common'
 
 export const AMMAN_STORAGE_ROOT = path.join(tmpdir(), 'amman-storage')
 

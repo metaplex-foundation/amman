@@ -25,7 +25,7 @@ import { canAccessSync } from '../utils/fs'
 import { processAccounts } from './process-accounts'
 import { mapPersistedAccountInfos } from '../assets'
 import { processSnapshot } from './process-snapshot'
-import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-core'
+import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-common'
 
 /**
  * @private

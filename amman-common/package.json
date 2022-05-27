@@ -1,11 +1,11 @@
 {
-  "name": "@metaplex-foundation/amman-core",
+  "name": "@metaplex-foundation/amman-common",
   "version": "0.0.0",
   "description": "Core functionality of amman, shared by both the client lib and the main amman runtime.",
-  "main": "dist/amman-core.js",
-  "types": "dist/amman-core.d.ts",
+  "main": "dist/amman-common.js",
+  "types": "dist/amman-common.d.ts",
   "bin": {
-    "amman": "dist/cli/amman-core.js"
+    "amman": "dist/cli/amman-common.js"
   },
   "scripts": {
     "check:publish-ready": "yarn build",

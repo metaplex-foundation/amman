@@ -26,7 +26,7 @@ import { closeConnection } from './utils'
 import { Amman } from '../api'
 import { Connection } from '@solana/web3.js'
 import path from 'path'
-import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-core'
+import { AMMAN_STORAGE_PORT } from '@metaplex-foundation/amman-common'
 
 const commands = yargs(hideBin(process.argv))
   // -----------------

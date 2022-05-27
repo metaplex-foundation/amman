@@ -1,5 +1,5 @@
 {
-  "entryPoints": ["src/amman-core.ts"],
+  "entryPoints": ["src/amman-common.ts"],
   "excludePrivate": true,
   "categorizeByGroup": false,
   "readme": "none",
