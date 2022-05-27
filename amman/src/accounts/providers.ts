@@ -8,8 +8,12 @@ import {
   AmmanAccountProvider,
   AmmanAccountRendererMap,
 } from '../types'
-import { LOCALHOST, logDebug, logError, logTrace } from '../utils'
-import { isKeyLike, publicKeyString } from '../utils/keys'
+import { logDebug, logError, logTrace } from '../utils'
+import {
+  LOCALHOST,
+  isKeyLike,
+  publicKeyString,
+} from '@metaplex-foundation/amman-client'
 import { isAccount, isMint } from './types'
 
 const AMMAN_TRACE_UNRESOLVED_ACCOUNTS =

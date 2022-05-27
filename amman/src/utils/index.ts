@@ -2,8 +2,6 @@ import crypto from 'crypto'
 import { tmpdir } from 'os'
 import path from 'path'
 
-export * from './address'
-export * from './consts'
 export * from './guards'
 export * from './log'
 

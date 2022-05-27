@@ -3,7 +3,8 @@ import split from 'split2'
 import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import colors from 'ansi-colors'
 import { Amman } from '../../api'
-import { LOCALHOST, logTrace } from '../../utils'
+import { logTrace } from '../../utils'
+import { LOCALHOST } from '@metaplex-foundation/amman-client'
 
 export async function pipeSolanaLogs(amman?: Amman) {
   const logger = new PrettyLogger(amman)

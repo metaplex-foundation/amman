@@ -11,7 +11,10 @@ import {
   GenLabeledKeypair,
   LoadKeypair,
   LoadOrGenKeypair,
-} from './diagnostics/address-labels'
+  TransactionChecker,
+  PayerTransactionHandler,
+  TransactionLabelMapper,
+} from '@metaplex-foundation/amman-client'
 import {
   AMMAN_RELAY_URI,
   AmmanClient,
@@ -23,11 +26,6 @@ import {
   AmmanMockStorageDriver,
   AmmanMockStorageDriverOptions,
 } from './storage'
-import { TransactionChecker } from './transactions/transaction-checker'
-import {
-  PayerTransactionHandler,
-  TransactionLabelMapper,
-} from './transactions/transaction-handler'
 import { logDebug } from './utils/log'
 
 /**

@@ -1,14 +1,12 @@
-import {
-  commitments,
-  isValidSolanaAddress,
-  LOCALHOST,
-  logDebug,
-  logInfo,
-} from '../../utils'
+import { commitments, logDebug, logInfo } from '../../utils'
 import path from 'path'
 import { strict as assert } from 'assert'
 import { keypairFromFile } from '../../utils/fs'
 import { Commitment, Connection, PublicKey } from '@solana/web3.js'
+import {
+  isValidSolanaAddress,
+  LOCALHOST,
+} from '@metaplex-foundation/amman-client'
 import { Amman } from '../../api'
 
 export async function handleAirdropCommand(

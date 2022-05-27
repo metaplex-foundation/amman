@@ -5,7 +5,7 @@ import {
   Signer,
   Transaction,
 } from '@solana/web3.js'
-import { defaultConfirmOptions } from '.'
+import { defaultConfirmOptions } from './consts'
 import { ConfirmedTransactionDetails, TransactionHandler } from './types'
 import { AddressLabels } from '../diagnostics/address-labels'
 import type { ErrorResolver } from '@metaplex-foundation/cusper'

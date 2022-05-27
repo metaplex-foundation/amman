@@ -1,13 +1,13 @@
 import {
-  ConfirmedTransactionAsserts,
-  ConfirmedTransactionDetails,
-} from './types'
-import {
   Assert,
   assertContainMessages,
   assertTransactionError,
   assertTransactionSuccess,
-} from '../asserts'
+} from '../asserts/asserts'
+import {
+  ConfirmedTransactionAsserts,
+  ConfirmedTransactionDetails,
+} from './types'
 
 const MISSING_ASSERT_MESSAGE = `
 ## Problem

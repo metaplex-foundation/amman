@@ -1,4 +1,7 @@
-import type { Diff } from 'deep-diff'
+import { Diff } from 'deep-diff'
+
+// TODO(thlorenz): Used to be Diff.Change
+type DiffChange = any
 
 export type AccountDiff = Array<Diff<Record<string, any>, Record<string, any>>>
 export type RelayAccountState = {
@@ -6,6 +9,6 @@ export type RelayAccountState = {
   accountDiff?: AccountDiff
   slot: number
   rendered?: string
-  renderedDiff?: Diff.Change[]
+  renderedDiff?: DiffChange[]
   timestamp: number
 }

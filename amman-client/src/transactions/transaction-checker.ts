@@ -1,4 +1,4 @@
-import { ErrorResolver } from '@metaplex-foundation/cusper'
+import type { ErrorResolver } from '@metaplex-foundation/cusper'
 import {
   Connection,
   TransactionResponse,
@@ -10,7 +10,7 @@ import {
   assertContainMessages,
   assertTransactionError,
   assertTransactionSuccess,
-} from '../asserts'
+} from '../asserts/asserts'
 import { TransactionSummary } from './types'
 
 /**

@@ -1,18 +1,15 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
-import {
-  AmmanClient,
-  ConnectedAmmanClient,
-} from '@metaplex-foundation/amman-client'
 import { strict as assert } from 'assert'
+import { AmmanClient, ConnectedAmmanClient } from '../relay/client'
 import {
   extractSolanaAddresses,
   isPublicKeyAddress,
   isSignatureAddress,
   isValidSolanaAddress,
-  logError,
-} from '../utils'
-import { mapLabel } from './address-label-mapper'
+} from '../utils/address'
 import { isKeyLike, KeyLike, publicKeyString } from '../utils/keys'
+import { logError } from '../utils/log'
+import { mapLabel } from './address-label-mapper'
 
 /** @private */
 export type AddLabel = (
@@ -224,7 +221,7 @@ export class AddressLabels {
   genKeypair: GenKeypair = () => {
     const kp = Keypair.generate()
     // NOTE: that this may fail to reach the relay before the app exists
-    this.storeKeypair(kp).catch((err) => {
+    this.storeKeypair(kp).catch((err: any) => {
       logError('Ran into some issue trying to store the generated keypair')
       logError(err)
     })

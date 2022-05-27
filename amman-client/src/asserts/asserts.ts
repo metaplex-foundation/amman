@@ -1,10 +1,10 @@
 import { TransactionResponse, TransactionSignature } from '@solana/web3.js'
-import {
+import { AMMAN_EXPLORER } from '../consts'
+import type {
   ConfirmedTransactionDetails,
   MaybeErrorWithCode,
   TransactionSummary,
-} from '../transactions'
-import { AMMAN_EXPLORER } from '../utils/consts'
+} from '../transactions/types'
 import { logError, logInfo } from '../utils/log'
 
 /**

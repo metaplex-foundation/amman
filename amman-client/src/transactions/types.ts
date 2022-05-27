@@ -1,5 +1,3 @@
-import type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
-export type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
 import {
   Connection,
   PublicKey,
@@ -12,7 +10,9 @@ import {
   TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
-import { Assert, assertContainMessages } from '../asserts'
+import type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
+import { Assert, assertContainMessages } from '../asserts/asserts'
+export type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
 
 /** @private */
 export type ErrorFromProgramLogs = (logs: string[]) => MaybeErrorWithCode

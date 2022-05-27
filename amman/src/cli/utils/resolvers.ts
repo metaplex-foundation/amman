@@ -1,5 +1,6 @@
+import { isValidPublicKeyAddress } from '@metaplex-foundation/amman-client'
 import { Amman } from '../../api'
-import { isValidPublicKeyAddress, logTrace } from '../../utils'
+import { logTrace } from '../../utils'
 
 export function cliAmmanInstance() {
   return Amman.instance({
