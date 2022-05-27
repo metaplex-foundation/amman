@@ -1,6 +1,6 @@
 # Amman Core
 
-**Core functionality of amman, shared by both the client lib and the main amman runtime.dator.
+**Common functionality of amman, shared by both the client lib and the main amman runtime.
 
 ## LICENSE
 

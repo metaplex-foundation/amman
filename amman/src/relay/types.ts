@@ -1,4 +1,3 @@
-import { Diff } from 'deep-diff'
 import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
 
 /** The version of amman, used by amman-explorer to detect amman compatibility */
@@ -38,14 +37,4 @@ export type RelayConfig = {
   killRunningRelay: boolean
   accountProviders: Record<string, AmmanAccountProvider>
   accountRenderers: AmmanAccountRendererMap
-}
-
-export type AccountDiff = Array<Diff<Record<string, any>, Record<string, any>>>
-export type RelayAccountState = {
-  account: Record<string, any>
-  accountDiff?: AccountDiff
-  slot: number
-  rendered?: string
-  renderedDiff?: Diff.Change[]
-  timestamp: number
 }

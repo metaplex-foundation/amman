@@ -18,7 +18,7 @@ import {
   handleSnapshotCommand,
 } from './commands'
 import { execSync as exec } from 'child_process'
-import { AMMAN_RELAY_PORT } from '../relay'
+import { AMMAN_RELAY_PORT } from '@metaplex-foundation/amman-common'
 import { assertCommitment, commitments, logError, logInfo } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { MockStorageServer } from '../storage'

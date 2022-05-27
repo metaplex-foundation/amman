@@ -12,10 +12,10 @@ import { AccountProvider } from './providers'
 import { strict as assert } from 'assert'
 import { diff } from 'deep-diff'
 import EventEmitter from 'events'
-import { AccountDiff } from '../relay/types'
 import * as Diff from 'diff'
 import { isKeyLike, publicKeyString } from '../utils/keys'
 import BN from 'bn.js'
+import { AccountDiff } from '@metaplex-foundation/amman-common'
 export type { Change } from 'diff'
 
 export type AccountState = {

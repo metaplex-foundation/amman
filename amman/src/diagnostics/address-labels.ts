@@ -1,5 +1,8 @@
 import { Keypair, PublicKey, Signer } from '@solana/web3.js'
-import { AmmanClient, ConnectedAmmanClient } from '../relay'
+import {
+  AmmanClient,
+  ConnectedAmmanClient,
+} from '@metaplex-foundation/amman-client'
 import { strict as assert } from 'assert'
 import {
   extractSolanaAddresses,

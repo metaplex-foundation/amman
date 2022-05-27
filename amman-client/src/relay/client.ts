@@ -1,7 +1,7 @@
 import { Keypair } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import io, { Socket } from 'socket.io-client'
-import { logDebug, logError, logTrace } from '../utils'
+import { logDebug, logError, logTrace } from '../utils/log'
 import {
   ACK_UPDATE_ADDRESS_LABELS,
   MSG_CLEAR_ADDRESS_LABELS,
@@ -19,9 +19,9 @@ import {
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
-} from './consts'
+  RelayAccountState,
+} from '@metaplex-foundation/amman-common'
 import { createTimeout } from './timeout'
-import { RelayAccountState } from './types'
 
 /** @private */
 export type AmmanClient = {

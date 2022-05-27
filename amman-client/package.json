@@ -1,11 +1,11 @@
 {
-  "name": "@metaplex-foundation/amman-common",
+  "name": "@metaplex-foundation/amman-client",
   "version": "0.0.0",
-  "description": "Core functionality of amman, shared by both the client lib and the main amman runtime.",
-  "main": "dist/amman-common.js",
-  "types": "dist/amman-common.d.ts",
+  "description": "Client piece of amman which supports with the running validator, relay and storage.",
+  "main": "dist/amman-client.js",
+  "types": "dist/amman-client.d.ts",
   "bin": {
-    "amman": "dist/cli/amman-common.js"
+    "amman": "dist/cli/amman-client.js"
   },
   "scripts": {
     "check:publish-ready": "yarn build",
@@ -42,9 +42,10 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@metaplex-foundation/amman-common": "^0.0.0"
+  },
   "devDependencies": {
-    "@types/deep-diff": "^1.0.1",
     "doctoc": "^2.1.0",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",

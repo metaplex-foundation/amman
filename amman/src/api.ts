@@ -12,13 +12,13 @@ import {
   LoadKeypair,
   LoadOrGenKeypair,
 } from './diagnostics/address-labels'
+import { AMMAN_RELAY_URI } from '@metaplex-foundation/amman-common'
 import {
   AmmanClient,
   AmmanClientOpts,
-  AMMAN_RELAY_URI,
   ConnectedAmmanClient,
   DisconnectedAmmanClient,
-} from './relay'
+} from '@metaplex-foundation/amman-client'
 import {
   AmmanMockStorageDriver,
   AmmanMockStorageDriverOptions,

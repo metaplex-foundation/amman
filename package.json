@@ -1,18 +1,25 @@
 {
   "scripts": {
-    "build": "(cd ./amman-common && yarn build) && (cd ./amman && yarn build)",
+    "build": "yarn build:common && yarn build:client && yarn build:amman",
+    "build:common": "tsc -p amman-common/tsconfig.json",
+    "build:client": "tsc -p amman-client/tsconfig.json",
+    "build:amman": "tsc -p amman/tsconfig.json",
     "doc": "(cd ./amman && yarn doc);",
     "doc:update": "./sh/update-docs"
   },
   "workspaces": {
     "packages": [
       "amman",
-      "amman-common"
+      "amman-common",
+      "amman-client"
     ]
   },
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
   "repository": {
     "url": "https://github.com/metaple-foundationx/amman.git"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "typescript": "^4.7.2"
+  }
 }

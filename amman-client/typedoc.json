@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["src/amman-common.ts"],
+  "excludePrivate": true,
+  "categorizeByGroup": false,
+  "readme": "none",
+  "emit": "both"
+}
