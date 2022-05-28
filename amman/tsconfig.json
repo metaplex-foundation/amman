@@ -4,8 +4,8 @@
     "baseUrl": "./",
     "outDir": "./dist/",
     "module": "commonjs",
-    "declarationDir": null,
-    "declaration": false
+    "noEmit": false,
+    "declaration": true
   },
   "include": ["src"]
 }
