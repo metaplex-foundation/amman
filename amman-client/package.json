@@ -1,0 +1,62 @@
+{
+  "name": "@metaplex-foundation/amman-client",
+  "version": "0.0.0",
+  "description": "Client piece of amman which supports with the running validator, relay and storage.",
+  "main": "dist/amman-client.js",
+  "types": "dist/amman-client.d.ts",
+  "bin": {
+    "amman": "dist/cli/amman-client.js"
+  },
+  "scripts": {
+    "check:publish-ready": "yarn build",
+    "preversion": "yarn check:publish-ready",
+    "postversion": "git add package.json && git commit -m \"chore: update $npm_package_name to v$npm_package_version\" && git tag $npm_package_name@$npm_package_version",
+    "prepublishOnly": "yarn check:publish-ready",
+    "postpublish": "git push origin && git push origin --tags",
+    "build": "rimraf dist && tsc -p tsconfig.json",
+    "test": "tape dist/test/*.test.js",
+    "lint": "prettier -c ./src/",
+    "lint:fix": "prettier --write ./src",
+    "doc": "rimraf ./docs && typedoc",
+    "doc:update": "./sh/update-docs",
+    "doctoc": "doctoc README.md"
+  },
+  "repository": "git@github.com:metaplex-foundation/amman.git",
+  "author": "Thorsten Lorenz <thlorenz@gmx.de>",
+  "license": "Apache-2.0",
+  "private": false,
+  "directories": {
+    "dist": "./dist/"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "keywords": [
+    "solana",
+    "blockchain",
+    "test",
+    "tools",
+    "utilities"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "dependencies": {
+    "@metaplex-foundation/cusper": "^0.0.2",
+    "@solana/spl-token-registry": "^0.2.2405",
+    "@solana/web3.js": "^1.35.0",
+    "debug": "^4.3.3",
+    "socket.io-client": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.7",
+    "@types/deep-diff": "^1.0.1",
+    "@types/diff": "^5.0.2",
+    "doctoc": "^2.1.0",
+    "prettier": "^2.5.1",
+    "rimraf": "^3.0.2",
+    "typedoc": "^0.22.10",
+    "typescript": "^4.5.2"
+  }
+}
