@@ -3,4 +3,7 @@ export { Change } from './accounts/state'
 export * from './storage/mock-driver'
 export * from './types'
 
-export { AmmanAccountRendererMap } from '@metaplex-foundation/amman-client'
+export {
+  AmmanAccountRendererMap,
+  LOCALHOST,
+} from '@metaplex-foundation/amman-client'

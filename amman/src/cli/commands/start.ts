@@ -19,9 +19,8 @@ export async function handleStartCommand(args: StartCommandArgs) {
     try {
       ;({ config, configPath } = await resolveConfig(args))
     } catch (err) {
-      logError(
-        `Having trouble loading amman config from ${args.config} which resolved to ${configPath}`
-      )
+      logError(`Having trouble loading amman config from ${args.config}`)
+      logError(err)
       return { needHelp: true }
     }
     if (configPath != null) {
