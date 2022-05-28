@@ -26,7 +26,9 @@ export const DEFAULT_START_CONFIG: AmmanConfig = {
  *
  * @private
  */
-export function completeConfig(config: Partial<AmmanConfig> = {}): AmmanConfig {
+export function completeConfig(
+  config: Partial<AmmanConfig> = {}
+): Required<AmmanConfig> {
   const validator = { ...DEFAULT_VALIDATOR_CONFIG, ...config.validator }
   const relay = { ...DEFAULT_RELAY_CONFIG, ...config.relay }
   const snapshot = { ...DEFAULT_SNAPSHOT_CONFIG, ...config.snapshot }

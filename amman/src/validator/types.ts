@@ -1,4 +1,6 @@
 import { Commitment } from '@solana/web3.js'
+import { ChildProcess } from 'child_process'
+import { AmmanConfig } from '../types'
 
 /**
  * Definition of a bpf program which the test-validator loads at startup.
@@ -75,4 +77,9 @@ export type ValidatorConfig = {
   limitLedgerSize: number
   verifyFees: boolean
   detached: boolean
+}
+
+export type AmmanState = {
+  config: Required<AmmanConfig>
+  validator: ChildProcess
 }

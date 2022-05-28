@@ -22,7 +22,7 @@ export type AmmanConfig = {
   validator?: ValidatorConfig
   relay?: RelayConfig
   storage?: StorageConfig
-  snapshot: SnapshotConfig
+  snapshot?: SnapshotConfig
   streamTransactionLogs?: boolean
   assetsFolder?: string
 }
