@@ -47,7 +47,9 @@
     "@solana/spl-token-registry": "^0.2.2405",
     "@solana/web3.js": "^1.35.0",
     "debug": "^4.3.3",
-    "socket.io-client": "^4.4.1"
+    "js-sha3": "^0.8.0",
+    "socket.io-client": "^4.4.1",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
