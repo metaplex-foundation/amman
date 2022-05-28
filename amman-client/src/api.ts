@@ -24,6 +24,11 @@ import {
   PayerTransactionHandler,
   TransactionLabelMapper,
 } from './transactions/transaction-handler'
+import {
+  deriveFromKeypair,
+  deriveFromWallet,
+  deriveInsecure,
+} from './utils/keypair'
 import { logDebug } from './utils/log'
 
 /**
@@ -90,6 +95,32 @@ export class Amman {
    */
   loadOrGenKeypair: LoadOrGenKeypair = async (label) =>
     this.addr.loadOrGenKeypair(label)
+
+  /**
+   * Derives a keypair from a message signed with the provided keypair.
+   *
+   * @param message - which is signed and then used to derive the seed digest
+   */
+  deriveKeypairFromKeypair = deriveFromKeypair
+
+  /**
+   * Derives a keypair from a message signed with the provided wallet.
+   *
+   * @param message - which is signed and then used to derive the seed digest
+   */
+  deriveKeypairFromWallet = deriveFromWallet
+
+  /**
+   * Derives a keypair from a message.
+   *
+   * **WARN: only use this for testing purposes.**
+   * Use {@link deriveFromWallet} or {@link deriveFromKeypair} instead in a production environment.
+   *
+   * This is entirely insecure as anyone with that same message can derive the same keypair.
+   *
+   * @param message - from wich the seed digest is derived
+   */
+  deriveKeypairInsecure = deriveInsecure
 
   /**
    * Drops the specified amount of tokens to the provided public key.
