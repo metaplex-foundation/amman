@@ -42,6 +42,3 @@ export type AmmanAccountProvider = {
     offset?: number
   ): [AmmanAccount, number]
 }
-
-export type AmmanRenderAccount = (account: any) => string
-export type AmmanAccountRendererMap = Map<any, AmmanRenderAccount>

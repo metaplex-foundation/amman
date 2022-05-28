@@ -16,6 +16,7 @@ import {
   MSG_RESPOND_STORE_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_KEYPAIR,
+  AmmanAccountRendererMap,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -24,7 +25,7 @@ import { Server, Socket } from 'socket.io'
 import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
 import { AccountPersister } from '../assets'
-import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
+import { AmmanAccountProvider } from '../types'
 import { logDebug, logTrace } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { Account, Program } from '../validator/types'

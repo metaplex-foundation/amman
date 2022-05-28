@@ -1,4 +1,5 @@
-import { AmmanAccountProvider, AmmanAccountRendererMap } from '../types'
+import { AmmanAccountRendererMap } from '@metaplex-foundation/amman-client'
+import { AmmanAccountProvider } from '../types'
 
 /** The version of amman, used by amman-explorer to detect amman compatibility */
 const { version } = require('../../package.json')

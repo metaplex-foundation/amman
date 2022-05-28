@@ -3,16 +3,13 @@ import {
   isKeyLike,
   publicKeyString,
   Amman,
+  AmmanAccountRendererMap,
 } from '@metaplex-foundation/amman-client'
 import { getAccount, getMint, Mint, Account } from '@solana/spl-token'
 import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
 import numeral from 'numeral'
-import {
-  AmmanAccount,
-  AmmanAccountProvider,
-  AmmanAccountRendererMap,
-} from '../types'
+import { AmmanAccount, AmmanAccountProvider } from '../types'
 import { logDebug, logError, logTrace } from '../utils'
 import { isAccount, isMint } from './types'
 
