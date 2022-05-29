@@ -8,8 +8,10 @@ import {
   isValidSolanaAddress,
 } from '../utils/address'
 import { KeyLike, isKeyLike, publicKeyString } from '../utils/keys'
-import { logError } from '../utils/log'
+import { logError, scopedLog } from '../utils/log'
 import { mapLabel } from './address-label-mapper'
+
+const { logTrace } = scopedLog('addr')
 
 /** @private */
 export type AddLabel = (
@@ -87,6 +89,7 @@ export class AddressLabels {
     this.knownLabels[keyString] = label
 
     await this.ammanClient.addAddressLabels({ [keyString]: label })
+    logTrace(`🔑 ${label}: ${keyString}`)
     return label
   }
 
@@ -112,6 +115,7 @@ export class AddressLabels {
             labels[keyString] = label
             this.knownLabels[keyString] = label
             this.logLabel(`🔑 ${label}: ${keyString}`)
+            logTrace(`🔑 ${label}: ${keyString}`)
           }
         }
       }

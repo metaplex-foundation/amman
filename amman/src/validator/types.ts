@@ -82,4 +82,5 @@ export type ValidatorConfig = {
 export type AmmanState = {
   config: Required<AmmanConfig>
   validator: ChildProcess
+  detached: boolean
 }

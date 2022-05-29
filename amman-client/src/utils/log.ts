@@ -1,9 +1,9 @@
 import debug from 'debug'
 
-export const logErrorDebug = debug('amman-client:error')
-export const logInfoDebug = debug('amman-client:info')
-export const logDebug = debug('amman-client:debug')
-export const logTrace = debug('amman-client:trace')
+export const logErrorDebug = debug('amman:error')
+export const logInfoDebug = debug('amman:info')
+export const logDebug = debug('amman:debug')
+export const logTrace = debug('amman:trace')
 
 export const logError = logErrorDebug.enabled
   ? logErrorDebug
@@ -13,6 +13,11 @@ export const logInfo = logInfoDebug.enabled
   ? logInfoDebug
   : console.log.bind(console)
 
-export function scopedLog(level: string, scope: string) {
-  return debug(`amman-client:${scope}:${level}`)
+export function scopedLog(scope: string) {
+  return {
+    logError: debug(`amman:${scope}:error`),
+    logInfo: debug(`amman:${scope}:info`),
+    logDebug: debug(`amman:${scope}:debug`),
+    logTrace: debug(`amman:${scope}:trace`),
+  }
 }

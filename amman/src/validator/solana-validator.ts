@@ -1,10 +1,17 @@
+import { PersistedAccountInfo } from '@metaplex-foundation/amman-client'
+import { Keypair } from '@solana/web3.js'
 import { ChildProcess, spawn } from 'child_process'
+import { createTemporarySnapshot } from '../assets'
 import { AmmanConfig } from '../types'
 import { canAccessSync } from '../utils/fs'
+import { scopedLog } from '../utils/log'
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { solanaConfig } from './prepare-config'
 import { processAccounts } from './process-accounts'
 import { processSnapshot } from './process-snapshot'
+import { AmmanState } from './types'
+
+const { logDebug, logInfo } = scopedLog('validator')
 
 export async function buildSolanaValidatorArgs(
   config: Required<AmmanConfig>,
@@ -101,6 +108,7 @@ export async function waitForValidator(
 ) {
   await ensureValidatorIsUp(jsonRpcUrl, verifyFees)
   await cleanupConfig()
+  logInfo('up and running')
 }
 
 export async function killValidatorChild(child: ChildProcess) {
@@ -108,4 +116,35 @@ export async function killValidatorChild(child: ChildProcess) {
   await new Promise((resolve, reject) => {
     child.on('exit', resolve).on('error', reject)
   })
+}
+
+export async function restartValidator(
+  ammanState: AmmanState,
+  addresses: string[],
+  // Keyed pubkey:label
+  accountLabels: Record<string, string>,
+  keypairs: Map<string, { keypair: Keypair; id: string }>,
+  accountOverrides: Map<string, PersistedAccountInfo> = new Map()
+) {
+  logDebug('Restarting validator')
+
+  const snapshotConfig = await createTemporarySnapshot(
+    addresses,
+    accountLabels,
+    keypairs,
+    accountOverrides
+  )
+  await killValidatorChild(ammanState.validator)
+
+  const validatorConfig = { ...ammanState.config.validator, snapshotConfig }
+  const config = { ...ammanState.config, validator: validatorConfig }
+  const { args, cleanupConfig } = await buildSolanaValidatorArgs(config, false)
+  const validator = await startSolanaValidator(args, ammanState.detached)
+  ammanState.validator = validator
+
+  await waitForValidator(
+    config.validator.jsonRpcUrl,
+    config.validator.verifyFees,
+    cleanupConfig
+  )
 }

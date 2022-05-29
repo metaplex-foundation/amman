@@ -17,6 +17,9 @@ import {
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_KEYPAIR,
   AmmanAccountRendererMap,
+  MSG_REQUEST_SET_ACCOUNT,
+  MSG_RESPOND_SET_ACCOUNT,
+  PersistedAccountInfo,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -26,10 +29,13 @@ import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
 import { AccountPersister } from '../assets'
 import { AmmanAccountProvider } from '../types'
-import { logDebug, logTrace } from '../utils'
+import { scopedLog } from '../utils'
 import { killRunningServer } from '../utils/http'
-import { Account, Program } from '../validator/types'
+import { restartValidator } from '../validator'
+import { Account, AmmanState, Program } from '../validator/types'
 import { AMMAN_VERSION } from './types'
+
+const { logError, logDebug, logTrace } = scopedLog('relay')
 
 /**
  * A simple socket.io server which communicates to the Amman Explorere as well as accepting connections
@@ -40,6 +46,7 @@ import { AMMAN_VERSION } from './types'
 class RelayServer {
   constructor(
     readonly io: Server,
+    readonly ammanState: AmmanState,
     readonly accountProvider: AccountProvider,
     readonly accountPersister: AccountPersister,
     readonly snapshotPersister: AccountPersister,
@@ -66,6 +73,7 @@ class RelayServer {
     socket
       .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
         if (logTrace.enabled) {
+          logTrace(MSG_UPDATE_ADDRESS_LABELS)
           const labelCount = Object.keys(labels).length
           logTrace(`Got ${labelCount} labels, broadcasting ...`)
         }
@@ -78,12 +86,14 @@ class RelayServer {
       })
       .on(MSG_GET_KNOWN_ADDRESS_LABELS, () => {
         if (logTrace.enabled) {
+          logTrace(MSG_GET_KNOWN_ADDRESS_LABELS)
           const labelCount = Object.keys(this.allKnownLabels).length
           logTrace(`Sending ${labelCount} known labels to requesting client.`)
         }
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.allKnownLabels)
       })
       .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
+        logTrace(MSG_REQUEST_ACCOUNT_STATES, pubkey)
         const states = this.accountStates.get(pubkey)?.relayStates
         if (states != null) {
           socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
@@ -92,10 +102,12 @@ class RelayServer {
           subscribedAccountStates.add(pubkey)
           this.accountStates.on(`account-changed:${pubkey}`, (states) => {
             socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
+            logTrace(MSG_UPDATE_ACCOUNT_STATES)
           })
         }
       })
       .on(MSG_REQUEST_ACCOUNT_SAVE, async (pubkey: string, slot?: number) => {
+        logTrace(MSG_REQUEST_ACCOUNT_SAVE, pubkey)
         try {
           let data
           if (slot != null) {
@@ -112,6 +124,7 @@ class RelayServer {
         }
       })
       .on(MSG_REQUEST_SNAPSHOT_SAVE, async (label: string) => {
+        logTrace(MSG_REQUEST_SNAPSHOT_SAVE, label)
         try {
           const addresses = this.accountStates.allAccountAddresses()
           const snapshotDir = await this.snapshotPersister.snapshot(
@@ -126,19 +139,36 @@ class RelayServer {
         }
       })
       .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {
+        logTrace(MSG_REQUEST_STORE_KEYPAIR, id)
         try {
           const keypair = Keypair.fromSecretKey(secretKey)
           this.accountStates.storeKeypair(id, keypair)
           socket.emit(MSG_RESPOND_STORE_KEYPAIR)
+          logTrace(MSG_RESPOND_STORE_KEYPAIR)
         } catch (err: any) {
+          logError(err)
           socket.emit(MSG_RESPOND_STORE_KEYPAIR, err.toString())
         }
       })
       .on(MSG_REQUEST_LOAD_KEYPAIR, (id: string) => {
+        logTrace(MSG_REQUEST_LOAD_KEYPAIR, id)
         const keypair = this.accountStates.getKeypairById(id)
         socket.emit(MSG_RESPOND_LOAD_KEYPAIR, keypair?.secretKey)
       })
+      .on(MSG_REQUEST_SET_ACCOUNT, async (account: PersistedAccountInfo) => {
+        logTrace(MSG_REQUEST_SET_ACCOUNT)
+        const addresses = this.accountStates.allAccountAddresses()
+        await restartValidator(
+          this.ammanState,
+          addresses,
+          this.allKnownLabels,
+          this.accountStates.allKeypairs,
+          new Map([[account.pubkey, account]])
+        )
+        socket.emit(MSG_RESPOND_SET_ACCOUNT)
+      })
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
+        logTrace(MSG_REQUEST_AMMAN_VERSION)
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
   }
@@ -150,6 +180,7 @@ class RelayServer {
  * */
 export class Relay {
   private static createApp(
+    ammanState: AmmanState,
     accountProvider: AccountProvider,
     accountPersister: AccountPersister,
     snapshotPersister: AccountPersister,
@@ -164,6 +195,7 @@ export class Relay {
     })
     const relayServer = new RelayServer(
       io,
+      ammanState,
       accountProvider,
       accountPersister,
       snapshotPersister,
@@ -174,6 +206,7 @@ export class Relay {
   }
 
   static async startServer(
+    ammanState: AmmanState,
     accountProviders: Record<string, AmmanAccountProvider>,
     accountRenderers: AmmanAccountRendererMap,
     programs: Program[],
@@ -227,6 +260,7 @@ export class Relay {
     const knownLabels = { ...programLabels, ...accountLabels }
 
     const { app, io, relayServer } = Relay.createApp(
+      ammanState,
       accountProvider,
       accountPersister,
       snapshotPersister,

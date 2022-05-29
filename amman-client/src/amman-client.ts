@@ -3,6 +3,7 @@ export * from './consts'
 export * from './types'
 
 export * from './asserts/api'
+export * from './assets/api'
 export * from './diagnostics/api'
 export * from './relay/api'
 export * from './storage/api'

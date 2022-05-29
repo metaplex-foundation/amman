@@ -16,7 +16,7 @@ import {
   startSolanaValidator,
   waitForValidator,
 } from './solana-validator'
-import { ValidatorConfig } from './types'
+import { AmmanState, ValidatorConfig } from './types'
 
 /**
  * @private
@@ -86,7 +86,12 @@ export async function initValidator(
     keypairs,
     cleanupConfig,
   } = await buildSolanaValidatorArgs(config, forceClone ?? false)
-  const validator = await startSolanaValidator(args, detached, cleanupConfig)
+  const validator = await startSolanaValidator(args, detached)
+  const ammanState: AmmanState = {
+    validator,
+    detached,
+    config,
+  }
 
   // -----------------
   // Launch relay server in parallel
@@ -97,6 +102,7 @@ export async function initValidator(
       ...persistedSnapshotAccountInfos,
     ])
     Relay.startServer(
+      ammanState,
       accountProviders,
       accountRenderers,
       programs,
@@ -144,6 +150,4 @@ export async function initValidator(
   // Wait for validator to come up and cleanup
   // -----------------
   await waitForValidator(jsonRpcUrl, verifyFees, cleanupConfig)
-
-  logInfo('solana-test-validator is up')
 }

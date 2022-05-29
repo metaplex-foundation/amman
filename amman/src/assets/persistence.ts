@@ -1,21 +1,19 @@
+import {
+  LOCALHOST,
+  PersistedAccountInfo,
+} from '@metaplex-foundation/amman-client'
 import { AccountInfo, Connection, Keypair, PublicKey } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import { promises as fs } from 'fs'
+import { tmpdir } from 'os'
 import path from 'path'
+import { scopedLog } from '../utils'
 import { fullAccountsDir } from '../utils/config'
 import { ensureDir } from '../utils/fs'
 import { SNAPSHOT_ACCOUNTS_DIR, SNAPSHOT_KEYPAIRS_DIR } from './consts'
+import { SnapshotConfig } from './types'
 
-export type PersistedAccountInfo = {
-  pubkey: string
-  account: {
-    lamports: number
-    data: [string, 'base64']
-    owner: string
-    executable: boolean
-    rentEpoch: number
-  }
-}
+const { logDebug, logTrace } = scopedLog('persist')
 
 export class AccountPersister {
   constructor(readonly targetDir: string, readonly connection?: Connection) {}
@@ -29,15 +27,6 @@ export class AccountPersister {
     subdir?: string,
     label?: string
   ) {
-    assert(!accountInfo.executable, 'Can only save non-executable accounts')
-
-    const fulldir = subdir ? path.join(this.targetDir, subdir) : this.targetDir
-    await ensureDir(fulldir)
-
-    const accountPath = path.join(
-      fulldir,
-      `${label ?? address.toBase58()}.json`
-    )
     const persistedAccount: PersistedAccountInfo = {
       pubkey: address.toBase58(),
       account: {
@@ -49,6 +38,28 @@ export class AccountPersister {
       },
     }
 
+    return this.savePersistedAccountInfo(persistedAccount, subdir, label)
+  }
+
+  async savePersistedAccountInfo(
+    persistedAccount: PersistedAccountInfo,
+    subdir?: string,
+    label?: string
+  ) {
+    logTrace('Saving account info', persistedAccount.pubkey, label ?? '')
+    logTrace(persistedAccount)
+    assert(
+      !persistedAccount.account.executable,
+      'Can only save non-executable accounts'
+    )
+    const fulldir = subdir ? path.join(this.targetDir, subdir) : this.targetDir
+    await ensureDir(fulldir)
+
+    const accountPath = path.join(
+      fulldir,
+      `${label ?? persistedAccount.pubkey}.json`
+    )
+
     await fs.writeFile(accountPath, JSON.stringify(persistedAccount, null, 2))
     return accountPath
   }
@@ -58,7 +69,7 @@ export class AccountPersister {
     connection?: Connection,
     data?: Buffer
   ) {
-    connection = this._requireConnection(connection, 'save Account')
+    connection = this._requireConnection('save Account', connection)
     const accountInfo = await connection.getAccountInfo(address, 'confirmed')
     assert(accountInfo != null, `Account not found at address ${address}`)
     if (data != null) {
@@ -93,23 +104,35 @@ export class AccountPersister {
     // Keyed pubkey:label
     accountLabels: Record<string, string>,
     keypairs: Map<string, { keypair: Keypair; id: string }>,
-    maybeConnection?: Connection
+    accountOverrides: Map<string, PersistedAccountInfo> = new Map()
   ) {
     const snapshotRoot = this.targetDir
-    const connection = this._requireConnection(maybeConnection, 'take snapshot')
+    const connection = this._requireConnection('take snapshot')
 
     const snapshotDir = path.join(snapshotRoot, snapshotLabel)
     await ensureDir(snapshotDir, true)
 
+    const subdir = path.join(snapshotLabel, SNAPSHOT_ACCOUNTS_DIR)
+
     await Promise.all(
       addresses.map(async (address) => {
+        // Save override if present
+        const override = accountOverrides.get(address)
+        if (override != null) {
+          return this.savePersistedAccountInfo(
+            override,
+            subdir,
+            accountLabels[address]
+          )
+        }
+
+        // Otherwise, save account info we pull from the validator
         const accountInfo = await connection.getAccountInfo(
           new PublicKey(address),
           'confirmed'
         )
         if (accountInfo == null || accountInfo.executable) return
 
-        const subdir = path.join(snapshotLabel, SNAPSHOT_ACCOUNTS_DIR)
         return this.saveAccountInfo(
           new PublicKey(address),
           accountInfo,
@@ -128,8 +151,8 @@ export class AccountPersister {
   }
 
   private _requireConnection(
-    connection: Connection | undefined,
-    task: string
+    task: string,
+    connection?: Connection
   ): Connection {
     connection ??= this.connection
     assert(
@@ -145,6 +168,7 @@ export async function loadAccount(
   sourceDir?: string,
   label?: string
 ) {
+  logTrace('Loading account', address.toBase58(), label ?? '')
   const accountPath = path.join(
     sourceDir ?? fullAccountsDir(),
     `${label ?? address.toBase58()}.json`
@@ -182,4 +206,35 @@ export function mapPersistedAccountInfos(
     map.set(address, accountInfo)
   }
   return map
+}
+
+export async function createTemporarySnapshot(
+  addresses: string[],
+  // Keyed pubkey:label
+  accountLabels: Record<string, string>,
+  keypairs: Map<string, { keypair: Keypair; id: string }>,
+  accountOverrides: Map<string, PersistedAccountInfo> = new Map()
+) {
+  logDebug('Creating temporary snapshot')
+  logTrace(accountOverrides)
+
+  const label = 'temporary'
+  const snapshotFolder = path.join(tmpdir(), 'amman-snapshots')
+  const config: SnapshotConfig = {
+    snapshotFolder,
+    load: label,
+  }
+  const persister = new AccountPersister(
+    snapshotFolder,
+    new Connection(LOCALHOST, 'confirmed')
+  )
+  await persister.snapshot(
+    label,
+    addresses,
+    accountLabels,
+    keypairs,
+    accountOverrides
+  )
+
+  return config
 }

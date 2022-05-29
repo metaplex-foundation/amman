@@ -5,6 +5,7 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from '@solana/web3.js'
+import { AccountDataMutator, MutableAccount } from './assets/persistence'
 import {
   AddressLabels,
   GenKeypair,
@@ -29,7 +30,9 @@ import {
   deriveFromWallet,
   deriveInsecure,
 } from './utils/keypair'
-import { logDebug } from './utils/log'
+import { scopedLog } from './utils/log'
+
+const { logDebug } = scopedLog('api')
 
 /**
  * Creates an Amman instance which is used to interact with address labels and
@@ -61,6 +64,10 @@ export class Amman {
     readonly errorResolver?: ErrorResolver
   ) {}
   private static _instance: Amman | undefined
+
+  // -----------------
+  // Keypair
+  // -----------------
 
   /**
    * Generates a keypair and returns its public key and the keypair itself as a
@@ -122,6 +129,10 @@ export class Amman {
    */
   deriveKeypairInsecure = deriveInsecure
 
+  // -----------------
+  // Transactions
+  // -----------------
+
   /**
    * Drops the specified amount of tokens to the provided public key.
    *
@@ -175,6 +186,22 @@ export class Amman {
     )
   }
 
+  // -----------------
+  // Validator Injection
+  // -----------------
+  accountModifier<T>(
+    address: PublicKey,
+    dataMutator?: AccountDataMutator<T>,
+    connection?: Connection
+  ) {
+    return MutableAccount.from(
+      this.ammanClient.requestSetAccount.bind(this.ammanClient),
+      address,
+      dataMutator,
+      connection
+    )
+  }
+
   /**
    * Provides a {@link AmmanMockStorageDriver} which stores uploaded data on
    * the filesystem inside a tmp directory.
@@ -191,6 +218,10 @@ export class Amman {
   ) => AmmanMockStorageDriver.create(storageId, options)
   */
 
+  // -----------------
+  // Disposing
+  // -----------------
+
   /**
    * Disconnects the amman relay client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the amman client opts.
@@ -206,6 +237,11 @@ export class Amman {
     this.ammanClient.destroy()
     logDebug('AmmanClient destoyed')
   }
+
+  // -----------------
+  // Instantiation
+  // -----------------
+
   /**
    * Creates an instance of {@link Amman}.
    *
