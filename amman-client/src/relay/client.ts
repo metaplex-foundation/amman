@@ -40,14 +40,8 @@ export type AmmanClient = {
 
 export type AmmanClientOpts = { autoUnref?: boolean; ack?: boolean }
 
-const AMMAN_UNABLE_ADD_LABELS = 'Unable to connect to send address labels'
-const AMMAN_UNABLE_FETCH_LABELS = 'Unable to connect to fetch address labels'
-const AMMAN_UNABLE_FETCH_ACCOUNT_STATES =
-  'Unable to connect to fetch account states'
-const AMMAN_UNABLE_SNAPSHOT_ACCOUNTS = 'Unable to connect to snapshot accounts'
-const AMMAN_UNABLE_SAVE_ACCOUNT = 'Unable to connect to save account'
-const AMMAN_UNABLE_STORE_KEYPAIR = 'Unable to connect to store keypair'
-const AMMAN_UNABLE_LOAD_KEYPAIR = 'Unable to connect to load keypair'
+const RELAY_TIMEOUT: number = 2000
+
 const AMMAN_NOT_RUNNING_ERROR =
   ', is amman running with the relay enabled?\n' +
   'If not please start it as part of amman in a separate terminal via `amman start`\n' +
@@ -86,136 +80,99 @@ export class ConnectedAmmanClient implements AmmanClient {
       const labelCount = Object.keys(labels).length
       logTrace(`Adding ${labelCount} address labels`)
     }
-    const promise = this.ack
-      ? new Promise<void>((resolve, reject) => {
-          const timeout = createTimeout(
-            2000,
-            new Error(AMMAN_UNABLE_ADD_LABELS + AMMAN_NOT_RUNNING_ERROR),
-            reject
-          )
-          this.socket
-            .on('error', (err) => {
-              clearTimeout(timeout)
-              reject(err)
-            })
-            .on(ACK_UPDATE_ADDRESS_LABELS, () => {
-              logTrace('Got ack for address labels update %O', labels)
-              clearTimeout(timeout)
-              resolve()
-            })
-        })
+    return this.ack
+      ? this._registerRequestHandler<void>(
+          'add address labels',
+          MSG_UPDATE_ADDRESS_LABELS,
+          [labels],
+          ACK_UPDATE_ADDRESS_LABELS,
+          (resolve, _reject) => {
+            logTrace('Got ack for address labels update %O', labels)
+            resolve()
+          }
+        )
       : Promise.resolve()
-
-    this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
-    return promise
   }
 
   async fetchAddressLabels(): Promise<Record<string, string>> {
     logTrace('Fetching address labels')
-    return new Promise<Record<string, string>>((resolve, reject) => {
-      const timeout = createTimeout(
-        2000,
-        new Error(AMMAN_UNABLE_FETCH_LABELS + AMMAN_NOT_RUNNING_ERROR),
-        reject
-      )
-      this.socket
-        .on('error', (err) => {
-          clearTimeout(timeout)
-          reject(err)
-        })
-        .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
-          clearTimeout(timeout)
-          logTrace('Got address labels %O', labels)
-          resolve(labels)
-        })
-        .emit(MSG_GET_KNOWN_ADDRESS_LABELS)
-    })
+
+    return this._registerRequestHandler<Record<string, string>>(
+      'fetch address labels',
+      MSG_GET_KNOWN_ADDRESS_LABELS,
+      [],
+      MSG_UPDATE_ADDRESS_LABELS,
+      (resolve, _reject, labels: Record<string, string>) => {
+        logTrace('Got address labels %O', labels)
+        resolve(labels)
+      }
+    )
   }
 
   async fetchAccountStates(address: string) {
     logTrace('Fetching account states for %s', address)
-    return new Promise<RelayAccountState[]>((resolve, reject) => {
-      const timeout = createTimeout(
-        2000,
-        new Error(AMMAN_UNABLE_FETCH_ACCOUNT_STATES + AMMAN_NOT_RUNNING_ERROR),
-        reject
-      )
-      this.socket
-        .on('error', (err) => {
-          clearTimeout(timeout)
-          reject(err)
-        })
-        .on(
-          MSG_RESPOND_ACCOUNT_STATES,
-          (accountAddress: string, states: RelayAccountState[]) => {
-            clearTimeout(timeout)
-            logDebug(
-              'Got account states for address %s, %O',
-              accountAddress,
-              states
-            )
-            resolve(states)
-          }
+
+    return this._registerRequestHandler<RelayAccountState[]>(
+      'fetch account states',
+      MSG_REQUEST_ACCOUNT_STATES,
+      [address],
+      MSG_RESPOND_ACCOUNT_STATES,
+      (
+        resolve,
+        _reject,
+        accountAddress: string,
+        states: RelayAccountState[]
+      ) => {
+        logDebug(
+          'Got account states for address %s, %O',
+          accountAddress,
+          states
         )
-        .emit(MSG_REQUEST_ACCOUNT_STATES, address)
-    })
+        resolve(states)
+      }
+    )
   }
 
   async requestSnapshot(label?: string): Promise<string> {
     logTrace('Requesting snapshot')
     label ??= new Date().toJSON().replace(/[:.]/g, '_')
 
-    return new Promise<string>((resolve, reject) => {
-      const timeout = createTimeout(
-        2000,
-        new Error(AMMAN_UNABLE_SNAPSHOT_ACCOUNTS + AMMAN_NOT_RUNNING_ERROR),
-        reject
-      )
-      this.socket
-        .on('error', (err) => {
-          clearTimeout(timeout)
-          reject(err)
-        })
-        .on(
-          MSG_RESPOND_SNAPSHOT_SAVE,
-          ({ err, snapshotDir }: { err?: string; snapshotDir?: string }) => {
-            clearTimeout(timeout)
-            if (err != null) return reject(new Error(err))
-            assert(snapshotDir != null, 'expected either error or snapshotDir')
-            logDebug('Completed snapshot at %s', snapshotDir)
-            resolve(snapshotDir)
-          }
-        )
-        .emit(MSG_REQUEST_SNAPSHOT_SAVE, label)
-    })
+    return this._registerRequestHandler<string>(
+      'snapshot accounts',
+      MSG_REQUEST_SNAPSHOT_SAVE,
+      [label],
+      MSG_RESPOND_SNAPSHOT_SAVE,
+      (
+        resolve,
+        reject,
+        { err, snapshotDir }: { err?: string; snapshotDir?: string }
+      ) => {
+        if (err != null) return reject(new Error(err))
+        assert(snapshotDir != null, 'expected either error or snapshotDir')
+        logDebug('Completed snapshot at %s', snapshotDir)
+        resolve(snapshotDir)
+      }
+    )
   }
 
   async requestSaveAccount(address: string): Promise<string> {
     logTrace('Requesting to save account "%s"', address)
-
-    return new Promise<string>((resolve, reject) => {
-      const timeout = createTimeout(
-        2000,
-        new Error(AMMAN_UNABLE_SAVE_ACCOUNT + AMMAN_NOT_RUNNING_ERROR),
-        reject
-      )
-      this.socket
-        .on('error', (err) => {
-          clearTimeout(timeout)
-          reject(err)
-        })
-        .on(
-          MSG_RESPOND_ACCOUNT_SAVE,
-          ({ err, accountPath }: { err?: string; accountPath?: string }) => {
-            clearTimeout(timeout)
-            if (err != null) return reject(new Error(err))
-            assert(accountPath != null, 'expected either error or accountPath')
-            logDebug('Completed saving account at %s', accountPath)
-            resolve(accountPath)
-          }
-        )
-        .emit(MSG_REQUEST_ACCOUNT_SAVE, address)
-    })
+    return this._registerRequestHandler<string>(
+      'save account',
+      MSG_REQUEST_ACCOUNT_SAVE,
+      [address],
+      MSG_RESPOND_ACCOUNT_SAVE,
+      (
+        resolve,
+        reject,
+        { err, accountPath }: { err?: string; accountPath?: string }
+      ) => {
+        if (err != null) return reject(new Error(err))
+        assert(accountPath != null, 'expected either error or accountPath')
+        logDebug('Completed saving account at %s', accountPath)
+        resolve(accountPath)
+      }
+    )
   }
 
   async requestStoreKeypair(id: string, keypair: Keypair): Promise<void> {
@@ -224,52 +181,66 @@ export class ConnectedAmmanClient implements AmmanClient {
       id,
       keypair.publicKey.toBuffer()
     )
-    return new Promise<void>((resolve, reject) => {
-      const timeout = createTimeout(
-        2000,
-        new Error(AMMAN_UNABLE_STORE_KEYPAIR + AMMAN_NOT_RUNNING_ERROR),
-        reject
-      )
-      this.socket
-        .on('error', (err) => {
-          clearTimeout(timeout)
-          reject(err)
-        })
-        .on(MSG_RESPOND_STORE_KEYPAIR, (err?: any) => {
-          clearTimeout(timeout)
-          if (err != null) return reject(new Error(err))
-          resolve()
-        })
-        .emit(MSG_REQUEST_STORE_KEYPAIR, id, keypair.secretKey)
-    })
+    return this._registerRequestHandler<void>(
+      'store keypair',
+      MSG_REQUEST_STORE_KEYPAIR,
+      [id, keypair.secretKey],
+      MSG_RESPOND_STORE_KEYPAIR,
+      (resolve, reject, err?: any) => {
+        if (err != null) return reject(new Error(err))
+        resolve()
+      }
+    )
   }
 
   async requestLoadKeypair(id: string): Promise<Keypair | undefined> {
     logTrace('Requesting to load keypair with id "%s"', id)
-    return new Promise<Keypair | undefined>((resolve, reject) => {
+    return this._registerRequestHandler<Keypair | undefined>(
+      'load keypair',
+      MSG_REQUEST_LOAD_KEYPAIR,
+      [id],
+      MSG_RESPOND_LOAD_KEYPAIR,
+      (resolve, _reject, secretKey: Uint8Array | undefined) => {
+        try {
+          resolve(
+            secretKey != null ? Keypair.fromSecretKey(secretKey) : undefined
+          )
+        } catch (err) {
+          logError('Failed to load keypair with id "%s"', id)
+          logError(err)
+          resolve(undefined)
+        }
+      }
+    )
+  }
+
+  private _registerRequestHandler<T = void>(
+    action: string,
+    request: string,
+    requestArgs: any[],
+    response: string,
+    responseHandler: (
+      resolve: (value: T | PromiseLike<T>) => void,
+      reject: (reason?: any) => void,
+      ...args: any[]
+    ) => Promise<void> | void
+  ) {
+    return new Promise<T>((resolve, reject) => {
       const timeout = createTimeout(
-        2000,
-        new Error(AMMAN_UNABLE_LOAD_KEYPAIR + AMMAN_NOT_RUNNING_ERROR),
+        RELAY_TIMEOUT,
+        new Error(`Unable to ${action}. ${AMMAN_NOT_RUNNING_ERROR}`),
         reject
       )
       this.socket
-        .on('error', (err) => {
+        .on('error', (err: any) => {
           clearTimeout(timeout)
           reject(err)
         })
-        .on(MSG_RESPOND_LOAD_KEYPAIR, (secretKey: Uint8Array | undefined) => {
+        .on(response, (...args: any[]) => {
           clearTimeout(timeout)
-          try {
-            resolve(
-              secretKey != null ? Keypair.fromSecretKey(secretKey) : undefined
-            )
-          } catch (err) {
-            logError('Failed to load keypair with id "%s"', id)
-            logError(err)
-            resolve(undefined)
-          }
+          responseHandler(resolve, reject, ...args)
         })
-        .emit(MSG_REQUEST_LOAD_KEYPAIR, id)
+        .emit(request, ...requestArgs)
     })
   }
 
@@ -328,7 +299,7 @@ export class DisconnectedAmmanClient implements AmmanClient {
     return Promise.resolve()
   }
 
-  requestLoadKeypair(id: string): Promise<Keypair | undefined> {
+  requestLoadKeypair(_id: string): Promise<Keypair | undefined> {
     return Promise.resolve(undefined)
   }
   disconnect() {}
