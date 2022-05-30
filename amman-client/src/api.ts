@@ -158,15 +158,16 @@ export class Amman {
 
   /**
    * Provides a {@link TransactionHandler} which uses the {@link payer} to sign transactions.
-   * @catetory transactions
+   * @category transactions
    */
   payerTransactionHandler(
     connection: Connection,
     payer: Keypair,
     errorResolver?: ErrorResolver
   ) {
-    this.addr.storeKeypair(payer, 'payer')
-    this.addr.addLabelIfUnknown('payer', payer.publicKey)
+    this.addr
+      .storeKeypair(payer, 'payer')
+      .then((label) => this.addr.addLabelIfUnknown('payer', label ?? 'payer'))
     return new PayerTransactionHandler(
       connection,
       payer,
@@ -177,8 +178,8 @@ export class Amman {
   /**
    * If you cannot use the {@link payerTransactionHandler} then you can use this to verify
    * the outcome of your transactions.
-   * @catetory transactions
-   * @catetory asserts
+   * @category transactions
+   * @category asserts
    */
   transactionChecker(connection: Connection, errorResolver?: ErrorResolver) {
     return new TransactionChecker(

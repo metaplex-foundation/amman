@@ -276,11 +276,15 @@ export class AddressLabels {
    *
    * @private
    */
-  storeKeypair(keypair: Keypair, label?: string) {
-    return this.ammanClient.requestStoreKeypair(
+  async storeKeypair(keypair: Keypair, label?: string) {
+    if (label != null) {
+      label = await this._nonCollidingLabel(label, keypair.publicKey.toBase58())
+    }
+    await this.ammanClient.requestStoreKeypair(
       label ?? keypair.publicKey.toBase58(),
       keypair
     )
+    return label
   }
 
   /**
