@@ -132,7 +132,7 @@ export function assertTransactionError<Err extends Function>(
   const err = typeof errOrRx === 'function' ? errOrRx : undefined
   const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
   // Support checking for merly the existence of a transaction error
-  if (err == null && msgRx == null) {
+  if (err == null && rx == null) {
     t.ok(details.txSummary.transactionError != null, 'transaction failed')
   } else {
     assertErrorMatches(t, details.txSummary.loggedError, {
