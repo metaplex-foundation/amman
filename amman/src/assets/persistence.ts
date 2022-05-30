@@ -114,34 +114,41 @@ export class AccountPersister {
 
     const subdir = path.join(snapshotLabel, SNAPSHOT_ACCOUNTS_DIR)
 
+    // 1. Save acconuts with known addresses
     await Promise.all(
-      addresses.map(async (address) => {
-        // Save override if present
-        const override = accountOverrides.get(address)
-        if (override != null) {
-          logTrace('Saving override account info %O', address)
-          return this.savePersistedAccountInfo(
-            override,
+      addresses
+        // We are saving overrides below
+        .filter((address) => !accountOverrides.has(address))
+        .map(async (address) => {
+          // Save account info we pull from the validator
+          const accountInfo = await connection.getAccountInfo(
+            new PublicKey(address),
+            'confirmed'
+          )
+          if (accountInfo == null || accountInfo.executable) return
+
+          return this.saveAccountInfo(
+            new PublicKey(address),
+            accountInfo,
             subdir,
             accountLabels[address]
           )
-        }
+        })
+    )
 
-        // Otherwise, save account info we pull from the validator
-        const accountInfo = await connection.getAccountInfo(
-          new PublicKey(address),
-          'confirmed'
-        )
-        if (accountInfo == null || accountInfo.executable) return
-
-        return this.saveAccountInfo(
-          new PublicKey(address),
-          accountInfo,
+    // 2. Save account overrides
+    await Promise.all(
+      Array.from(accountOverrides.values()).map((override) => {
+        logTrace('Saving override account info %s', override.pubkey)
+        return this.savePersistedAccountInfo(
+          override,
           subdir,
-          accountLabels[address]
+          accountLabels[override.pubkey]
         )
       })
     )
+
+    // 3. Save keypairs
     await Promise.all(
       Array.from(keypairs.values()).map(async ({ keypair, id }) => {
         return this.saveKeypair(id, keypair, snapshotLabel)
