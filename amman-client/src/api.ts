@@ -13,6 +13,7 @@ import {
   GenLabeledKeypair,
   LoadKeypair,
   LoadOrGenKeypair,
+  StoreKeypair,
 } from './diagnostics/address-labels'
 import {
   AmmanClient,
@@ -94,6 +95,15 @@ export class Amman {
    * returns `undefined`.
    */
   loadKeypair: LoadKeypair = async (label) => this.addr.loadKeypair(label)
+
+  /**
+   * Stores the keypair in the relay using the provided label or public key as id.
+   * NOTE: that this is performed byt {@link loadOrGenKeypair} and {@link
+   * genLabeledKeypair} for you already, so consider using those methods
+   * instead.
+   */
+  storeKeypair: StoreKeypair = async (keypair, label) =>
+    this.addr.storeKeypair(keypair, label)
 
   /**
    * Loads a labeled {@link Keypair} from the relay.
