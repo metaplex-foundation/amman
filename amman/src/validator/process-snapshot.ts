@@ -1,15 +1,17 @@
+import { PersistedAccountInfo } from '@metaplex-foundation/amman-client'
 import { Keypair } from '@solana/web3.js'
 import { promises as fs } from 'fs'
 import path from 'path'
 import {
-  PersistedAccountInfo,
   SnapshotConfig,
   SNAPSHOT_ACCOUNTS_DIR,
   SNAPSHOT_KEYPAIRS_DIR,
 } from '../assets'
-import { logInfo, logTrace } from '../utils'
+import { logInfo, logTrace, scopedLog } from '../utils'
 import { canAccess } from '../utils/fs'
 import { Account } from './types'
+
+const { logError } = scopedLog('process-snapshot')
 
 export async function processSnapshot(snapshotConfig: SnapshotConfig): Promise<{
   snapshotArgs: string[]
@@ -113,14 +115,21 @@ async function loadKeypairs(
 ): Promise<Map<string, Keypair>> {
   const promises = (await fs.readdir(keypairsDir))
     .filter((x) => path.extname(x) === '.json')
-    .map(async function (x: string): Promise<[string, Keypair]> {
+    .map(async function (x: string): Promise<[string, Keypair] | undefined> {
       const label = path.basename(x, '.json')
       const fullPath = path.join(keypairsDir, x)
-      const json = JSON.parse(await fs.readFile(fullPath, 'utf8'))
-      const data = Uint8Array.from(json)
-      const keypair = Keypair.fromSecretKey(data)
-      return [label, keypair]
+      const src = await fs.readFile(fullPath, 'utf8')
+      try {
+        const json = JSON.parse(src)
+        const data = Uint8Array.from(json)
+        const keypair = Keypair.fromSecretKey(data)
+        return [label, keypair]
+      } catch (err) {
+        logError(err)
+        logError(`Failed to load keypair ${label}`)
+        logError(src)
+      }
     })
-  const keypairsArr: [string, Keypair][] = await Promise.all(promises)
-  return new Map(keypairsArr)
+  const keypairsArr = (await Promise.all(promises)).filter((x) => x != null)
+  return new Map(keypairsArr as [string, Keypair][])
 }

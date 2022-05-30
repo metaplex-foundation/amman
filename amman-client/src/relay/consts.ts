@@ -43,6 +43,11 @@ export const MSG_REQUEST_LOAD_KEYPAIR = 'request:load-keypair'
 export const MSG_RESPOND_LOAD_KEYPAIR = 'respond:load-keypair'
 
 /** @private */
+export const MSG_REQUEST_SET_ACCOUNT = 'request:set-account'
+/** @private */
+export const MSG_RESPOND_SET_ACCOUNT = 'respond:set-account'
+
+/** @private */
 export const MSG_REQUEST_AMMAN_VERSION = 'request:relay-version'
 /** @private */
 export const MSG_RESPOND_AMMAN_VERSION = 'respond:relay-version'

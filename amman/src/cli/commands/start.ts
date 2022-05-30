@@ -14,7 +14,7 @@ export type StartCommandArgs = {
 }
 
 export async function handleStartCommand(args: StartCommandArgs) {
-  let config: AmmanConfig, configPath
+  let config: Required<AmmanConfig>, configPath
   try {
     try {
       ;({ config, configPath } = await resolveConfig(args))
@@ -34,14 +34,8 @@ export async function handleStartCommand(args: StartCommandArgs) {
       `Running validator with ${config.validator.programs.length} custom program(s) and ${config.validator.accounts.length} remote account(s) preloaded`
     )
     logDebug(config.validator)
-    await initValidator(
-      config.validator,
-      config.relay,
-      { ...config.snapshot, load: args.load },
-      config.storage,
-      config.assetsFolder,
-      args.forceClone
-    )
+    config.snapshot = { ...config.snapshot, load: args.load }
+    await initValidator(config, args.forceClone)
 
     if (config.streamTransactionLogs) {
       pipeSolanaLogs(cliAmmanInstance())
@@ -53,7 +47,10 @@ export async function handleStartCommand(args: StartCommandArgs) {
   }
 }
 
-async function resolveConfig({ config }: StartCommandArgs) {
+async function resolveConfig({ config }: StartCommandArgs): Promise<{
+  config: Required<AmmanConfig>
+  configPath: string | null
+}> {
   if (config == null) {
     const { config: localConfig, configPath } = await tryLoadLocalConfigRc()
     return { config: completeConfig(localConfig), configPath }

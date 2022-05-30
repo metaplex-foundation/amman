@@ -15,9 +15,7 @@ import { DEFAULT_STORAGE_CONFIG } from './types'
 
 export const AMMAN_STORAGE_ROOT = path.join(tmpdir(), 'amman-storage')
 
-const logError = scopedLog('error', 'mock-storage')
-const logDebug = scopedLog('debug', 'mock-storage')
-const logTrace = scopedLog('trace', 'mock-storage')
+const { logError, logDebug, logTrace } = scopedLog('mock-storage')
 
 export class MockStorageServer {
   server?: Server

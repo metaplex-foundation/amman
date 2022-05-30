@@ -5,6 +5,8 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from '@solana/web3.js'
+import { AccountDataSerializer } from './assets/account-data-serializer'
+import { MutableAccount } from './assets/persistence'
 import {
   AddressLabels,
   GenKeypair,
@@ -29,7 +31,9 @@ import {
   deriveFromWallet,
   deriveInsecure,
 } from './utils/keypair'
-import { logDebug } from './utils/log'
+import { scopedLog } from './utils/log'
+
+const { logDebug } = scopedLog('api')
 
 /**
  * Creates an Amman instance which is used to interact with address labels and
@@ -61,6 +65,10 @@ export class Amman {
     readonly errorResolver?: ErrorResolver
   ) {}
   private static _instance: Amman | undefined
+
+  // -----------------
+  // Keypair
+  // -----------------
 
   /**
    * Generates a keypair and returns its public key and the keypair itself as a
@@ -122,6 +130,10 @@ export class Amman {
    */
   deriveKeypairInsecure = deriveInsecure
 
+  // -----------------
+  // Transactions
+  // -----------------
+
   /**
    * Drops the specified amount of tokens to the provided public key.
    *
@@ -146,15 +158,16 @@ export class Amman {
 
   /**
    * Provides a {@link TransactionHandler} which uses the {@link payer} to sign transactions.
-   * @catetory transactions
+   * @category transactions
    */
   payerTransactionHandler(
     connection: Connection,
     payer: Keypair,
     errorResolver?: ErrorResolver
   ) {
-    this.addr.storeKeypair(payer, 'payer')
-    this.addr.addLabelIfUnknown('payer', payer.publicKey)
+    this.addr
+      .storeKeypair(payer, 'payer')
+      .then((label) => this.addr.addLabelIfUnknown('payer', label ?? 'payer'))
     return new PayerTransactionHandler(
       connection,
       payer,
@@ -165,13 +178,29 @@ export class Amman {
   /**
    * If you cannot use the {@link payerTransactionHandler} then you can use this to verify
    * the outcome of your transactions.
-   * @catetory transactions
-   * @catetory asserts
+   * @category transactions
+   * @category asserts
    */
   transactionChecker(connection: Connection, errorResolver?: ErrorResolver) {
     return new TransactionChecker(
       connection,
       errorResolver ?? this.errorResolver
+    )
+  }
+
+  // -----------------
+  // Validator Injection
+  // -----------------
+  accountModifier<T>(
+    address: PublicKey,
+    serializer?: AccountDataSerializer<T>,
+    connection?: Connection
+  ) {
+    return MutableAccount.from(
+      this.ammanClient.requestSetAccount.bind(this.ammanClient),
+      address,
+      serializer,
+      connection
     )
   }
 
@@ -191,6 +220,10 @@ export class Amman {
   ) => AmmanMockStorageDriver.create(storageId, options)
   */
 
+  // -----------------
+  // Disposing
+  // -----------------
+
   /**
    * Disconnects the amman relay client and allows the app to shut down.
    * Only needed if you set `{ autoUnref: false }` for the amman client opts.
@@ -206,6 +239,11 @@ export class Amman {
     this.ammanClient.destroy()
     logDebug('AmmanClient destoyed')
   }
+
+  // -----------------
+  // Instantiation
+  // -----------------
+
   /**
    * Creates an instance of {@link Amman}.
    *
