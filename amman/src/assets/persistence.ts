@@ -241,7 +241,7 @@ export async function createTemporarySnapshot(
     snapshotFolder,
     new Connection(LOCALHOST, 'confirmed')
   )
-  await persister.snapshot(
+  const snapshotDir = await persister.snapshot(
     label,
     addresses,
     accountLabels,
@@ -249,5 +249,9 @@ export async function createTemporarySnapshot(
     accountOverrides
   )
 
-  return config
+  function cleanupSnapshotDir() {
+    return fs.rm(snapshotDir, { recursive: true })
+  }
+
+  return { config, cleanupSnapshotDir }
 }

@@ -130,12 +130,13 @@ export async function restartValidator(
 ) {
   logDebug('Restarting validator')
 
-  const snapshot = await createTemporarySnapshot(
-    addresses,
-    accountLabels,
-    keypairs,
-    accountOverrides
-  )
+  const { config: snapshot, cleanupSnapshotDir } =
+    await createTemporarySnapshot(
+      addresses,
+      accountLabels,
+      keypairs,
+      accountOverrides
+    )
   await killValidatorChild(ammanState.validator)
 
   const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
@@ -149,4 +150,6 @@ export async function restartValidator(
     config.validator.verifyFees,
     cleanupConfig
   )
+
+  await cleanupSnapshotDir()
 }
