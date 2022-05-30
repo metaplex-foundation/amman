@@ -53,11 +53,18 @@ export class MutableAccount<T> {
   }
 
   setOwner(owner: PublicKey) {
+    logTrace('Updating owner of [%s] %s -> %s', this.owner, owner)
     this.owner = owner.toBase58()
     return this
   }
 
   setLamports(lamports: number) {
+    logTrace(
+      'Updating lamports of [%s] %d -> %d',
+      this.pubkey,
+      this.lamports,
+      lamports
+    )
     this.lamports = lamports
     return this
   }
@@ -71,6 +78,12 @@ export class MutableAccount<T> {
     const updated = { ...state, ...dataUpdate }
 
     this.data = this.mutator.serialize(updated)[0]
+    logTrace(
+      'Updating data of [%s] to %O (%s)',
+      this.pubkey,
+      updated,
+      this.data.toString('base64')
+    )
     return this
   }
 

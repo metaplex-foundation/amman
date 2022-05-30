@@ -119,6 +119,7 @@ export class AccountPersister {
         // Save override if present
         const override = accountOverrides.get(address)
         if (override != null) {
+          logTrace('Saving override account info %O', address)
           return this.savePersistedAccountInfo(
             override,
             subdir,
