@@ -2,6 +2,7 @@ import { Connection, PublicKey } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import { LOCALHOST } from '../consts'
 import { scopedLog } from '../utils/log'
+import { AccountDataSerializer, serializeData } from './account-data-serializer'
 
 const { logDebug, logTrace } = scopedLog('persist')
 
@@ -14,11 +15,6 @@ export type PersistedAccountInfo = {
     executable: boolean
     rentEpoch: number
   }
-}
-
-export type AccountDataMutator<T> = {
-  serialize(data: T): [Buffer, number]
-  deserialize(buf: Buffer, offset?: number): [T, number]
 }
 
 export type PersistAccount = (
@@ -42,7 +38,7 @@ export class MutableAccount<T> {
       executable: boolean
       rentEpoch: number
     },
-    private readonly mutator?: AccountDataMutator<T>
+    private readonly serializer?: AccountDataSerializer<T>
   ) {
     this.pubkey = pubkey
     this.lamports = account.lamports
@@ -71,13 +67,15 @@ export class MutableAccount<T> {
 
   updateData<T>(dataUpdate: Partial<T>) {
     assert(
-      this.mutator != null,
+      this.serializer != null,
       'Account data mutator is not defined, but needed to update account data'
     )
-    const [state] = this.mutator.deserialize(this.data)
+    const des = this.serializer.deserialize(this.data)
+    const state = Array.isArray(des) ? des[0] : des
     const updated = { ...state, ...dataUpdate }
 
-    this.data = this.mutator.serialize(updated)[0]
+    const ser = serializeData(this.serializer, updated)
+    this.data = Array.isArray(ser) ? ser[0] : ser
     logTrace(
       'Updating data of [%s] to %O (%s)',
       this.pubkey,
@@ -111,7 +109,7 @@ export class MutableAccount<T> {
   static async from<T>(
     persist: PersistAccount,
     address: PublicKey,
-    dataMutator?: AccountDataMutator<T>,
+    dataMutator?: AccountDataSerializer<T>,
     connection: Connection = new Connection(LOCALHOST, 'confirmed')
   ) {
     const accountInfo = await connection.getAccountInfo(address, 'confirmed')

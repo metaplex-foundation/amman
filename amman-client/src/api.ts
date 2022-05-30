@@ -5,7 +5,8 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from '@solana/web3.js'
-import { AccountDataMutator, MutableAccount } from './assets/persistence'
+import { AccountDataSerializer } from './assets/account-data-serializer'
+import { MutableAccount } from './assets/persistence'
 import {
   AddressLabels,
   GenKeypair,
@@ -191,13 +192,13 @@ export class Amman {
   // -----------------
   accountModifier<T>(
     address: PublicKey,
-    dataMutator?: AccountDataMutator<T>,
+    serializer?: AccountDataSerializer<T>,
     connection?: Connection
   ) {
     return MutableAccount.from(
       this.ammanClient.requestSetAccount.bind(this.ammanClient),
       address,
-      dataMutator,
+      serializer,
       connection
     )
   }
