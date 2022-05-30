@@ -11,12 +11,13 @@ import { processAccounts } from './process-accounts'
 import { processSnapshot } from './process-snapshot'
 import { AmmanState } from './types'
 
-const { logDebug, logInfo } = scopedLog('validator')
+const { logDebug, logInfo, logTrace } = scopedLog('validator')
 
 export async function buildSolanaValidatorArgs(
   config: Required<AmmanConfig>,
   forceClone: boolean
 ) {
+  logTrace('config %O', config)
   const validatorConfig = config.validator
   const {
     programs,
@@ -89,6 +90,7 @@ export async function buildSolanaValidatorArgs(
 }
 
 export async function startSolanaValidator(args: string[], detached: boolean) {
+  logTrace('start %O', args)
   const child = spawn('solana-test-validator', args, {
     detached,
     stdio: 'inherit',
@@ -128,7 +130,7 @@ export async function restartValidator(
 ) {
   logDebug('Restarting validator')
 
-  const snapshotConfig = await createTemporarySnapshot(
+  const snapshot = await createTemporarySnapshot(
     addresses,
     accountLabels,
     keypairs,
@@ -136,8 +138,7 @@ export async function restartValidator(
   )
   await killValidatorChild(ammanState.validator)
 
-  const validatorConfig = { ...ammanState.config.validator, snapshotConfig }
-  const config = { ...ammanState.config, validator: validatorConfig }
+  const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
   const { args, cleanupConfig } = await buildSolanaValidatorArgs(config, false)
   const validator = await startSolanaValidator(args, ammanState.detached)
   ammanState.validator = validator
