@@ -212,6 +212,18 @@ export class Amman {
    * For use while running tests it is deprecated until we find a better
    * solution to achieve the same in a more reliable way.
    *
+   * For now you can perform separate steps to get similar results:
+   *
+   * 1. Launch a script that will init your validator state and then use this
+   *    method `accountModifier` to modify the account
+   * 2. Call {@link saveSnapshot} with a <label> to save it as part of your project
+   * 3. In your test that needs the account state as such use {@link
+   *    loadSnapshot} to put the validator into that desired state
+   *
+   * Make sure to use {@link loadOrGenKeypair} in your test setup to get the
+   * keypairs going along with the loaded snapshot.
+   *
+   *
    * @deprecated (for now)
    */
   accountModifier<T>(
