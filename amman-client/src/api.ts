@@ -227,6 +227,29 @@ export class Amman {
     )
   }
 
+  loadSnapshot(label: string) {
+    return this.ammanClient.requestLoadSnapshot(label)
+  }
+
+  // -----------------
+  // Snapshot
+  // -----------------
+  /**
+   * Snapshots the current state of the ledger storing the folloinwg information:
+   *
+   * - accounts: that amman is aware of, i.e. that were part of a transaction
+   * - keypairs: that amman is aware of either via {@link storeKeypair} or that
+   *   were used by the {@link payerTransactionHandler}
+   *
+   * You can instruct amman to load this snapshot later via: `amman start --load <label>`.
+   *
+   * @param label the snapshot will be stored under this label
+   * @category snapshot
+   */
+  saveSnapshot(label: string) {
+    return this.ammanClient.requestSnapshot(label)
+  }
+
   /**
    * Provides a {@link AmmanMockStorageDriver} which stores uploaded data on
    * the filesystem inside a tmp directory.

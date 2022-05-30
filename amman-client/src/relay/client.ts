@@ -12,12 +12,14 @@ import {
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_REQUEST_LOAD_KEYPAIR,
+  MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_REQUEST_SET_ACCOUNT,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_RESPOND_LOAD_KEYPAIR,
+  MSG_RESPOND_LOAD_SNAPSHOT,
   MSG_RESPOND_SET_ACCOUNT,
   MSG_RESPOND_SNAPSHOT_SAVE,
   MSG_RESPOND_STORE_KEYPAIR,
@@ -36,6 +38,7 @@ export type AmmanClient = {
   fetchAddressLabels(): Promise<Record<string, string>>
   fetchAccountStates(address: string): Promise<RelayAccountState[]>
   requestSnapshot(label?: string): Promise<string>
+  requestLoadSnapshot(label: string): Promise<void>
   requestSaveAccount(address: string): Promise<string>
   requestStoreKeypair(label: string, keypair: Keypair): Promise<void>
   requestLoadKeypair(id: string): Promise<Keypair | undefined>
@@ -164,6 +167,20 @@ export class ConnectedAmmanClient implements AmmanClient {
         logDebug('Completed snapshot at %s', snapshotDir)
         resolve(snapshotDir)
       }
+    )
+  }
+
+  async requestLoadSnapshot(label: string): Promise<void> {
+    return this._handleRequest<void>(
+      'request load snapshot',
+      MSG_REQUEST_LOAD_SNAPSHOT,
+      [label],
+      MSG_RESPOND_LOAD_SNAPSHOT,
+      (resolve, reject, err) => {
+        if (err != null) return reject(new Error(err))
+        resolve()
+      },
+      5000
     )
   }
 
@@ -322,6 +339,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
   }
   requestSnapshot(_label?: string): Promise<string> {
     return Promise.resolve('')
+  }
+  requestLoadSnapshot(_label: string): Promise<void> {
+    return Promise.resolve()
   }
   requestSaveAccount(_address: string): Promise<string> {
     return Promise.resolve('')
