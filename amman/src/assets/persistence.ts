@@ -82,16 +82,15 @@ export class AccountPersister {
   // Keypairs
   // -----------------
   async saveKeypair(id: string, keypair: Keypair, subdir?: string) {
+    logTrace('Saving keypair', id)
     const fulldir = subdir
       ? path.join(this.targetDir, subdir, SNAPSHOT_KEYPAIRS_DIR)
       : path.join(this.targetDir, SNAPSHOT_KEYPAIRS_DIR)
     await ensureDir(fulldir)
     const keypairPath = path.join(fulldir, `${id}.json`)
 
-    await fs.writeFile(
-      keypairPath,
-      JSON.stringify(Buffer.from(keypair.secretKey).toJSON().data)
-    )
+    const json = JSON.stringify(Array.from(keypair.secretKey))
+    await fs.writeFile(keypairPath, json, 'utf8')
     return keypairPath
   }
 
@@ -149,8 +148,14 @@ export class AccountPersister {
     )
 
     // 3. Save keypairs
+    const seenKeypairIds = new Set<string>()
     await Promise.all(
       Array.from(keypairs.values()).map(async ({ keypair, id }) => {
+        // The client ensures that keypair ids don't collide, but we add this
+        // extra check here in order to guard against corrupted keypair files
+        // due to being written to at the same time (filenames are ids)
+        if (seenKeypairIds.has(id)) return
+        seenKeypairIds.add(id)
         return this.saveKeypair(id, keypair, snapshotLabel)
       })
     )
