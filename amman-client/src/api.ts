@@ -191,6 +191,19 @@ export class Amman {
   // -----------------
   // Validator Injection
   // -----------------
+  /**
+   * This is an API that allows modifying accounts via validator restart.
+   * However it does not work reliably while running tests and thus should only
+   * be used to experiment.
+   *
+   * It is still useful to modify an account and save it or create a snapshot.
+   * Then you can load that account or snapshot on startup and use it in your tests.
+   *
+   * For use while running tests it is deprecated until we find a better
+   * solution to achieve the same in a more reliable way.
+   *
+   * @deprecated (for now)
+   */
   accountModifier<T>(
     address: PublicKey,
     serializer?: AccountDataSerializer<T>,

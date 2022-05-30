@@ -113,13 +113,23 @@ export async function waitForValidator(
   logInfo('up and running')
 }
 
-export async function killValidatorChild(child: ChildProcess) {
+export function killValidatorChild(child: ChildProcess) {
   child.kill()
-  await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     child.on('exit', resolve).on('error', reject)
   })
 }
 
+/**
+ * Attempts to kill and restart the validator creating a snapshot of accounts and keypairs first.
+ * That same snapshot is then loaded on restart.
+ *
+ * NOTE: that for now this seems to only work once, i.e. the validator fails to
+ * handle transactions after it is restarted twice (they time out after 30secs)
+ *
+ * @param accountOverrides allow to override some accounts that are written to the snapshot
+ *
+ */
 export async function restartValidator(
   ammanState: AmmanState,
   addresses: string[],
