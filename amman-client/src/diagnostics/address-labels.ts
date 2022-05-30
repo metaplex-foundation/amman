@@ -8,10 +8,10 @@ import {
   isValidSolanaAddress,
 } from '../utils/address'
 import { KeyLike, isKeyLike, publicKeyString } from '../utils/keys'
-import { logError, scopedLog } from '../utils/log'
+import { scopedLog } from '../utils/log'
 import { mapLabel } from './address-label-mapper'
 
-const { logTrace } = scopedLog('addr')
+const { logError, logTrace } = scopedLog('addr')
 
 /** @private */
 export type AddLabel = (
