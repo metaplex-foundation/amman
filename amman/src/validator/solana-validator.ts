@@ -139,6 +139,7 @@ export async function restartValidator(
   await killValidatorChild(ammanState.validator)
 
   const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
+  // TODO(thlorenz): Ideally we'd update account states, etc. like we do on main startup
   const { args, cleanupConfig } = await buildSolanaValidatorArgs(config, false)
   const validator = await startSolanaValidator(args, ammanState.detached)
   ammanState.validator = validator
