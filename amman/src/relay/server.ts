@@ -95,9 +95,7 @@ class RelayServer {
       .on(MSG_REQUEST_ACCOUNT_STATES, (pubkey: string) => {
         logTrace(MSG_REQUEST_ACCOUNT_STATES, pubkey)
         const states = this.accountStates.get(pubkey)?.relayStates
-        if (states != null) {
-          socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states)
-        }
+        socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states ?? [])
         if (!subscribedAccountStates.has(pubkey)) {
           subscribedAccountStates.add(pubkey)
           this.accountStates.on(`account-changed:${pubkey}`, (states) => {

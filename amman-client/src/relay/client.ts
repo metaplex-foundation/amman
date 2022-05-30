@@ -259,7 +259,7 @@ export class ConnectedAmmanClient implements AmmanClient {
         timeoutMs,
         new Error(`Unable to ${action}. ${AMMAN_NOT_RUNNING_ERROR}`),
         (reason: any) => {
-          logTrace(`'${request}' timed out`)
+          logError(`'${request}' timed out`)
           reject(reason)
         }
       )
