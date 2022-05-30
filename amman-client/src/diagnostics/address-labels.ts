@@ -27,6 +27,11 @@ export type GenLabeledKeypair = (
   label: string
 ) => Promise<[PublicKey, Keypair, string]>
 /** @private */
+export type StoreKeypair = (
+  keypair: Keypair,
+  label?: string
+) => Promise<string | undefined>
+/** @private */
 export type LoadKeypair = (
   label: string
 ) => Promise<[PublicKey, Keypair] | undefined>
@@ -276,7 +281,7 @@ export class AddressLabels {
    *
    * @private
    */
-  async storeKeypair(keypair: Keypair, label?: string) {
+  storeKeypair: StoreKeypair = async (keypair, label) => {
     if (label != null) {
       label = await this._nonCollidingLabel(label, keypair.publicKey.toBase58())
     }

@@ -1,7 +1,7 @@
 import { PersistedAccountInfo } from '@metaplex-foundation/amman-client'
 import { Keypair } from '@solana/web3.js'
 import { ChildProcess, spawn } from 'child_process'
-import { createTemporarySnapshot } from '../assets'
+import { createTemporarySnapshot, SnapshotConfig } from '../assets'
 import { AmmanConfig } from '../types'
 import { canAccessSync } from '../utils/fs'
 import { scopedLog } from '../utils/log'
@@ -124,22 +124,17 @@ export function killValidatorChild(child: ChildProcess) {
  * Attempts to kill and restart the validator creating a snapshot of accounts and keypairs first.
  * That same snapshot is then loaded on restart.
  *
- * NOTE: that for now this seems to only work once, i.e. the validator fails to
- * handle transactions after it is restarted twice (they time out after 30secs)
- *
  * @param accountOverrides allow to override some accounts that are written to the snapshot
  *
  */
-export async function restartValidator(
+export async function restartValidatorWithAccountOverrides(
   ammanState: AmmanState,
   addresses: string[],
   // Keyed pubkey:label
   accountLabels: Record<string, string>,
   keypairs: Map<string, { keypair: Keypair; id: string }>,
-  accountOverrides: Map<string, PersistedAccountInfo> = new Map()
+  accountOverrides: Map<string, PersistedAccountInfo>
 ) {
-  logDebug('Restarting validator')
-
   const { config: snapshot, cleanupSnapshotDir } =
     await createTemporarySnapshot(
       addresses,
@@ -147,11 +142,49 @@ export async function restartValidator(
       keypairs,
       accountOverrides
     )
-  await killValidatorChild(ammanState.validator)
 
   const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
-  // TODO(thlorenz): Ideally we'd update account states, etc. like we do on main startup
-  const { args, cleanupConfig } = await buildSolanaValidatorArgs(config, false)
+  const res = await restartValidator(ammanState, config)
+
+  await cleanupSnapshotDir()
+
+  return res
+}
+
+/**
+ * Attempts to kill and restart the validator with the given snapshot.
+ */
+export async function restartValidatorWithSnapshot(
+  ammanState: AmmanState,
+  snapshotLabel: string
+) {
+  const snapshot: SnapshotConfig = {
+    ...ammanState.config.snapshot,
+    load: snapshotLabel,
+  }
+  const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
+  return restartValidator(ammanState, config)
+}
+
+/**
+ * Attempts to kill and restart the validator with the provided config.
+ *
+ * NOTE: that for now this seems to only work once, i.e. the validator fails to
+ * handle transactions after it is restarted twice (they time out after 30secs)
+ *
+ */
+async function restartValidator(
+  ammanState: AmmanState,
+  config: Required<AmmanConfig>
+) {
+  logDebug('Restarting validator')
+
+  await killValidatorChild(ammanState.validator)
+
+  const { args, cleanupConfig, ...rest } = await buildSolanaValidatorArgs(
+    config,
+    false
+  )
   const validator = await startSolanaValidator(args, ammanState.detached)
   ammanState.validator = validator
 
@@ -161,5 +194,5 @@ export async function restartValidator(
     cleanupConfig
   )
 
-  await cleanupSnapshotDir()
+  return { args, cleanupConfig, ...rest }
 }

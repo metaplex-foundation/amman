@@ -205,7 +205,6 @@ export class AccountStates extends EventEmitter {
     loadedAccountInfos: Map<string, AccountInfo<Buffer>>,
     loadedKeypairs: Map<string, Keypair>
   ) {
-    if (AccountStates._instance != null) return
     AccountStates._instance = new AccountStates(
       connection,
       accountProvider,

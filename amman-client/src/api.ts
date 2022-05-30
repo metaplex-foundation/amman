@@ -13,6 +13,7 @@ import {
   GenLabeledKeypair,
   LoadKeypair,
   LoadOrGenKeypair,
+  StoreKeypair,
 } from './diagnostics/address-labels'
 import {
   AmmanClient,
@@ -94,6 +95,15 @@ export class Amman {
    * returns `undefined`.
    */
   loadKeypair: LoadKeypair = async (label) => this.addr.loadKeypair(label)
+
+  /**
+   * Stores the keypair in the relay using the provided label or public key as id.
+   * NOTE: that this is performed byt {@link loadOrGenKeypair} and {@link
+   * genLabeledKeypair} for you already, so consider using those methods
+   * instead.
+   */
+  storeKeypair: StoreKeypair = async (keypair, label) =>
+    this.addr.storeKeypair(keypair, label)
 
   /**
    * Loads a labeled {@link Keypair} from the relay.
@@ -202,6 +212,18 @@ export class Amman {
    * For use while running tests it is deprecated until we find a better
    * solution to achieve the same in a more reliable way.
    *
+   * For now you can perform separate steps to get similar results:
+   *
+   * 1. Launch a script that will init your validator state and then use this
+   *    method `accountModifier` to modify the account
+   * 2. Call {@link saveSnapshot} with a <label> to save it as part of your project
+   * 3. In your test that needs the account state as such use {@link
+   *    loadSnapshot} to put the validator into that desired state
+   *
+   * Make sure to use {@link loadOrGenKeypair} in your test setup to get the
+   * keypairs going along with the loaded snapshot.
+   *
+   *
    * @deprecated (for now)
    */
   accountModifier<T>(
@@ -215,6 +237,29 @@ export class Amman {
       serializer,
       connection
     )
+  }
+
+  loadSnapshot(label: string) {
+    return this.ammanClient.requestLoadSnapshot(label)
+  }
+
+  // -----------------
+  // Snapshot
+  // -----------------
+  /**
+   * Snapshots the current state of the ledger storing the folloinwg information:
+   *
+   * - accounts: that amman is aware of, i.e. that were part of a transaction
+   * - keypairs: that amman is aware of either via {@link storeKeypair} or that
+   *   were used by the {@link payerTransactionHandler}
+   *
+   * You can instruct amman to load this snapshot later via: `amman start --load <label>`.
+   *
+   * @param label the snapshot will be stored under this label
+   * @category snapshot
+   */
+  saveSnapshot(label: string) {
+    return this.ammanClient.requestSnapshot(label)
   }
 
   /**
