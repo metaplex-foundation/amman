@@ -59,6 +59,7 @@ const AMMAN_NOT_RUNNING_ERROR =
 export class ConnectedAmmanClient implements AmmanClient {
   private readonly socket: Socket
   private readonly ack: boolean
+  private _reqId = 0
   private constructor(readonly url: string, opts: AmmanClientOpts = {}) {
     const { autoUnref = true, ack = false } = opts
     this.ack = ack
@@ -111,8 +112,6 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   async fetchAddressLabels(): Promise<Record<string, string>> {
-    logTrace('Fetching address labels')
-
     return this._handleRequest<Record<string, string>>(
       'fetch address labels',
       MSG_GET_KNOWN_ADDRESS_LABELS,
@@ -126,10 +125,8 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   async fetchAccountStates(address: string) {
-    logTrace('Fetching account states for %s', address)
-
     return this._handleRequest<RelayAccountState[]>(
-      'fetch account states',
+      `fetch account states for ${address}`,
       MSG_REQUEST_ACCOUNT_STATES,
       [address],
       MSG_RESPOND_ACCOUNT_STATES,
@@ -150,11 +147,10 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   async requestSnapshot(label?: string): Promise<string> {
-    logTrace('Requesting snapshot')
     label ??= new Date().toJSON().replace(/[:.]/g, '_')
 
     return this._handleRequest<string>(
-      'snapshot accounts',
+      'request snapshot accounts',
       MSG_REQUEST_SNAPSHOT_SAVE,
       [label],
       MSG_RESPOND_SNAPSHOT_SAVE,
@@ -172,9 +168,8 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   async requestSaveAccount(address: string): Promise<string> {
-    logTrace('Requesting to save account "%s"', address)
     return this._handleRequest<string>(
-      'save account',
+      `save account ${address}`,
       MSG_REQUEST_ACCOUNT_SAVE,
       [address],
       MSG_RESPOND_ACCOUNT_SAVE,
@@ -192,15 +187,15 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   async requestStoreKeypair(id: string, keypair: Keypair): Promise<void> {
-    logTrace('Requesting to store keypair "%s" (%s)', id, keypair.publicKey)
+    const key = keypair.publicKey.toBase58()
+    const taskSuffix = id === key ? `"${id}"` : `"${id}" (${key})`
 
     return this._handleRequest<void>(
-      'store keypair',
+      `store keypair ${taskSuffix}`,
       MSG_REQUEST_STORE_KEYPAIR,
       [id, keypair.secretKey],
       MSG_RESPOND_STORE_KEYPAIR,
       (resolve, reject, err?: any) => {
-        console.error(err)
         if (err != null) return reject(new Error(err))
         resolve()
       }
@@ -208,9 +203,8 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   async requestLoadKeypair(id: string): Promise<Keypair | undefined> {
-    logTrace('Requesting to load keypair with id "%s"', id)
     return this._handleRequest<Keypair | undefined>(
-      'load keypair',
+      `load keypair ${id}`,
       MSG_REQUEST_LOAD_KEYPAIR,
       [id],
       MSG_RESPOND_LOAD_KEYPAIR,
@@ -229,8 +223,6 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
 
   requestSetAccount(persistedAccountInfo: PersistedAccountInfo) {
-    logDebug('Requesting to set account')
-    logTrace(persistedAccountInfo)
     return this._handleRequest(
       'set account',
       MSG_REQUEST_SET_ACCOUNT,
@@ -256,7 +248,9 @@ export class ConnectedAmmanClient implements AmmanClient {
     timeoutMs = RELAY_TIMEOUT_MS
   ) {
     return new Promise<T>((resolve, reject) => {
+      const reqId = this._reqId++
       const onResponse = (...args: any[]) => {
+        logTrace('<- [%s][%d]', action, reqId)
         clearTimeout(timeout)
         responseHandler(resolve, reject, ...args)
         this.socket.off(response, onResponse)
@@ -276,6 +270,8 @@ export class ConnectedAmmanClient implements AmmanClient {
         })
         .on(response, onResponse)
         .emit(request, ...requestArgs)
+
+      logTrace('-> [%s][%d]', action, reqId)
     })
   }
 
