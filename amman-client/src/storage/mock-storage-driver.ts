@@ -1,10 +1,14 @@
 import { scopedLog } from '../utils/log'
-import { AMMAN_STORAGE_UPLOAD_URI, AMMAN_STORAGE_URI } from './consts'
+import {
+  AMMAN_DEFAULT_MOCK_STORAGE_ID,
+  AMMAN_STORAGE_UPLOAD_URI,
+  AMMAN_STORAGE_URI,
+} from './consts'
 import { Amount, MetaplexFile, sol, StorageDriver } from './sdk-types'
 
 const { logError, logDebug } = scopedLog('mock-storage')
 
-export function ammanMockStorage(storageId: string, costPerByte?: number) {
+export function ammanMockStorage(storageId?: string, costPerByte?: number) {
   return new AmmanMockStorageDriver(storageId, costPerByte)
 }
 
@@ -14,7 +18,10 @@ class AmmanMockStorageDriver implements StorageDriver {
   readonly baseResourceUrl: string
   readonly baseUploadUrl: string
 
-  constructor(readonly storageId: string, readonly costPerByte: number = 1) {
+  constructor(
+    readonly storageId: string = AMMAN_DEFAULT_MOCK_STORAGE_ID,
+    readonly costPerByte: number = 1
+  ) {
     this.baseResourceUrl = AmmanMockStorageDriver.getStorageUri(storageId)
     this.baseUploadUrl = AmmanMockStorageDriver.getUploadToStorageUri(storageId)
     logDebug(`Amman Storage Driver for ${this.baseResourceUrl} initialized`)
