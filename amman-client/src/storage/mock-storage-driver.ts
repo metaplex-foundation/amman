@@ -4,11 +4,30 @@ import {
   AMMAN_STORAGE_UPLOAD_URI,
   AMMAN_STORAGE_URI,
 } from './consts'
-import { Amount, MetaplexFile, sol, StorageDriver } from './sdk-types'
+import {
+  Amount,
+  MetaplexFile,
+  MetaplexPlugin,
+  sol,
+  StorageDriver,
+} from './sdk-types'
 
 const { logError, logDebug } = scopedLog('mock-storage')
 
-export function ammanMockStorage(storageId?: string, costPerByte?: number) {
+export const ammanMockStorage = (
+  storageId?: string,
+  costPerByte?: number
+): MetaplexPlugin => ({
+  install(metaplex: any /* Metaplex */) {
+    const driver = ammanMockStorageDriver(storageId, costPerByte)
+    metaplex.storage().setDriver(driver)
+  },
+})
+
+export function ammanMockStorageDriver(
+  storageId?: string,
+  costPerByte?: number
+) {
   return new AmmanMockStorageDriver(storageId, costPerByte)
 }
 

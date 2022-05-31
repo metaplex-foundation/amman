@@ -2,6 +2,16 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import BN from 'bn.js'
 
 // TODO(thlorenz): Copied from SDK for now until a version with those types is published
+// -----------------
+// Metaplex Plugin
+// -----------------
+export type MetaplexPlugin = {
+  install(metaplex: any /* Metaplex */): any
+}
+
+// -----------------
+// Storage Driver
+// -----------------
 export type StorageDriver = {
   getUploadPrice: (bytes: number) => Promise<Amount>
   upload: (file: MetaplexFile) => Promise<string>
