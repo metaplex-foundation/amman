@@ -77,7 +77,12 @@ export class MockStorageServer {
         } else {
           logDebug(`serving ${resource}`)
           writeStatusHead(res, 200)
-          fs.createReadStream(resource).pipe(res)
+          fs.createReadStream(resource)
+            .on('error', (err) => {
+              logError(err)
+              fail(res, 'Failed to read resource')
+            })
+            .pipe(res)
         }
       })
       .unref()

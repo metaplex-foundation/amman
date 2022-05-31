@@ -1,3 +1,5 @@
+import { AMMAN_DEFAULT_MOCK_STORAGE_ID } from '@metaplex-foundation/amman-client'
+
 export const ContentTypes = [
   'image/jpeg',
   'image/png',
@@ -28,6 +30,6 @@ export type StorageConfig = {
  */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
   enabled: process.env.CI == null,
-  storageId: 'storageId',
+  storageId: AMMAN_DEFAULT_MOCK_STORAGE_ID,
   clearOnStart: true,
 }
