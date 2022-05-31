@@ -45,7 +45,7 @@
   "dependencies": {
     "@metaplex-foundation/cusper": "^0.0.2",
     "@solana/spl-token-registry": "^0.2.2405",
-    "@solana/web3.js": "^1.35.0",
+    "@solana/web3.js": "^1.43.4",
     "debug": "^4.3.3",
     "js-sha3": "^0.8.0",
     "socket.io-client": "^4.4.1",

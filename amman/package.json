@@ -45,7 +45,7 @@
   "dependencies": {
     "@metaplex-foundation/amman-client": "^0.0.0",
     "@solana/spl-token": "^0.2.0",
-    "@solana/web3.js": "^1.35.0",
+    "@solana/web3.js": "^1.43.4",
     "ansi-colors": "^4.1.1",
     "bn.js": "^5.2.0",
     "buffer-hexdump": "^1.0.0",
