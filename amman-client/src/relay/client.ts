@@ -2,6 +2,7 @@ import { Keypair } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import io, { Socket } from 'socket.io-client'
 import { PersistedAccountInfo } from '../assets/persistence'
+import { isBrowser } from '../utils/browser'
 import { scopedLog } from '../utils/log'
 import {
   ACK_UPDATE_ADDRESS_LABELS,
@@ -64,7 +65,7 @@ export class ConnectedAmmanClient implements AmmanClient {
   private readonly ack: boolean
   private _reqId = 0
   private constructor(readonly url: string, opts: AmmanClientOpts = {}) {
-    const { autoUnref = true, ack = false } = opts
+    const { autoUnref = !isBrowser, ack = false } = opts
     this.ack = ack
     this.socket = io(url, { autoUnref })
   }

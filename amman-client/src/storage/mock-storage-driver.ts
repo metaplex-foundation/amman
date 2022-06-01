@@ -97,14 +97,17 @@ class AmmanMockStorageDriver implements StorageDriver {
 export async function uploadBuffer(url: string, buf: Buffer) {
   const byteSize = buf.byteLength
   try {
-    return await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         contentLength: `${byteSize}`,
       },
       body: buf,
     })
+    await res.text()
+    return res
   } catch (err) {
-    logError(`Error uploading ${url}: ${err}`)
+    logError(`Error uploading ${url}`)
+    logError(err)
   }
 }
