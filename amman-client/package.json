@@ -1,12 +1,9 @@
 {
   "name": "@metaplex-foundation/amman-client",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Client piece of amman which supports with the running validator, relay and storage.",
   "main": "dist/amman-client.js",
   "types": "dist/amman-client.d.ts",
-  "bin": {
-    "amman": "dist/cli/amman-client.js"
-  },
   "scripts": {
     "check:publish-ready": "yarn build",
     "preversion": "yarn check:publish-ready",
