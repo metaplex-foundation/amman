@@ -12,6 +12,8 @@ import {
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_RESPOND_SNAPSHOT_SAVE,
+  MSG_REQUEST_RESTART_VALIDATOR,
+  MSG_RESPOND_RESTART_VALIDATOR,
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_STORE_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
@@ -34,6 +36,7 @@ import { AmmanAccountProvider } from '../types'
 import { scopedLog } from '../utils'
 import { killRunningServer } from '../utils/http'
 import {
+  restartValidator,
   restartValidatorWithAccountOverrides,
   restartValidatorWithSnapshot,
 } from '../validator'
@@ -165,6 +168,32 @@ class RelayServer {
           socket.emit(MSG_RESPOND_LOAD_SNAPSHOT)
         } catch (err: any) {
           socket.emit(MSG_RESPOND_LOAD_SNAPSHOT, err.toString())
+        }
+      })
+      .on(MSG_REQUEST_RESTART_VALIDATOR, async (label: string) => {
+        logTrace(MSG_REQUEST_RESTART_VALIDATOR, label)
+        try {
+          const {
+            persistedAccountInfos,
+            persistedSnapshotAccountInfos,
+            keypairs,
+          } = await restartValidator(this.ammanState, this.ammanState.config)
+
+          const accountInfos = mapPersistedAccountInfos([
+            ...persistedAccountInfos,
+            ...persistedSnapshotAccountInfos,
+          ])
+
+          this.accountStates = AccountStates.createInstance(
+            this.accountProvider.connection,
+            this.accountProvider,
+            accountInfos,
+            keypairs
+          )
+
+          socket.emit(MSG_RESPOND_RESTART_VALIDATOR)
+        } catch (err: any) {
+          socket.emit(MSG_RESPOND_RESTART_VALIDATOR, err.toString())
         }
       })
       .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {

@@ -173,7 +173,7 @@ export async function restartValidatorWithSnapshot(
  * handle transactions after it is restarted twice (they time out after 30secs)
  *
  */
-async function restartValidator(
+export async function restartValidator(
   ammanState: AmmanState,
   config: Required<AmmanConfig>
 ) {
@@ -194,5 +194,5 @@ async function restartValidator(
     cleanupConfig
   )
 
-  return { args, cleanupConfig, ...rest }
+  return { args, ...rest }
 }
