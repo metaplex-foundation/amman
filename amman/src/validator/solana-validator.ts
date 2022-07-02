@@ -1,6 +1,7 @@
 import { PersistedAccountInfo } from '@metaplex-foundation/amman-client'
 import { Keypair } from '@solana/web3.js'
 import { ChildProcess, spawn } from 'child_process'
+import { AccountStates } from 'src/accounts/state'
 import { createTemporarySnapshot, SnapshotConfig } from '../assets'
 import { AmmanConfig } from '../types'
 import { canAccessSync } from '../utils/fs'
@@ -174,10 +175,13 @@ export async function restartValidatorWithSnapshot(
  *
  */
 export async function restartValidator(
+  accountStates: AccountStates,
   ammanState: AmmanState,
   config: Required<AmmanConfig>
 ) {
   logDebug('Restarting validator')
+
+  accountStates.paused = true
 
   await killValidatorChild(ammanState.validator)
 
@@ -193,6 +197,7 @@ export async function restartValidator(
     config.validator.verifyFees,
     cleanupConfig
   )
+  accountStates.paused = false
 
   return { args, ...rest }
 }

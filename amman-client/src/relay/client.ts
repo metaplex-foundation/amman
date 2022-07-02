@@ -14,6 +14,7 @@ import {
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
+  MSG_REQUEST_RESTART_VALIDATOR,
   MSG_REQUEST_SET_ACCOUNT,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
@@ -21,6 +22,7 @@ import {
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_SNAPSHOT,
+  MSG_RESPOND_RESTART_VALIDATOR,
   MSG_RESPOND_SET_ACCOUNT,
   MSG_RESPOND_SNAPSHOT_SAVE,
   MSG_RESPOND_STORE_KEYPAIR,
@@ -44,6 +46,7 @@ export type AmmanClient = {
   requestStoreKeypair(label: string, keypair: Keypair): Promise<void>
   requestLoadKeypair(id: string): Promise<Keypair | undefined>
   requestSetAccount(persistedAccountInfo: PersistedAccountInfo): Promise<void>
+  requestRestartValidator(): Promise<void>
   disconnect(): void
   destroy(): void
 }
@@ -93,22 +96,22 @@ export class ConnectedAmmanClient implements AmmanClient {
     }
     const promise = this.ack
       ? new Promise<void>((resolve, reject) => {
-          const timeout = createTimeout(
-            2000,
-            new Error('Unable to add address labels' + AMMAN_NOT_RUNNING_ERROR),
-            reject
-          )
-          this.socket
-            .on('error', (err) => {
-              clearTimeout(timeout)
-              reject(err)
-            })
-            .on(ACK_UPDATE_ADDRESS_LABELS, () => {
-              logTrace('Got ack for address labels update %O', labels)
-              clearTimeout(timeout)
-              resolve()
-            })
-        })
+        const timeout = createTimeout(
+          2000,
+          new Error('Unable to add address labels' + AMMAN_NOT_RUNNING_ERROR),
+          reject
+        )
+        this.socket
+          .on('error', (err) => {
+            clearTimeout(timeout)
+            reject(err)
+          })
+          .on(ACK_UPDATE_ADDRESS_LABELS, () => {
+            logTrace('Got ack for address labels update %O', labels)
+            clearTimeout(timeout)
+            resolve()
+          })
+      })
       : Promise.resolve()
 
     this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
@@ -253,6 +256,19 @@ export class ConnectedAmmanClient implements AmmanClient {
     )
   }
 
+  requestRestartValidator(): Promise<void> {
+    return this._handleRequest(
+      '',
+      MSG_REQUEST_RESTART_VALIDATOR,
+      [],
+      MSG_RESPOND_RESTART_VALIDATOR,
+      (resolve, _reject) => {
+        resolve()
+      },
+      5000
+    )
+  }
+
   private _handleRequest<T = void>(
     action: string,
     request: string,
@@ -327,8 +343,8 @@ export class ConnectedAmmanClient implements AmmanClient {
 
 /** @private */
 export class DisconnectedAmmanClient implements AmmanClient {
-  clearAddressLabels(): void {}
-  clearTransactions(): void {}
+  clearAddressLabels(): void { }
+  clearTransactions(): void { }
   addAddressLabels(_labels: Record<string, string>): Promise<void> {
     return Promise.resolve()
   }
@@ -357,6 +373,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
   requestSetAccount(_persistedAccountInfo: PersistedAccountInfo) {
     return Promise.resolve()
   }
-  disconnect() {}
-  destroy() {}
+  requestRestartValidator(): Promise<void> {
+    return Promise.resolve()
+  }
+  disconnect() { }
+  destroy() { }
 }

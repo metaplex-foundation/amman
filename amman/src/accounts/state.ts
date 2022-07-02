@@ -82,6 +82,16 @@ export class AccountStates extends EventEmitter {
   // address:{ keypair, id (label) }
   readonly keypairs: Map<string, { keypair: Keypair; id: string }> = new Map()
 
+  private _paused = true
+
+  get paused() {
+    return this._paused
+  }
+
+  set paused(val: boolean) {
+    this._paused = val
+  }
+
   private constructor(
     readonly connection: Connection,
     readonly accountProvider: AccountProvider,
@@ -177,6 +187,8 @@ export class AccountStates extends EventEmitter {
   }
 
   private _onLog = async (logs: Logs, ctx: Context) => {
+    if (this._paused) return
+
     const tx = await this.connection.getTransaction(logs.signature, {
       commitment: 'confirmed',
     })
@@ -189,6 +201,7 @@ export class AccountStates extends EventEmitter {
       .map((x) => x.toBase58())
 
     for (const key of nonProgramAddresses) {
+      if (this._paused) return
       this.update(key, ctx.slot)
     }
   }

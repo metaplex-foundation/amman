@@ -177,7 +177,11 @@ class RelayServer {
             persistedAccountInfos,
             persistedSnapshotAccountInfos,
             keypairs,
-          } = await restartValidator(this.ammanState, this.ammanState.config)
+          } = await restartValidator(
+            this.accountStates,
+            this.ammanState,
+            this.ammanState.config
+          )
 
           const accountInfos = mapPersistedAccountInfos([
             ...persistedAccountInfos,

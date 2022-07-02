@@ -64,7 +64,7 @@ export class Amman {
     readonly addr: AddressLabels,
     readonly ammanClient: AmmanClient,
     readonly errorResolver?: ErrorResolver
-  ) {}
+  ) { }
   private static _instance: Amman | undefined
 
   // -----------------
@@ -239,6 +239,10 @@ export class Amman {
     )
   }
 
+  restartValidator() {
+    return this.ammanClient.requestRestartValidator()
+  }
+
   loadSnapshot(label: string) {
     return this.ammanClient.requestLoadSnapshot(label)
   }
@@ -335,7 +339,7 @@ export class Amman {
     const { connectClient = process.env.CI == null, ammanClientOpts } = args
     const {
       knownLabels = {},
-      log = (_) => {},
+      log = (_) => { },
       ammanClient = connectClient
         ? ConnectedAmmanClient.getInstance(AMMAN_RELAY_URI, ammanClientOpts)
         : new DisconnectedAmmanClient(),
