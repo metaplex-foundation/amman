@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -17,7 +15,7 @@ impl AmmanClient {
         Self { uri }
     }
 
-    async fn amman_get<T: DeserializeOwned>(&self, path: &str) -> Result<T, Box<dyn Error>> {
+    async fn amman_get<T: DeserializeOwned>(&self, path: &str) -> Result<T, reqwest::Error> {
         let result = reqwest::get(format!("{uri}/{req}", uri = self.uri, req = path))
             .await?
             .json::<T>()
@@ -26,7 +24,7 @@ impl AmmanClient {
         Ok(result)
     }
 
-    pub async fn request_amman_version(&self) -> Result<AmmanVersion, Box<dyn Error>> {
+    pub async fn request_amman_version(&self) -> Result<AmmanVersion, reqwest::Error> {
         self.amman_get::<AmmanVersion>(MSG_REQUEST_AMMAN_VERSION)
             .await
     }
@@ -34,7 +32,7 @@ impl AmmanClient {
     // -----------------
     // Address Labels
     // -----------------
-    pub async fn request_known_address_labels(&self) -> Result<AddressLabels, Box<dyn Error>> {
+    pub async fn request_known_address_labels(&self) -> Result<AddressLabels, reqwest::Error> {
         self.amman_get::<AddressLabels>(MSG_GET_KNOWN_ADDRESS_LABELS)
             .await
     }
