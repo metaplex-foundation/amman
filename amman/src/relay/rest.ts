@@ -22,6 +22,36 @@ import { AMMAN_VERSION } from './types'
 
 const { logTrace } = scopedLog('rest-server')
 
+/**
+ * The rest server exposes similar functionality that is available via the socket.io interface.
+ *
+ * The main difference is that only request/response functionality is supported.
+ *
+ * ### Interface
+ *
+ * Args to a POST method are expected to be passed in a tuple of varying sizes, aka array.
+ *
+ * Return values from a POST or GET take on two shapes:
+ *
+ * #### Return value only indicating success or failure of the operation:
+ *
+ * ```
+ * {
+ *   success: boolean // set only on success
+ *   err: string      // set onlhy in an error case
+ * }
+ * ```
+ *
+ * #### Return value passing along a return arg
+ *
+ * ```
+ * {
+ *   result: any      // set only on success
+ *   err: string      // set onlhy in an error case
+ * }
+ *
+ * ```
+ */
 export class RestServer {
   private constructor(
     readonly app: HttpServer,
@@ -43,7 +73,7 @@ export class RestServer {
           // Amman Version
           // -----------------
           case MSG_REQUEST_AMMAN_VERSION: {
-            send(res, AMMAN_VERSION)
+            send(res, { result: AMMAN_VERSION })
             break
           }
           // -----------------
@@ -53,12 +83,12 @@ export class RestServer {
             if (!assertPost(req, res, url)) return
             const [labels] = await reqArgs(req)
             this.handler.updateAddressLabels(labels)
-            send(res, { success: true })
+            send(res, {})
             break
           }
           case MSG_GET_KNOWN_ADDRESS_LABELS: {
             if (!assertGet(req, res, url)) return
-            send(res, this.handler.allKnownLabels)
+            send(res, { result: this.handler.allKnownLabels })
             break
           }
           // -----------------
@@ -69,7 +99,7 @@ export class RestServer {
             const [pubkeyArg] = await reqArgs(req)
             const [pubkey, states] =
               this.handler.requestAccountStates(pubkeyArg)
-            send(res, [pubkey, states])
+            send(res, { result: [pubkey, states] })
             break
           }
           // -----------------
@@ -81,7 +111,7 @@ export class RestServer {
             const [pubkey, result] = await this.handler.requestAccountSave(
               pubkeyArg
             )
-            send(res, [pubkey, result])
+            send(res, { result: [pubkey, result] })
             break
           }
           // -----------------
@@ -97,8 +127,8 @@ export class RestServer {
           case MSG_REQUEST_LOAD_SNAPSHOT: {
             if (!assertPost(req, res, url)) return
             const [label] = await reqArgs(req)
-            const result = await this.handler.requestLoadSnapshot(label)
-            send(res, result)
+            const reply = await this.handler.requestLoadSnapshot(label)
+            send(res, reply)
             break
           }
           // -----------------
@@ -107,15 +137,15 @@ export class RestServer {
           case MSG_REQUEST_STORE_KEYPAIR: {
             if (!assertPost(req, res, url)) return
             const [id, secretKey] = await reqArgs(req)
-            const result = this.handler.requestStoreKeypair(id, secretKey)
-            send(res, result)
+            const reply = this.handler.requestStoreKeypair(id, secretKey)
+            send(res, reply)
             break
           }
           case MSG_REQUEST_LOAD_KEYPAIR: {
             if (!assertPost(req, res, url)) return
             const [id] = await reqArgs(req)
             const result = this.handler.requestLoadKeypair(id)
-            send(res, result)
+            send(res, { result })
             break
           }
           // -----------------
@@ -124,8 +154,8 @@ export class RestServer {
           case MSG_REQUEST_SET_ACCOUNT: {
             if (!assertPost(req, res, url)) return
             const [account] = await reqArgs(req)
-            const result = this.handler.requestSetAccount(account)
-            send(res, result)
+            const reply = this.handler.requestSetAccount(account)
+            send(res, reply)
             break
           }
           default:
@@ -179,15 +209,19 @@ async function reqArgs(req: IncomingMessage): Promise<any[]> {
   }
 }
 
-function send(res: ServerResponse, msg: any) {
+function send(res: ServerResponse, payload: any) {
   writeStatusHead(res, 200)
-  const payload = JSON.stringify(msg)
-  res.end(payload)
+  try {
+    const json = JSON.stringify(payload)
+    res.end(json)
+  } catch (err: any) {
+    fail(res, `Failed to stringify payload: ${payload.toString()}`)
+  }
 }
 
 function fail(res: ServerResponse, msg: string, statusCode = 422) {
   writeStatusHead(res, statusCode)
-  res.end(`${STATUS_CODES[statusCode]}: ${msg}`)
+  res.end(JSON.stringify({ err: `${STATUS_CODES[statusCode]}: ${msg}` }))
 }
 
 function writeStatusHead(res: ServerResponse, status: number) {

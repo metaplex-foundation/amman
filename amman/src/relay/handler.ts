@@ -101,7 +101,7 @@ export class RelayHandler {
         keypairs
       )
 
-      return { success: true }
+      return {}
     } catch (err: any) {
       return { err: err.toString() }
     }
@@ -114,7 +114,7 @@ export class RelayHandler {
     try {
       const keypair = Keypair.fromSecretKey(secretKey)
       this.accountStates.storeKeypair(id, keypair)
-      return { success: true }
+      return {}
     } catch (err: any) {
       return { err: err.toString() }
     }
@@ -158,7 +158,7 @@ export class RelayHandler {
         accountInfos,
         keypairs
       )
-      return { success: true }
+      return {}
     } catch (err: any) {
       return { err: err.toString() }
     }
