@@ -5,11 +5,11 @@ use reqwest::blocking as req;
 
 use crate::{
     consts::{
-        AMMAN_RELAY_URI, MSG_GET_KNOWN_ADDRESS_LABELS, MSG_REQUEST_AMMAN_VERSION,
-        MSG_UPDATE_ADDRESS_LABELS,
+        AMMAN_RELAY_URI, MSG_GET_KNOWN_ADDRESS_LABELS, MSG_REQUEST_ACCOUNT_STATES,
+        MSG_REQUEST_AMMAN_VERSION, MSG_UPDATE_ADDRESS_LABELS,
     },
     errors::{AmmanClientError, AmmanClientResult},
-    payloads::{AddressLabels, AmmanVersion, Outcome, ResultOutcome},
+    payloads::{AccountState, AddressLabels, AmmanVersion, Outcome, ResultOutcome},
 };
 
 pub struct AmmanClient {
@@ -39,20 +39,6 @@ impl AmmanClient {
         }
     }
 
-    fn amman_post_with_result<T: DeserializeOwned, Args: Serialize + ?Sized>(
-        &self,
-        path: &str,
-        payload: &Args,
-    ) -> AmmanClientResult<T> {
-        let result = req::Client::new()
-            .post(format!("{uri}/{req}", uri = self.uri, req = path))
-            .json(payload)
-            .send()?
-            .json::<T>()?;
-
-        Ok(result)
-    }
-
     fn amman_post<Args: Serialize + ?Sized>(
         &self,
         path: &str,
@@ -68,6 +54,30 @@ impl AmmanClient {
             return Err(AmmanClientError::RelayResponseHasError(err));
         };
         Ok(())
+    }
+
+    fn amman_post_with_result<T: DeserializeOwned, Args: Serialize + ?Sized>(
+        &self,
+        path: &str,
+        payload: &Args,
+    ) -> AmmanClientResult<ResultOutcome<T>> {
+        #[cfg(test)]
+        {
+            let body = req::Client::new()
+                .post(format!("{uri}/{req}", uri = self.uri, req = path))
+                .json(payload)
+                .send()?
+                .text()?;
+            eprintln!("{:#?}", body);
+        }
+
+        let result = req::Client::new()
+            .post(format!("{uri}/{req}", uri = self.uri, req = path))
+            .json(payload)
+            .send()?
+            .json::<ResultOutcome<T>>()?;
+
+        Ok(result)
     }
 
     pub fn request_amman_version(&self) -> Result<AmmanVersion, AmmanClientError> {
@@ -88,18 +98,17 @@ impl AmmanClient {
         self.amman_post(MSG_UPDATE_ADDRESS_LABELS, &vec![address_labels])
     }
 
-    pub fn request_update_address_labels_(
+    // -----------------
+    // Accounts
+    // -----------------
+    pub fn request_account_states(
         &self,
-        address_labels: &AddressLabels,
-    ) -> Result<String, reqwest::Error> {
-        let path = MSG_UPDATE_ADDRESS_LABELS;
-        let result = req::Client::new()
-            .post(format!("{uri}/{req}", uri = self.uri, req = path))
-            .json(address_labels)
-            .send()?
-            .text()?;
-
-        Ok(result)
+        address: &str,
+    ) -> AmmanClientResult<ResultOutcome<(String, Vec<AccountState>)>> {
+        self.amman_post_with_result::<(String, Vec<AccountState>), _>(
+            MSG_REQUEST_ACCOUNT_STATES,
+            &vec![address],
+        )
     }
 }
 
@@ -138,12 +147,33 @@ mod tests {
         let labels = {
             let mut map = HashMap::<String, String>::new();
             map.insert("some address".to_string(), "some label".to_string());
-            AddressLabels(map)
+            map
         };
         client
             .request_update_address_labels(&labels)
             .expect("should work");
         let labels = client.request_known_address_labels().expect("should work");
         eprintln!("{:#?}", labels);
+    }
+
+    // -----------------
+    // Accounts
+    // -----------------
+    #[test]
+    fn request_account_states() {
+        let client = AmmanClient::new(None);
+        let labels = client
+            .request_known_address_labels()
+            .expect("should get address labels");
+
+        let game_pda_address = labels
+            .iter()
+            .find_map(|(k, v)| if v == "gamePda" { Some(k) } else { None })
+            .expect("Make sure to populate amman with game data first");
+
+        let states = client
+            .request_account_states(game_pda_address)
+            .expect("request_account_states should work");
+        eprintln!("{:#?}", states);
     }
 }
