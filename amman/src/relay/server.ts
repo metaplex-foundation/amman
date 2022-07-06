@@ -140,29 +140,29 @@ export /* internal */ class RelayServer {
       })
       .on(MSG_REQUEST_LOAD_SNAPSHOT, async (label: string) => {
         logTrace(MSG_REQUEST_LOAD_SNAPSHOT, label)
-        const result = await this.handler.requestLoadSnapshot(label)
-        socket.emit(MSG_RESPOND_LOAD_SNAPSHOT, result)
+        const reply = await this.handler.requestLoadSnapshot(label)
+        socket.emit(MSG_RESPOND_LOAD_SNAPSHOT, reply)
       })
       // -----------------
       // Keypair
       // -----------------
       .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {
         logTrace(MSG_REQUEST_STORE_KEYPAIR, id)
-        const result = this.handler.requestStoreKeypair(id, secretKey)
-        socket.emit(MSG_RESPOND_STORE_KEYPAIR, result)
+        const reply = this.handler.requestStoreKeypair(id, secretKey)
+        socket.emit(MSG_RESPOND_STORE_KEYPAIR, reply)
       })
       .on(MSG_REQUEST_LOAD_KEYPAIR, (idArg: string) => {
         logTrace(MSG_REQUEST_LOAD_KEYPAIR, idArg)
         const [id, keypair] = this.handler.requestLoadKeypair(idArg)
         socket.emit(MSG_RESPOND_LOAD_KEYPAIR, [id, keypair])
       })
-  // -----------------
-  // Set Account
-  // -----------------
+      // -----------------
+      // Set Account
+      // -----------------
       .on(MSG_REQUEST_SET_ACCOUNT, async (account: PersistedAccountInfo) => {
         logTrace(MSG_REQUEST_SET_ACCOUNT)
-        const result = await this.handler.requestSetAccount(account)
-        socket.emit(MSG_RESPOND_SET_ACCOUNT, result)
+        const reply = await this.handler.requestSetAccount(account)
+        socket.emit(MSG_RESPOND_SET_ACCOUNT, reply)
       })
   }
 }

@@ -177,8 +177,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_LOAD_SNAPSHOT,
       [label],
       MSG_RESPOND_LOAD_SNAPSHOT,
-      (resolve, reject, err) => {
-        if (err != null) return reject(new Error(err))
+      (resolve, reject, reply) => {
+        if (reply?.err != null) return reject(new Error(reply.err))
         resolve()
       },
       5000
@@ -213,8 +213,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_STORE_KEYPAIR,
       [id, keypair.secretKey],
       MSG_RESPOND_STORE_KEYPAIR,
-      (resolve, reject, err?: any) => {
-        if (err != null) return reject(new Error(err))
+      (resolve, reject, reply?: any) => {
+        if (reply?.err != null) return reject(new Error(reply.err))
         resolve()
       }
     )
@@ -246,7 +246,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_SET_ACCOUNT,
       [persistedAccountInfo],
       MSG_RESPOND_SET_ACCOUNT,
-      (resolve, _reject) => {
+      (resolve, reject, reply) => {
+        if (reply?.err != null) return reject(new Error(reply.err))
         resolve()
       },
       5000
