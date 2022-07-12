@@ -12,6 +12,7 @@ import {
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
+  MSG_REQUEST_AMMAN_VERSION,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_REQUEST_RESTART_VALIDATOR,
@@ -20,6 +21,7 @@ import {
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_STATES,
+  MSG_RESPOND_AMMAN_VERSION,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_SNAPSHOT,
   MSG_RESPOND_RESTART_VALIDATOR,
@@ -96,22 +98,22 @@ export class ConnectedAmmanClient implements AmmanClient {
     }
     const promise = this.ack
       ? new Promise<void>((resolve, reject) => {
-        const timeout = createTimeout(
-          2000,
-          new Error('Unable to add address labels' + AMMAN_NOT_RUNNING_ERROR),
-          reject
-        )
-        this.socket
-          .on('error', (err) => {
-            clearTimeout(timeout)
-            reject(err)
-          })
-          .on(ACK_UPDATE_ADDRESS_LABELS, () => {
-            logTrace('Got ack for address labels update %O', labels)
-            clearTimeout(timeout)
-            resolve()
-          })
-      })
+          const timeout = createTimeout(
+            2000,
+            new Error('Unable to add address labels' + AMMAN_NOT_RUNNING_ERROR),
+            reject
+          )
+          this.socket
+            .on('error', (err) => {
+              clearTimeout(timeout)
+              reject(err)
+            })
+            .on(ACK_UPDATE_ADDRESS_LABELS, () => {
+              logTrace('Got ack for address labels update %O', labels)
+              clearTimeout(timeout)
+              resolve()
+            })
+        })
       : Promise.resolve()
 
     this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
@@ -149,6 +151,17 @@ export class ConnectedAmmanClient implements AmmanClient {
           states
         )
         resolve(states)
+      }
+    )
+  }
+  async fetchAmmanVersion(): Promise<[number, number, number]> {
+    return this._handleRequest(
+      'fetch versoin',
+      MSG_REQUEST_AMMAN_VERSION,
+      [],
+      MSG_RESPOND_AMMAN_VERSION,
+      (resolve, _reject, version) => {
+        resolve(version)
       }
     )
   }
@@ -343,8 +356,8 @@ export class ConnectedAmmanClient implements AmmanClient {
 
 /** @private */
 export class DisconnectedAmmanClient implements AmmanClient {
-  clearAddressLabels(): void { }
-  clearTransactions(): void { }
+  clearAddressLabels(): void {}
+  clearTransactions(): void {}
   addAddressLabels(_labels: Record<string, string>): Promise<void> {
     return Promise.resolve()
   }
@@ -376,6 +389,6 @@ export class DisconnectedAmmanClient implements AmmanClient {
   requestRestartValidator(): Promise<void> {
     return Promise.resolve()
   }
-  disconnect() { }
-  destroy() { }
+  disconnect() {}
+  destroy() {}
 }
