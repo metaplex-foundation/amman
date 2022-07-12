@@ -91,6 +91,7 @@ export async function initValidator(
     validator,
     detached,
     config,
+    pid: validator.pid!,
   }
 
   // -----------------
@@ -150,4 +151,6 @@ export async function initValidator(
   // Wait for validator to come up and cleanup
   // -----------------
   await waitForValidator(jsonRpcUrl, verifyFees, cleanupConfig)
+
+  return ammanState
 }

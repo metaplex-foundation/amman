@@ -53,7 +53,7 @@ const { logError, logDebug, logTrace } = scopedLog('relay')
  *
  * @private
  */
-class RelayServer {
+export class RelayServer {
   constructor(
     readonly io: Server,
     readonly ammanState: AmmanState,
@@ -262,6 +262,9 @@ class RelayServer {
         logTrace(MSG_REQUEST_VALIDATOR_PID)
         socket.emit(MSG_RESPOND_VALIDATOR_PID, this.ammanState.validator.pid ?? 0)
       })
+  }
+  close() {
+    return new Promise<void>((resolve, reject) => this.io.close((err) => err ? reject(err) : resolve()))
   }
 }
 

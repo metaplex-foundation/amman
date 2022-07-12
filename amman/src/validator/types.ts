@@ -1,5 +1,6 @@
 import { Commitment } from '@solana/web3.js'
 import { ChildProcess } from 'child_process'
+import { RelayServer } from 'src/relay/server'
 import { AmmanConfig } from '../types'
 
 /**
@@ -83,4 +84,10 @@ export type AmmanState = {
   config: Required<AmmanConfig>
   validator: ChildProcess
   detached: boolean
+  pid: number
+}
+
+/** @private only used in tests */
+export type AmmanStateInternal = AmmanState & {
+  relayServer?: RelayServer
 }
