@@ -64,7 +64,7 @@ export class Amman {
     readonly addr: AddressLabels,
     readonly ammanClient: AmmanClient,
     readonly errorResolver?: ErrorResolver
-  ) { }
+  ) {}
   private static _instance: Amman | undefined
 
   // -----------------
@@ -339,7 +339,7 @@ export class Amman {
     const { connectClient = process.env.CI == null, ammanClientOpts } = args
     const {
       knownLabels = {},
-      log = (_) => { },
+      log = (_) => {},
       ammanClient = connectClient
         ? ConnectedAmmanClient.getInstance(AMMAN_RELAY_URI, ammanClientOpts)
         : new DisconnectedAmmanClient(),

@@ -61,3 +61,8 @@ export const MSG_RESPOND_RESTART_VALIDATOR = 'respond:restart-validator'
 export const MSG_REQUEST_AMMAN_VERSION = 'request:relay-version'
 /** @private */
 export const MSG_RESPOND_AMMAN_VERSION = 'respond:relay-version'
+
+/** @private */
+export const MSG_REQUEST_VALIDATOR_PID = 'request:validator-pid'
+/** @private */
+export const MSG_RESPOND_VALIDATOR_PID = 'respond:validator-pid'
