@@ -5,7 +5,7 @@ import { killAmman, launchAmman, relayClient } from './utils/launch'
 
 const DEBUG = true
 
-test('socket-client: amman version', async (t) => {
+test('amman-client: amman version', async (t) => {
   const client = relayClient()
 
   const state = await launchAmman({ streamTransactionLogs: DEBUG })

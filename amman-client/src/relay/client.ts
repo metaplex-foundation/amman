@@ -156,7 +156,7 @@ export class ConnectedAmmanClient implements AmmanClient {
   }
   async fetchAmmanVersion(): Promise<[number, number, number]> {
     return this._handleRequest(
-      'fetch versoin',
+      'fetch version',
       MSG_REQUEST_AMMAN_VERSION,
       [],
       MSG_RESPOND_AMMAN_VERSION,
