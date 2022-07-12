@@ -19,6 +19,7 @@ import {
   MSG_REQUEST_SET_ACCOUNT,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
+  MSG_REQUEST_VALIDATOR_PID,
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_RESPOND_AMMAN_VERSION,
@@ -28,6 +29,7 @@ import {
   MSG_RESPOND_SET_ACCOUNT,
   MSG_RESPOND_SNAPSHOT_SAVE,
   MSG_RESPOND_STORE_KEYPAIR,
+  MSG_RESPOND_VALIDATOR_PID,
   MSG_UPDATE_ADDRESS_LABELS,
 } from './consts'
 import { createTimeout } from './timeout'
@@ -162,6 +164,18 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_RESPOND_AMMAN_VERSION,
       (resolve, _reject, version) => {
         resolve(version)
+      }
+    )
+  }
+
+  async fetchValidatorPid(): Promise<number> {
+    return this._handleRequest(
+      'fetch validator pid',
+      MSG_REQUEST_VALIDATOR_PID,
+      [],
+      MSG_RESPOND_VALIDATOR_PID,
+      (resolve, _reject, pid) => {
+        resolve(pid)
       }
     )
   }

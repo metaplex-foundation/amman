@@ -91,7 +91,6 @@ export async function initValidator(
     validator,
     detached,
     config,
-    pid: validator.pid!,
   }
 
   // -----------------

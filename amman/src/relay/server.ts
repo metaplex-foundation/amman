@@ -153,7 +153,11 @@ export class RelayServer {
             persistedAccountInfos,
             persistedSnapshotAccountInfos,
             keypairs,
-          } = await restartValidatorWithSnapshot(this.ammanState, label)
+          } = await restartValidatorWithSnapshot(
+            this.accountStates,
+            this.ammanState,
+            label
+          )
 
           const accountInfos = mapPersistedAccountInfos([
             ...persistedAccountInfos,
@@ -223,6 +227,7 @@ export class RelayServer {
         logTrace(MSG_REQUEST_SET_ACCOUNT)
         const addresses = this.accountStates.allAccountAddresses()
         await restartValidatorWithAccountOverrides(
+          this.accountStates,
           this.ammanState,
           addresses,
           this.allKnownLabels,
@@ -234,6 +239,7 @@ export class RelayServer {
           persistedSnapshotAccountInfos,
           keypairs,
         } = await restartValidatorWithAccountOverrides(
+          this.accountStates,
           this.ammanState,
           addresses,
           this.allKnownLabels,
@@ -260,11 +266,16 @@ export class RelayServer {
       })
       .on(MSG_REQUEST_VALIDATOR_PID, () => {
         logTrace(MSG_REQUEST_VALIDATOR_PID)
-        socket.emit(MSG_RESPOND_VALIDATOR_PID, this.ammanState.validator.pid ?? 0)
+        socket.emit(
+          MSG_RESPOND_VALIDATOR_PID,
+          this.ammanState.validator.pid ?? 0
+        )
       })
   }
   close() {
-    return new Promise<void>((resolve, reject) => this.io.close((err) => err ? reject(err) : resolve()))
+    return new Promise<void>((resolve, reject) =>
+      this.io.close((err) => (err ? reject(err) : resolve()))
+    )
   }
 }
 

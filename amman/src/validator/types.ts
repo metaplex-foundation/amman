@@ -84,7 +84,6 @@ export type AmmanState = {
   config: Required<AmmanConfig>
   validator: ChildProcess
   detached: boolean
-  pid: number
 }
 
 /** @private only used in tests */

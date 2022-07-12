@@ -28,7 +28,7 @@ export async function killAmman(t: Test, ammanState: AmmanStateInternal) {
       t.error(err, 'amman relay failed to close properly')
     }
   }
-  process.kill(ammanState.pid)
+  process.kill(ammanState.validator.pid!)
 
   killStuckProcess()
 }
