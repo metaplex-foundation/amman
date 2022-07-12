@@ -15,6 +15,10 @@
     "access": "private",
     "registry": "https://registry.npmjs.org"
   },
+  "dependencies": {
+    "@metaplex-foundation/amman": "*",
+    "@metaplex-foundation/amman-client": "*"
+  },
   "devDependencies": {
     "@types/tape": "^4.13.2",
     "esbuild": "^0.14.49",
