@@ -8,6 +8,7 @@ import {
   MSG_REQUEST_SET_ACCOUNT,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
+  MSG_REQUEST_VALIDATOR_PID,
   MSG_UPDATE_ADDRESS_LABELS,
 } from '@metaplex-foundation/amman-client'
 import {
@@ -77,6 +78,14 @@ export class RestServer {
             break
           }
           // -----------------
+          // Validator Pid
+          // -----------------
+          case MSG_REQUEST_VALIDATOR_PID:
+            if (!assertGet(req, res, url)) return
+            const reply = handler.requestValidatorPid()
+            send(res, reply)
+            break
+          // -----------------
           // Address Labels
           // -----------------
           case MSG_UPDATE_ADDRESS_LABELS: {
@@ -108,6 +117,8 @@ export class RestServer {
           case MSG_REQUEST_ACCOUNT_SAVE: {
             if (!assertPost(req, res, url)) return
             const [pubkeyArg] = await reqArgs(req)
+            // TODO(thlorenz): for consistency the handler should return a `{ result }` reply
+            // make sure we don't break amman-client that's also using the handler
             const [pubkey, result] = await this.handler.requestAccountSave(
               pubkeyArg
             )
@@ -120,6 +131,8 @@ export class RestServer {
           case MSG_REQUEST_SNAPSHOT_SAVE: {
             if (!assertPost(req, res, url)) return
             const [label] = await reqArgs(req)
+            // TODO(thlorenz): for consistency the handler should return a `{ result }` reply
+            // make sure we don't break amman-client that's also using the handler
             const result = await this.handler.requestSnapshotSave(label)
             send(res, result)
             break

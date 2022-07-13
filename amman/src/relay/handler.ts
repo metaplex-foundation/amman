@@ -47,6 +47,24 @@ export class RelayHandler {
   }
 
   // -----------------
+  // Amman Version
+  // -----------------
+  async requestAmmanVersion() {}
+
+  // -----------------
+  // Validator Pid
+  // -----------------
+  requestValidatorPid() {
+    const pid = this.ammanState.validator.pid
+    if (pid == null) {
+      return {
+        err: 'It seems like no validator is running currently, cannot get pid',
+      }
+    }
+    return { result: pid }
+  }
+
+  // -----------------
   // Save Account
   // -----------------
   async requestAccountSave(pubkey: string, slot?: number) {
@@ -87,7 +105,11 @@ export class RelayHandler {
   async requestLoadSnapshot(label: string) {
     try {
       const { persistedAccountInfos, persistedSnapshotAccountInfos, keypairs } =
-        await restartValidatorWithSnapshot(this.ammanState, label)
+        await restartValidatorWithSnapshot(
+          this.accountStates,
+          this.ammanState,
+          label
+        )
 
       const accountInfos = mapPersistedAccountInfos([
         ...persistedAccountInfos,
@@ -131,15 +153,9 @@ export class RelayHandler {
   async requestSetAccount(account: PersistedAccountInfo) {
     const addresses = this.accountStates.allAccountAddresses()
     try {
-      await restartValidatorWithAccountOverrides(
-        this.ammanState,
-        addresses,
-        this.allKnownLabels,
-        this.accountStates.allKeypairs,
-        new Map([[account.pubkey, account]])
-      )
       const { persistedAccountInfos, persistedSnapshotAccountInfos, keypairs } =
         await restartValidatorWithAccountOverrides(
+          this.accountStates,
           this.ammanState,
           addresses,
           this.allKnownLabels,

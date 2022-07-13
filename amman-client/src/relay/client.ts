@@ -92,6 +92,36 @@ export class ConnectedAmmanClient implements AmmanClient {
     // TODO(thlorenz): this should ack to resolve a promise
     this.socket.emit(MSG_CLEAR_TRANSACTIONS)
   }
+  // -----------------
+  // Amman Version
+  // -----------------
+  async fetchAmmanVersion(): Promise<[number, number, number]> {
+    return this._handleRequest(
+      'fetch version',
+      MSG_REQUEST_AMMAN_VERSION,
+      [],
+      MSG_RESPOND_AMMAN_VERSION,
+      (resolve, _reject, version) => {
+        resolve(version)
+      }
+    )
+  }
+
+  // -----------------
+  // Validator Pid
+  // -----------------
+  async fetchValidatorPid(): Promise<number> {
+    return this._handleRequest(
+      'fetch validator pid',
+      MSG_REQUEST_VALIDATOR_PID,
+      [],
+      MSG_RESPOND_VALIDATOR_PID,
+      (resolve, reject, { err, result }) => {
+        if (err != null) return reject(new Error(err))
+        resolve(result)
+      }
+    )
+  }
 
   addAddressLabels(labels: Record<string, string>): Promise<void> {
     if (logTrace.enabled) {
@@ -156,30 +186,6 @@ export class ConnectedAmmanClient implements AmmanClient {
       }
     )
   }
-  async fetchAmmanVersion(): Promise<[number, number, number]> {
-    return this._handleRequest(
-      'fetch version',
-      MSG_REQUEST_AMMAN_VERSION,
-      [],
-      MSG_RESPOND_AMMAN_VERSION,
-      (resolve, _reject, version) => {
-        resolve(version)
-      }
-    )
-  }
-
-  async fetchValidatorPid(): Promise<number> {
-    return this._handleRequest(
-      'fetch validator pid',
-      MSG_REQUEST_VALIDATOR_PID,
-      [],
-      MSG_RESPOND_VALIDATOR_PID,
-      (resolve, _reject, pid) => {
-        resolve(pid)
-      }
-    )
-  }
-
   async requestSnapshot(label?: string): Promise<string> {
     label ??= new Date().toJSON().replace(/[:.]/g, '_')
 

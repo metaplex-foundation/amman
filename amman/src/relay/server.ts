@@ -22,6 +22,8 @@ import {
   PersistedAccountInfo,
   MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_RESPOND_LOAD_SNAPSHOT,
+  MSG_REQUEST_VALIDATOR_PID,
+  MSG_RESPOND_VALIDATOR_PID,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -76,6 +78,14 @@ export /* internal */ class RelayServer {
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
         logTrace(MSG_REQUEST_AMMAN_VERSION)
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
+      })
+      // -----------------
+      // Validator Pid
+      // -----------------
+      .on(MSG_REQUEST_VALIDATOR_PID, () => {
+        logTrace(MSG_REQUEST_VALIDATOR_PID)
+        const reply = this.handler.requestValidatorPid()
+        socket.emit(MSG_RESPOND_VALIDATOR_PID, reply)
       })
       // -----------------
       // Address Labels
