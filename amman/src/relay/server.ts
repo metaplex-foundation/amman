@@ -12,6 +12,8 @@ import {
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_RESPOND_SNAPSHOT_SAVE,
+  MSG_REQUEST_RESTART_VALIDATOR,
+  MSG_RESPOND_RESTART_VALIDATOR,
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_RESPOND_STORE_KEYPAIR,
   MSG_REQUEST_LOAD_KEYPAIR,
@@ -22,6 +24,8 @@ import {
   PersistedAccountInfo,
   MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_RESPOND_LOAD_SNAPSHOT,
+  MSG_REQUEST_VALIDATOR_PID,
+  MSG_RESPOND_VALIDATOR_PID,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair, PublicKey } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -34,6 +38,7 @@ import { AmmanAccountProvider } from '../types'
 import { scopedLog } from '../utils'
 import { killRunningServer } from '../utils/http'
 import {
+  restartValidator,
   restartValidatorWithAccountOverrides,
   restartValidatorWithSnapshot,
 } from '../validator'
@@ -48,7 +53,7 @@ const { logError, logDebug, logTrace } = scopedLog('relay')
  *
  * @private
  */
-class RelayServer {
+export class RelayServer {
   constructor(
     readonly io: Server,
     readonly ammanState: AmmanState,
@@ -148,7 +153,11 @@ class RelayServer {
             persistedAccountInfos,
             persistedSnapshotAccountInfos,
             keypairs,
-          } = await restartValidatorWithSnapshot(this.ammanState, label)
+          } = await restartValidatorWithSnapshot(
+            this.accountStates,
+            this.ammanState,
+            label
+          )
 
           const accountInfos = mapPersistedAccountInfos([
             ...persistedAccountInfos,
@@ -165,6 +174,36 @@ class RelayServer {
           socket.emit(MSG_RESPOND_LOAD_SNAPSHOT)
         } catch (err: any) {
           socket.emit(MSG_RESPOND_LOAD_SNAPSHOT, err.toString())
+        }
+      })
+      .on(MSG_REQUEST_RESTART_VALIDATOR, async (label: string) => {
+        logTrace(MSG_REQUEST_RESTART_VALIDATOR, label)
+        try {
+          const {
+            persistedAccountInfos,
+            persistedSnapshotAccountInfos,
+            keypairs,
+          } = await restartValidator(
+            this.accountStates,
+            this.ammanState,
+            this.ammanState.config
+          )
+
+          const accountInfos = mapPersistedAccountInfos([
+            ...persistedAccountInfos,
+            ...persistedSnapshotAccountInfos,
+          ])
+
+          this.accountStates = AccountStates.createInstance(
+            this.accountProvider.connection,
+            this.accountProvider,
+            accountInfos,
+            keypairs
+          )
+
+          socket.emit(MSG_RESPOND_RESTART_VALIDATOR)
+        } catch (err: any) {
+          socket.emit(MSG_RESPOND_RESTART_VALIDATOR, err.toString())
         }
       })
       .on(MSG_REQUEST_STORE_KEYPAIR, (id: string, secretKey: Uint8Array) => {
@@ -188,6 +227,7 @@ class RelayServer {
         logTrace(MSG_REQUEST_SET_ACCOUNT)
         const addresses = this.accountStates.allAccountAddresses()
         await restartValidatorWithAccountOverrides(
+          this.accountStates,
           this.ammanState,
           addresses,
           this.allKnownLabels,
@@ -199,6 +239,7 @@ class RelayServer {
           persistedSnapshotAccountInfos,
           keypairs,
         } = await restartValidatorWithAccountOverrides(
+          this.accountStates,
           this.ammanState,
           addresses,
           this.allKnownLabels,
@@ -223,6 +264,18 @@ class RelayServer {
         logTrace(MSG_REQUEST_AMMAN_VERSION)
         socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
       })
+      .on(MSG_REQUEST_VALIDATOR_PID, () => {
+        logTrace(MSG_REQUEST_VALIDATOR_PID)
+        socket.emit(
+          MSG_RESPOND_VALIDATOR_PID,
+          this.ammanState.validator.pid ?? 0
+        )
+      })
+  }
+  close() {
+    return new Promise<void>((resolve, reject) =>
+      this.io.close((err) => (err ? reject(err) : resolve()))
+    )
   }
 }
 

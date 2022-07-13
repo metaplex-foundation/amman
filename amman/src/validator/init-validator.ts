@@ -150,4 +150,6 @@ export async function initValidator(
   // Wait for validator to come up and cleanup
   // -----------------
   await waitForValidator(jsonRpcUrl, verifyFees, cleanupConfig)
+
+  return ammanState
 }

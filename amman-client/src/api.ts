@@ -239,6 +239,10 @@ export class Amman {
     )
   }
 
+  restartValidator() {
+    return this.ammanClient.requestRestartValidator()
+  }
+
   loadSnapshot(label: string) {
     return this.ammanClient.requestLoadSnapshot(label)
   }

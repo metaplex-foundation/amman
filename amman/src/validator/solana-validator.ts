@@ -1,6 +1,7 @@
 import { PersistedAccountInfo } from '@metaplex-foundation/amman-client'
 import { Keypair } from '@solana/web3.js'
 import { ChildProcess, spawn } from 'child_process'
+import { AccountStates } from 'src/accounts/state'
 import { createTemporarySnapshot, SnapshotConfig } from '../assets'
 import { AmmanConfig } from '../types'
 import { canAccessSync } from '../utils/fs'
@@ -128,6 +129,7 @@ export function killValidatorChild(child: ChildProcess) {
  *
  */
 export async function restartValidatorWithAccountOverrides(
+  accountStates: AccountStates,
   ammanState: AmmanState,
   addresses: string[],
   // Keyed pubkey:label
@@ -144,7 +146,7 @@ export async function restartValidatorWithAccountOverrides(
     )
 
   const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
-  const res = await restartValidator(ammanState, config)
+  const res = await restartValidator(accountStates, ammanState, config)
 
   await cleanupSnapshotDir()
 
@@ -155,6 +157,7 @@ export async function restartValidatorWithAccountOverrides(
  * Attempts to kill and restart the validator with the given snapshot.
  */
 export async function restartValidatorWithSnapshot(
+  accountStates: AccountStates,
   ammanState: AmmanState,
   snapshotLabel: string
 ) {
@@ -163,7 +166,7 @@ export async function restartValidatorWithSnapshot(
     load: snapshotLabel,
   }
   const config: Required<AmmanConfig> = { ...ammanState.config, snapshot }
-  return restartValidator(ammanState, config)
+  return restartValidator(accountStates, ammanState, config)
 }
 
 /**
@@ -173,11 +176,14 @@ export async function restartValidatorWithSnapshot(
  * handle transactions after it is restarted twice (they time out after 30secs)
  *
  */
-async function restartValidator(
+export async function restartValidator(
+  accountStates: AccountStates,
   ammanState: AmmanState,
   config: Required<AmmanConfig>
 ) {
   logDebug('Restarting validator')
+
+  accountStates.paused = true
 
   await killValidatorChild(ammanState.validator)
 
@@ -193,6 +199,7 @@ async function restartValidator(
     config.validator.verifyFees,
     cleanupConfig
   )
+  accountStates.paused = false
 
-  return { args, cleanupConfig, ...rest }
+  return { args, ...rest }
 }
