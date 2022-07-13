@@ -8,6 +8,21 @@ import {
   restartValidatorWithSnapshot,
 } from '../validator'
 import { AmmanState } from '../validator/types'
+import { AmmanVersion, AMMAN_VERSION } from './types'
+
+export type RelayReply<T> = { result: T } | { err: string }
+
+export function isReplyWithResult<T>(
+  reply: RelayReply<T>
+): reply is { result: T } {
+  return !isReplyWithError(reply) && (reply as { result: T }).result != null
+}
+
+export function isReplyWithError<T>(
+  reply: RelayReply<T>
+): reply is { err: string } {
+  return (reply as { err: string }).err != null
+}
 
 export class RelayHandler {
   constructor(
@@ -49,7 +64,9 @@ export class RelayHandler {
   // -----------------
   // Amman Version
   // -----------------
-  async requestAmmanVersion() {}
+  requestAmmanVersion(): RelayReply<AmmanVersion> {
+    return { result: AMMAN_VERSION }
+  }
 
   // -----------------
   // Validator Pid

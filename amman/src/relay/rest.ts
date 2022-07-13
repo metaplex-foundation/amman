@@ -1,4 +1,5 @@
 import {
+  AmmanRequest,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
@@ -17,9 +18,15 @@ import {
   ServerResponse,
   STATUS_CODES,
 } from 'http'
+import { UnreachableCaseError } from 'ts-essentials'
 import { scopedLog } from '../utils/log'
 import { RelayHandler } from './handler'
-import { AMMAN_VERSION } from './types'
+import {
+  RelayMethod,
+  RELAY_REST_PATH,
+  RELAY_REST_PATH_LEN,
+  ammanRelayRoutes,
+} from './routes'
 
 const { logTrace } = scopedLog('rest-server')
 
@@ -60,28 +67,32 @@ export class RestServer {
   ) {
     app.on('request', async (req: IncomingMessage, res: ServerResponse) => {
       const url = req.url?.trim()
-      // handled by the socket io server
-      if (url?.startsWith('/socket.io')) return
+
+      // /socket.io  handled by the socket io server
+
+      if (!url?.startsWith(`/${RELAY_REST_PATH}`)) return
 
       logTrace(req.url)
-      if (url == null || url.length === 0) {
-        return fail(res, 'Url is required')
-      }
+
+      // cut off the path and the surrounding /s
+      const request = url.slice(2 + RELAY_REST_PATH_LEN) as AmmanRequest
+      const method = ammanRelayRoutes().methodForRequest(request)
 
       try {
-        switch (url.slice(1)) {
+        switch (request) {
           // -----------------
           // Amman Version
           // -----------------
           case MSG_REQUEST_AMMAN_VERSION: {
-            send(res, { result: AMMAN_VERSION })
+            const reply = handler.requestAmmanVersion()
+            send(res, reply)
             break
           }
           // -----------------
           // Validator Pid
           // -----------------
           case MSG_REQUEST_VALIDATOR_PID:
-            if (!assertGet(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const reply = handler.requestValidatorPid()
             send(res, reply)
             break
@@ -89,14 +100,14 @@ export class RestServer {
           // Address Labels
           // -----------------
           case MSG_UPDATE_ADDRESS_LABELS: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [labels] = await reqArgs(req)
             this.handler.updateAddressLabels(labels)
             send(res, {})
             break
           }
           case MSG_GET_KNOWN_ADDRESS_LABELS: {
-            if (!assertGet(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             send(res, { result: this.handler.allKnownLabels })
             break
           }
@@ -104,7 +115,7 @@ export class RestServer {
           // Account States
           // -----------------
           case MSG_REQUEST_ACCOUNT_STATES: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [pubkeyArg] = await reqArgs(req)
             const [pubkey, states] =
               this.handler.requestAccountStates(pubkeyArg)
@@ -115,7 +126,7 @@ export class RestServer {
           // Save Account
           // -----------------
           case MSG_REQUEST_ACCOUNT_SAVE: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [pubkeyArg] = await reqArgs(req)
             // TODO(thlorenz): for consistency the handler should return a `{ result }` reply
             // make sure we don't break amman-client that's also using the handler
@@ -129,7 +140,7 @@ export class RestServer {
           // Snapshot
           // -----------------
           case MSG_REQUEST_SNAPSHOT_SAVE: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [label] = await reqArgs(req)
             // TODO(thlorenz): for consistency the handler should return a `{ result }` reply
             // make sure we don't break amman-client that's also using the handler
@@ -138,7 +149,7 @@ export class RestServer {
             break
           }
           case MSG_REQUEST_LOAD_SNAPSHOT: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [label] = await reqArgs(req)
             const reply = await this.handler.requestLoadSnapshot(label)
             send(res, reply)
@@ -148,14 +159,14 @@ export class RestServer {
           // Keypair
           // -----------------
           case MSG_REQUEST_STORE_KEYPAIR: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [id, secretKey] = await reqArgs(req)
             const reply = this.handler.requestStoreKeypair(id, secretKey)
             send(res, reply)
             break
           }
           case MSG_REQUEST_LOAD_KEYPAIR: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [id] = await reqArgs(req)
             const result = this.handler.requestLoadKeypair(id)
             send(res, { result })
@@ -165,7 +176,7 @@ export class RestServer {
           // Set Account
           // -----------------
           case MSG_REQUEST_SET_ACCOUNT: {
-            if (!assertPost(req, res, url)) return
+            if (!assertMethod(req, res, url, method)) return
             const [account] = await reqArgs(req)
             const reply = this.handler.requestSetAccount(account)
             send(res, reply)
@@ -188,6 +199,21 @@ export class RestServer {
 // -----------------
 // Helpers
 // -----------------
+function assertMethod(
+  req: IncomingMessage,
+  res: ServerResponse,
+  url: string,
+  method: RelayMethod
+) {
+  switch (method) {
+    case 'GET':
+      return assertGet(req, res, url)
+    case 'POST':
+      return assertPost(req, res, url)
+    default:
+      throw new UnreachableCaseError(method)
+  }
+}
 function assertPost(req: IncomingMessage, res: ServerResponse, url: string) {
   if (req.method?.toUpperCase() !== 'POST') {
     fail(res, `${url} needs to be POST`, 405)
