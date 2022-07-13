@@ -12,18 +12,24 @@ import {
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
+  MSG_REQUEST_AMMAN_VERSION,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
+  MSG_REQUEST_RESTART_VALIDATOR,
   MSG_REQUEST_SET_ACCOUNT,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
+  MSG_REQUEST_VALIDATOR_PID,
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_STATES,
+  MSG_RESPOND_AMMAN_VERSION,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_SNAPSHOT,
+  MSG_RESPOND_RESTART_VALIDATOR,
   MSG_RESPOND_SET_ACCOUNT,
   MSG_RESPOND_SNAPSHOT_SAVE,
   MSG_RESPOND_STORE_KEYPAIR,
+  MSG_RESPOND_VALIDATOR_PID,
   MSG_UPDATE_ADDRESS_LABELS,
 } from './consts'
 import { createTimeout } from './timeout'
@@ -44,6 +50,7 @@ export type AmmanClient = {
   requestStoreKeypair(label: string, keypair: Keypair): Promise<void>
   requestLoadKeypair(id: string): Promise<Keypair | undefined>
   requestSetAccount(persistedAccountInfo: PersistedAccountInfo): Promise<void>
+  requestRestartValidator(): Promise<void>
   disconnect(): void
   destroy(): void
 }
@@ -146,6 +153,29 @@ export class ConnectedAmmanClient implements AmmanClient {
           states
         )
         resolve(states)
+      }
+    )
+  }
+  async fetchAmmanVersion(): Promise<[number, number, number]> {
+    return this._handleRequest(
+      'fetch version',
+      MSG_REQUEST_AMMAN_VERSION,
+      [],
+      MSG_RESPOND_AMMAN_VERSION,
+      (resolve, _reject, version) => {
+        resolve(version)
+      }
+    )
+  }
+
+  async fetchValidatorPid(): Promise<number> {
+    return this._handleRequest(
+      'fetch validator pid',
+      MSG_REQUEST_VALIDATOR_PID,
+      [],
+      MSG_RESPOND_VALIDATOR_PID,
+      (resolve, _reject, pid) => {
+        resolve(pid)
       }
     )
   }
@@ -254,6 +284,19 @@ export class ConnectedAmmanClient implements AmmanClient {
     )
   }
 
+  requestRestartValidator(): Promise<void> {
+    return this._handleRequest(
+      '',
+      MSG_REQUEST_RESTART_VALIDATOR,
+      [],
+      MSG_RESPOND_RESTART_VALIDATOR,
+      (resolve, _reject) => {
+        resolve()
+      },
+      5000
+    )
+  }
+
   private _handleRequest<T = void>(
     action: string,
     request: string,
@@ -356,6 +399,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
     return Promise.resolve(undefined)
   }
   requestSetAccount(_persistedAccountInfo: PersistedAccountInfo) {
+    return Promise.resolve()
+  }
+  requestRestartValidator(): Promise<void> {
     return Promise.resolve()
   }
   disconnect() {}

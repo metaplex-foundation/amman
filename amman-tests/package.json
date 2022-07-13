@@ -1,0 +1,31 @@
+{
+  "name": "@metaplex-foundation/amman-tests",
+  "version": "0.0.0",
+  "description": "Tests for amman.",
+  "scripts": {
+    "test": "for t in ./tests{,/tasks}/*.ts; do esr $t; done | tap-spec",
+    "lint": "prettier -c ./tests/",
+    "lint:fix": "prettier --write ./tests"
+  },
+  "repository": "git@github.com:metaplex-foundation/amman.git",
+  "author": "Thorsten Lorenz <thlorenz@gmx.de>",
+  "license": "Apache-2.0",
+  "private": true,
+  "publishConfig": {
+    "access": "private",
+    "registry": "https://registry.npmjs.org"
+  },
+  "dependencies": {
+    "@metaplex-foundation/amman": "*",
+    "@metaplex-foundation/amman-client": "*"
+  },
+  "devDependencies": {
+    "@types/tape": "^4.13.2",
+    "esbuild": "^0.14.49",
+    "esbuild-runner": "^2.2.1",
+    "prettier": "^2.7.1",
+    "spok": "^1.4.3",
+    "tap-spec": "^5.0.0",
+    "tape": "^5.5.3"
+  }
+}

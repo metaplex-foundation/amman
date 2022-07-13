@@ -67,6 +67,7 @@ export /* internal */ class RelayServer {
   }
 
   hookMessages(socket: Socket) {
+    // TODO(thlorenz): After merge add method to request pid and restart validator
     const subscribedAccountStates = new Set<string>()
     socket
       // -----------------

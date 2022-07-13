@@ -11,7 +11,7 @@ import { DEFAULT_VALIDATOR_CONFIG } from '../validator'
 
 export const DEFAULT_STREAM_TRANSACTION_LOGS = process.env.CI == null
 
-export const DEFAULT_START_CONFIG: AmmanConfig = {
+export const DEFAULT_START_CONFIG: Required<AmmanConfig> = {
   validator: DEFAULT_VALIDATOR_CONFIG,
   relay: DEFAULT_RELAY_CONFIG,
   snapshot: DEFAULT_SNAPSHOT_CONFIG,
