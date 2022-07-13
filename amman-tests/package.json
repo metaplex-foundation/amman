@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@metaplex-foundation/amman": "*",
-    "@metaplex-foundation/amman-client": "*"
+    "@metaplex-foundation/amman-client": "*",
+    "axios": "^0.27.2"
   },
   "devDependencies": {
     "@types/tape": "^4.13.2",
