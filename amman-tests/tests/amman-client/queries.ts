@@ -1,7 +1,7 @@
 import { AMMAN_VERSION } from '@metaplex-foundation/amman/src/relay/types'
 import spok from 'spok'
 import test from 'tape'
-import { killAmman, launchAmman, relayClient } from './utils/launch'
+import { killAmman, launchAmman, relayClient } from '../utils/launch'
 
 const DEBUG = true
 

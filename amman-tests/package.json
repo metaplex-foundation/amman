@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "Tests for amman.",
   "scripts": {
-    "test": "for t in ./tests{,/tasks}/*.ts; do esr $t; done | tap-spec",
+    "test": "for t in ./tests/{amman-client,rest-client}{,/tasks}/*.ts; do esr $t; done | tap-spec",
     "lint": "prettier -c ./tests/",
     "lint:fix": "prettier --write ./tests"
   },
