@@ -24,6 +24,8 @@ import {
   MSG_RESPOND_LOAD_SNAPSHOT,
   MSG_REQUEST_VALIDATOR_PID,
   MSG_RESPOND_VALIDATOR_PID,
+  MSG_REQUEST_RESTART_VALIDATOR,
+  MSG_RESPOND_RESTART_VALIDATOR,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -107,6 +109,14 @@ export /* internal */ class RelayServer {
           logTrace(`Sending ${labelCount} known labels to requesting client.`)
         }
         socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.handler.allKnownLabels)
+      })
+      // -----------------
+      // Restart Validator
+      // -----------------
+      .on(MSG_REQUEST_RESTART_VALIDATOR, async (label: string) => {
+        logTrace(MSG_REQUEST_RESTART_VALIDATOR, label)
+        const reply = await this.handler.requestRestartValidator()
+        socket.emit(MSG_RESPOND_RESTART_VALIDATOR, reply)
       })
       // -----------------
       // Account States

@@ -4,6 +4,7 @@ import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
 import { AccountPersister, mapPersistedAccountInfos } from '../assets'
 import {
+  restartValidator,
   restartValidatorWithAccountOverrides,
   restartValidatorWithSnapshot,
 } from '../validator'
@@ -42,6 +43,13 @@ export class RelayHandler {
     return this._accountStates
   }
 
+  private set accountStates(val: AccountStates) {
+    // ensure we don't loose any existing subscriptions
+    // (namely the relay server listening to account state changes)
+    val.listeners = this._accountStates.listeners
+    this._accountStates = val
+  }
+
   requestAccountStates(pubkey: string): [string, any] {
     const states = this.accountStates.get(pubkey)?.relayStates
     return [pubkey, states ?? []]
@@ -66,6 +74,35 @@ export class RelayHandler {
   // -----------------
   requestAmmanVersion(): RelayReply<AmmanVersion> {
     return { result: AMMAN_VERSION }
+  }
+
+  // -----------------
+  // Restart Validator
+  // -----------------
+  async requestRestartValidator(): Promise<RelayReply<void>> {
+    try {
+      const { persistedAccountInfos, persistedSnapshotAccountInfos, keypairs } =
+        await restartValidator(
+          this.accountStates,
+          this.ammanState,
+          this.ammanState.config
+        )
+
+      const accountInfos = mapPersistedAccountInfos([
+        ...persistedAccountInfos,
+        ...persistedSnapshotAccountInfos,
+      ])
+
+      this.accountStates = AccountStates.createInstance(
+        this.accountProvider.connection,
+        this.accountProvider,
+        accountInfos,
+        keypairs
+      )
+      return { result: void 0 }
+    } catch (err: any) {
+      return { err }
+    }
   }
 
   // -----------------
