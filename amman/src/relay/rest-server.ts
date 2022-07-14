@@ -6,6 +6,7 @@ import {
   MSG_REQUEST_AMMAN_VERSION,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
+  MSG_REQUEST_RESTART_VALIDATOR,
   MSG_REQUEST_SET_ACCOUNT,
   MSG_REQUEST_SNAPSHOT_SAVE,
   MSG_REQUEST_STORE_KEYPAIR,
@@ -112,6 +113,15 @@ export class RestServer {
             break
           }
           // -----------------
+          // Restart Validator
+          // -----------------
+          case MSG_REQUEST_RESTART_VALIDATOR: {
+            if (!assertMethod(req, res, url, method)) return
+            const reply = await this.handler.requestRestartValidator()
+            send(res, reply)
+            break
+          }
+          // -----------------
           // Account States
           // -----------------
           case MSG_REQUEST_ACCOUNT_STATES: {
@@ -183,7 +193,7 @@ export class RestServer {
             break
           }
           default:
-            fail(res, `Unknown route ${url}`)
+            fail(res, `Unknown route ${url}`, 404)
         }
       } catch (err: any) {
         fail(res, err.toString(), 500)

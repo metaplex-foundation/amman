@@ -39,7 +39,7 @@ import { scopedLog } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { Account, AmmanState, Program } from '../validator/types'
 import { RelayHandler } from './handler'
-import { RestServer } from './rest'
+import { RestServer } from './rest-server'
 import { AMMAN_VERSION } from './types'
 
 const { logDebug, logTrace } = scopedLog('relay')
