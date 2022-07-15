@@ -35,7 +35,7 @@ import {
   MSG_UPDATE_ADDRESS_LABELS,
 } from './consts'
 import { createTimeout } from './timeout'
-import { RelayAccountState } from './types'
+import { isReplyWithError, RelayAccountState, RelayReply } from './types'
 
 const { logError, logDebug, logTrace } = scopedLog('relay')
 
@@ -213,12 +213,9 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_SNAPSHOT_SAVE,
       [label],
       MSG_RESPOND_SNAPSHOT_SAVE,
-      (
-        resolve,
-        reject,
-        { err, snapshotDir }: { err?: string; snapshotDir?: string }
-      ) => {
-        if (err != null) return reject(new Error(err))
+      (resolve, reject, reply: RelayReply<string>) => {
+        if (isReplyWithError(reply)) return reject(new Error(reply.err))
+        const snapshotDir = reply.result
         assert(snapshotDir != null, 'expected either error or snapshotDir')
         logDebug('Completed snapshot at %s', snapshotDir)
         resolve(snapshotDir)

@@ -166,8 +166,8 @@ export /* internal */ class RelayServer {
       // -----------------
       .on(MSG_REQUEST_SNAPSHOT_SAVE, async (label: string) => {
         logTrace(MSG_REQUEST_SNAPSHOT_SAVE, label)
-        const result = this.handler.requestSnapshotSave(label)
-        socket.emit(MSG_RESPOND_SNAPSHOT_SAVE, result)
+        const reply = await this.handler.requestSnapshotSave(label)
+        socket.emit(MSG_RESPOND_SNAPSHOT_SAVE, reply)
       })
       .on(MSG_REQUEST_LOAD_SNAPSHOT, async (label: string) => {
         logTrace(MSG_REQUEST_LOAD_SNAPSHOT, label)
