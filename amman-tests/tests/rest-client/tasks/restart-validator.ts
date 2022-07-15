@@ -19,7 +19,7 @@ test('rest-client: restart-validator', async (t) => {
     assertHasResult(t, reply)
 
     spok(t, reply, { $topic: 'validator pid', result: spok.gtz })
-    pidBeforeRestart = reply.result
+    pidBeforeRestart = reply.result as number
   })
 
   t.test('request to restart validator', async (t) => {
