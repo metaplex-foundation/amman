@@ -4,6 +4,7 @@ import {
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_REQUEST_AMMAN_VERSION,
+  MSG_REQUEST_KILL_AMMAN,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_REQUEST_RESTART_VALIDATOR,
@@ -97,6 +98,15 @@ export class RestServer {
             const reply = handler.requestValidatorPid()
             send(res, reply)
             break
+          // -----------------
+          // Kill Amman
+          // -----------------
+          case MSG_REQUEST_KILL_AMMAN: {
+            if (!assertMethod(req, res, url, method)) return
+            const reply = await this.handler.requestKillAmman()
+            send(res, reply)
+            break
+          }
           // -----------------
           // Address Labels
           // -----------------
@@ -193,7 +203,8 @@ export class RestServer {
             break
           }
           default:
-            fail(res, `Unknown route ${url}`, 404)
+            const err = new UnreachableCaseError(request)
+            fail(res, `Unknown route ${url} ${err.toString()}`, 404)
         }
       } catch (err: any) {
         fail(res, err.toString(), 500)
