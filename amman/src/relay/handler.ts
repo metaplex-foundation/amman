@@ -1,6 +1,7 @@
 import {
   KILL_AMMAN_EXIT_CODE,
   PersistedAccountInfo,
+  RelayReply,
 } from '@metaplex-foundation/amman-client'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { AccountProvider } from '../accounts/providers'
@@ -16,20 +17,6 @@ import { AmmanStateInternal } from '../validator/types'
 import { AmmanVersion, AMMAN_VERSION } from './types'
 
 const { logDebug } = scopedLog('relay')
-
-export type RelayReply<T> = { result: T } | { err: string }
-
-export function isReplyWithResult<T>(
-  reply: RelayReply<T>
-): reply is { result: T } {
-  return !isReplyWithError(reply) && (reply as { result: T }).result != null
-}
-
-export function isReplyWithError<T>(
-  reply: RelayReply<T>
-): reply is { err: string } {
-  return (reply as { err: string }).err != null
-}
 
 export class RelayHandler {
   constructor(
@@ -175,7 +162,7 @@ export class RelayHandler {
   // -----------------
   // Snapshot
   // -----------------
-  async requestSnapshotSave(label: string) {
+  async requestSnapshotSave(label: string): Promise<RelayReply<string>> {
     try {
       const addresses = this.accountStates.allAccountAddresses()
       const snapshotDir = await this.snapshotPersister.snapshot(
@@ -184,7 +171,7 @@ export class RelayHandler {
         this.allKnownLabels,
         this.accountStates.allKeypairs
       )
-      return { snapshotDir }
+      return { result: snapshotDir }
     } catch (err: any) {
       return { err: err.toString() }
     }
