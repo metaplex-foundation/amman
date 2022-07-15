@@ -26,6 +26,8 @@ import {
   MSG_RESPOND_VALIDATOR_PID,
   MSG_REQUEST_RESTART_VALIDATOR,
   MSG_RESPOND_RESTART_VALIDATOR,
+  MSG_RESPOND_KILL_AMMAN,
+  MSG_REQUEST_KILL_AMMAN,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -88,6 +90,14 @@ export /* internal */ class RelayServer {
         logTrace(MSG_REQUEST_VALIDATOR_PID)
         const reply = this.handler.requestValidatorPid()
         socket.emit(MSG_RESPOND_VALIDATOR_PID, reply)
+      })
+      // -----------------
+      // Kill Amman
+      // -----------------
+      .on(MSG_REQUEST_KILL_AMMAN, async () => {
+        logTrace(MSG_REQUEST_KILL_AMMAN)
+        const reply = await this.handler.requestKillAmman()
+        socket.emit(MSG_RESPOND_KILL_AMMAN, reply)
       })
       // -----------------
       // Address Labels
@@ -185,6 +195,12 @@ export /* internal */ class RelayServer {
         const reply = await this.handler.requestSetAccount(account)
         socket.emit(MSG_RESPOND_SET_ACCOUNT, reply)
       })
+  }
+
+  close() {
+    return new Promise<void>((resolve, reject) =>
+      this.io.close((err) => (err ? reject(err) : resolve()))
+    )
   }
 }
 

@@ -13,6 +13,7 @@ import {
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_REQUEST_AMMAN_VERSION,
+  MSG_REQUEST_KILL_AMMAN,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_REQUEST_RESTART_VALIDATOR,
@@ -23,6 +24,7 @@ import {
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_RESPOND_AMMAN_VERSION,
+  MSG_RESPOND_KILL_AMMAN,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_SNAPSHOT,
   MSG_RESPOND_RESTART_VALIDATOR,
@@ -51,6 +53,7 @@ export type AmmanClient = {
   requestLoadKeypair(id: string): Promise<Keypair | undefined>
   requestSetAccount(persistedAccountInfo: PersistedAccountInfo): Promise<void>
   requestRestartValidator(): Promise<void>
+  requestKillAmman(): Promise<void>
   disconnect(): void
   destroy(): void
 }
@@ -120,6 +123,22 @@ export class ConnectedAmmanClient implements AmmanClient {
         if (err != null) return reject(new Error(err))
         resolve(result)
       }
+    )
+  }
+  // -----------------
+  // Kill Amman
+  // -----------------
+  async requestKillAmman(): Promise<void> {
+    return this._handleRequest(
+      'fetch validator pid',
+      MSG_REQUEST_KILL_AMMAN,
+      [],
+      MSG_RESPOND_KILL_AMMAN,
+      (resolve, reject, { err }) => {
+        if (err != null) return reject(new Error(err))
+        resolve()
+      },
+      5000
     )
   }
 
@@ -408,6 +427,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
     return Promise.resolve()
   }
   requestRestartValidator(): Promise<void> {
+    return Promise.resolve()
+  }
+  requestKillAmman(): Promise<void> {
     return Promise.resolve()
   }
   disconnect() {}

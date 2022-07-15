@@ -1,15 +1,21 @@
-import { PersistedAccountInfo } from '@metaplex-foundation/amman-client'
+import {
+  KILL_AMMAN_EXIT_CODE,
+  PersistedAccountInfo,
+} from '@metaplex-foundation/amman-client'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
 import { AccountPersister, mapPersistedAccountInfos } from '../assets'
+import { scopedLog } from '../utils/log'
 import {
   restartValidator,
   restartValidatorWithAccountOverrides,
   restartValidatorWithSnapshot,
 } from '../validator'
-import { AmmanState } from '../validator/types'
+import { AmmanStateInternal } from '../validator/types'
 import { AmmanVersion, AMMAN_VERSION } from './types'
+
+const { logDebug } = scopedLog('relay')
 
 export type RelayReply<T> = { result: T } | { err: string }
 
@@ -30,7 +36,7 @@ export class RelayHandler {
     readonly accountProvider: AccountProvider,
     readonly accountPersister: AccountPersister,
     readonly snapshotPersister: AccountPersister,
-    readonly ammanState: AmmanState,
+    readonly ammanState: AmmanStateInternal,
     private _accountStates: AccountStates,
     // Keyed pubkey:label
     private readonly _allKnownLabels: Record<string, string> = {}
@@ -116,6 +122,34 @@ export class RelayHandler {
       }
     }
     return { result: pid }
+  }
+
+  // -----------------
+  // Kill Amman
+  // -----------------
+  async requestKillAmman(): Promise<RelayReply<void>> {
+    if (this.ammanState.relayServer != null) {
+      logDebug('Stopping relay server')
+      try {
+        await this.ammanState.relayServer.close()
+      } catch (err: any) {
+        return { err: `amman relay failed to close properly\n${err.toString}` }
+      }
+    }
+
+    // NOTE: if timing issues arise due to this function returning
+    // before the process has finished stopping then we need to add some _wait_
+    // code here that only returns once the process cannot be reached anymore
+    logDebug('Killing validator')
+    process.kill(this.ammanState.validator.pid!, 9)
+
+    logDebug('Scheduling amman exit in next event loop')
+    setImmediate(() => {
+      logDebug('Exiting amman')
+      process.exit(KILL_AMMAN_EXIT_CODE)
+    })
+
+    return { result: void 0 }
   }
 
   // -----------------

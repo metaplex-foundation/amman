@@ -13,6 +13,7 @@ import {
   MSG_REQUEST_AMMAN_VERSION,
   MSG_REQUEST_VALIDATOR_PID,
   AMMAN_RELAY_URI,
+  MSG_REQUEST_KILL_AMMAN,
 } from '@metaplex-foundation/amman-client'
 import { UnreachableCaseError } from 'ts-essentials'
 
@@ -49,6 +50,7 @@ export class AmmanRelayRoutes {
       case MSG_REQUEST_SET_ACCOUNT:
       case MSG_REQUEST_LOAD_SNAPSHOT:
       case MSG_REQUEST_RESTART_VALIDATOR:
+      case MSG_REQUEST_KILL_AMMAN:
         return 'POST'
       default:
         throw new UnreachableCaseError(request)
