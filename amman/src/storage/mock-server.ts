@@ -146,6 +146,9 @@ function handleUpload(
     dstStream.close(() => {
       if (!failed) {
         writeStatusHead(res, 200)
+        const host = req.headers!.host!
+        const assetUrl = `http://${host}${req.url!.replace('upload/', '')}`
+        res.write(assetUrl)
         res.end()
       }
     })
