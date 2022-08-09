@@ -182,7 +182,7 @@ ${this.errorStack}`
    * @category transactions
    * @category asserts
    */
-  async assertNone() {
+  assertNone() {
     this.calledAssert = true
     return this
   }
