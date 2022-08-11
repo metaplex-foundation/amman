@@ -3,7 +3,7 @@
     "build": "yarn build:client && yarn build:amman",
     "build:client": "rimraf amman-client/dist && tsc -p amman-client/tsconfig.json",
     "build:amman": "rimraf amman/dist && tsc -p amman/tsconfig.json",
-    "tests": "yarn build && (cd amman-tests && yarn test)",
+    "test": "yarn build && (cd amman-tests && yarn test)",
     "lint": "(cd amman-client && yarn lint) && (cd amman && yarn lint)",
     "lint:fix": "(cd amman-client && yarn lint:fix) && (cd amman && yarn lint:fix)",
     "doc": "(cd ./amman && yarn doc);",

@@ -9,13 +9,14 @@ import {
 } from '@metaplex-foundation/amman/src/utils/config'
 import { initValidator } from '@metaplex-foundation/amman/src/validator/init-validator'
 import { AmmanStateInternal } from '@metaplex-foundation/amman/src/validator/types'
+import { DeepPartial } from '@metaplex-foundation/amman/src/types'
 
 const DEFAULT_TEST_CONFIG: Required<AmmanConfig> = { ...DEFAULT_START_CONFIG }
 
 DEFAULT_TEST_CONFIG.storage.enabled = false
 DEFAULT_TEST_CONFIG.streamTransactionLogs = false
 
-export async function launchAmman(conf: Partial<AmmanConfig> = {}) {
+export async function launchAmman(conf: DeepPartial<AmmanConfig> = {}) {
   const config = completeConfig({ ...DEFAULT_TEST_CONFIG, ...conf })
   return initValidator(config) as Promise<AmmanStateInternal>
 }

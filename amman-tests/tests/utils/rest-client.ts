@@ -1,5 +1,4 @@
-import { AmmanRequest } from '@metaplex-foundation/amman-client'
-import { RelayReply } from '@metaplex-foundation/amman/src/relay/handler'
+import { AmmanRequest, RelayReply } from '@metaplex-foundation/amman-client'
 import {
   AmmanRelayRoutes,
   ammanRelayRoutes,

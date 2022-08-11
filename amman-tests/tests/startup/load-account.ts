@@ -9,20 +9,27 @@ import { AccountInfo, Connection, PublicKey } from '@solana/web3.js'
 import saved from '../../fixtures/snapshots/01_token-metadata/accounts/13DX32Lou1qH62xUosRyk9QnQpetbuxtEgPzbkKvQmVu.json'
 
 const fixtures = path.resolve(__dirname, '../../fixtures')
-const snapshotsDir = path.join(fixtures, 'snapshots')
-const tokenMetadataSnapLabel = '01_token-metadata'
+const assetsDir = path.join(fixtures, 'assets')
 
 const accAddress = saved.pubkey
 const accPubkey = new PublicKey(accAddress)
 
-test('amman-client: given amman + relay is running and snapshot folder configured', async (t) => {
+test('amman-client: given amman + relay is running and assets folder set + validator configured to load an account', async (t) => {
   const state = await launchAmman({
-    snapshot: { snapshotFolder: snapshotsDir, load: tokenMetadataSnapLabel },
+    assetsFolder: assetsDir,
+    validator: {
+      accounts: [
+        {
+          label: 'loaded account',
+          accountId: accAddress,
+        },
+      ],
+    },
   })
   const connection = new Connection(LOCALHOST, 'confirmed')
 
   t.test(
-    'loads account inside snapshot which then is accessible in the validator',
+    'loads account provided account which then is accessible in the validator',
     async (t) => {
       const account = (await connection.getAccountInfo(
         accPubkey
