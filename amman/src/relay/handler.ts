@@ -2,6 +2,8 @@ import {
   KILL_AMMAN_EXIT_CODE,
   PersistedAccountInfo,
   RelayReply,
+  RelayAccountState,
+  AccountStatesResult,
 } from '@metaplex-foundation/amman-client'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { AccountProvider } from '../accounts/providers'
@@ -43,9 +45,10 @@ export class RelayHandler {
     this._accountStates = val
   }
 
-  requestAccountStates(pubkey: string): [string, any] {
-    const states = this.accountStates.get(pubkey)?.relayStates
-    return [pubkey, states ?? []]
+  requestAccountStates(pubkey: string): RelayReply<AccountStatesResult> {
+    const states: RelayAccountState[] =
+      this.accountStates.get(pubkey)?.relayStates ?? []
+    return { result: { pubkey, states: states ?? [] } }
   }
 
   // -----------------

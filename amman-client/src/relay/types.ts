@@ -24,3 +24,8 @@ export type RelayAccountState = {
   renderedDiff?: Change[]
   timestamp: number
 }
+
+export type AccountStatesResult = {
+  pubkey: string
+  states: RelayAccountState[]
+}

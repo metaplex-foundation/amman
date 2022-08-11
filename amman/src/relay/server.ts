@@ -28,6 +28,7 @@ import {
   MSG_RESPOND_RESTART_VALIDATOR,
   MSG_RESPOND_KILL_AMMAN,
   MSG_REQUEST_KILL_AMMAN,
+  isReplyWithResult,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -133,18 +134,23 @@ export /* internal */ class RelayServer {
       // -----------------
       .on(MSG_REQUEST_ACCOUNT_STATES, (pubkeyArg: string) => {
         logTrace(MSG_REQUEST_ACCOUNT_STATES, pubkeyArg)
-        const [pubkey, states] = this.handler.requestAccountStates(pubkeyArg)
+        const reply = this.handler.requestAccountStates(pubkeyArg)
 
-        socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states ?? [])
-        if (!subscribedAccountStates.has(pubkey)) {
-          subscribedAccountStates.add(pubkey)
-          this.handler.accountStates.on(
-            `account-changed:${pubkey}`,
-            (states) => {
-              socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
-              logTrace(MSG_UPDATE_ACCOUNT_STATES)
-            }
-          )
+        if (isReplyWithResult(reply)) {
+          const { pubkey, states } = reply.result
+          // TODO(thlorenz): Should respond with the reply here so that consumer can decide what to do in case of an
+          // error
+          socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states ?? [])
+          if (!subscribedAccountStates.has(pubkey)) {
+            subscribedAccountStates.add(pubkey)
+            this.handler.accountStates.on(
+              `account-changed:${pubkey}`,
+              (states) => {
+                socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
+                logTrace(MSG_UPDATE_ACCOUNT_STATES)
+              }
+            )
+          }
         }
       })
       // -----------------

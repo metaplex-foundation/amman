@@ -141,9 +141,16 @@ export class RestServer {
           case MSG_REQUEST_ACCOUNT_STATES: {
             if (!assertMethod(req, res, url, method)) return
             const [pubkeyArg] = await reqArgs(req)
-            const [pubkey, states] =
-              this.handler.requestAccountStates(pubkeyArg)
-            send(res, { result: [pubkey, states] })
+
+            if (pubkeyArg == null) {
+              fail(
+                res,
+                'Need to provide the public key of the account to fetch states for'
+              )
+            } else {
+              const reply = this.handler.requestAccountStates(pubkeyArg)
+              send(res, reply)
+            }
             break
           }
           // -----------------
