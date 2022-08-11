@@ -113,6 +113,11 @@ export class RestServer {
           case MSG_UPDATE_ADDRESS_LABELS: {
             if (!assertMethod(req, res, url, method)) return
             const [labels] = await reqArgs(req)
+            if (labels == null) {
+              throw new Error(
+                'Need to provide a record of address labels to update'
+              )
+            }
             this.handler.updateAddressLabels(labels)
             send(res, {})
             break
@@ -258,6 +263,9 @@ async function reqArgs(req: IncomingMessage): Promise<any[]> {
   }
 
   const data = Buffer.concat(buffers).toString()
+  if (data.length == 0) {
+    return []
+  }
   try {
     const args = JSON.parse(data)
     logTrace({ args })
