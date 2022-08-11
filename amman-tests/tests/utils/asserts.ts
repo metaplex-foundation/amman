@@ -43,7 +43,7 @@ export function assertSuccess<T>(
 export function assertHasError<T>(
   t: Test,
   reply: RelayReply<T>
-): asserts reply is { err: string } {
+): asserts reply is { status: number; statusCode: string; err: string } {
   if (isReplyWithError(reply)) {
     t.pass('reply has error')
   } else if (reply.result != null) {

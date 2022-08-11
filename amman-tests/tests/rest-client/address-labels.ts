@@ -5,7 +5,11 @@ import {
 import path from 'path'
 import spok from 'spok'
 import test from 'tape'
-import { assertHasResult, assertSuccess } from '../utils/asserts'
+import {
+  assertHasError,
+  assertHasResult,
+  assertSuccess,
+} from '../utils/asserts'
 import { killAmman, launchAmman } from '../utils/launch'
 import { restClient } from '../utils/rest-client'
 
@@ -15,7 +19,6 @@ const fixtures = path.resolve(__dirname, '../../fixtures')
 const assetsDir = path.join(fixtures, 'assets')
 
 const accAddress = saved.pubkey
-// const accPubkey = new PublicKey(accAddress)
 
 test('amman-client: given amman is running with relay and one loaded account', async (t) => {
   const client = await restClient()
@@ -46,13 +49,12 @@ test('amman-client: given amman is running with relay and one loaded account', a
   })
 
   t.test('fetch: update address labels without passing any', async (t) => {
-    const reply = await client.requestServerError(MSG_UPDATE_ADDRESS_LABELS)
+    const reply = await client.request(MSG_UPDATE_ADDRESS_LABELS)
+    assertHasError(t, reply)
+
     spok(t, reply, {
-      status: 500,
-      statusText: 'Internal Server Error',
-      errMsg: spok.test(
-        /Need to provide a record of address labels to update/i
-      ),
+      status: 422,
+      err: spok.test(/Need to provide a record of address labels to update/i),
     })
   })
 

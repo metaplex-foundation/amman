@@ -114,12 +114,11 @@ export class RestServer {
             if (!assertMethod(req, res, url, method)) return
             const [labels] = await reqArgs(req)
             if (labels == null) {
-              throw new Error(
-                'Need to provide a record of address labels to update'
-              )
+              fail(res, 'Need to provide a record of address labels to update')
+            } else {
+              this.handler.updateAddressLabels(labels)
+              send(res, {})
             }
-            this.handler.updateAddressLabels(labels)
-            send(res, {})
             break
           }
           case MSG_GET_KNOWN_ADDRESS_LABELS: {

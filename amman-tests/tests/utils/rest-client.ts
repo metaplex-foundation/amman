@@ -15,21 +15,13 @@ export class RestClient {
   ): Promise<RelayReply<T>> {
     const { method, url } = this.routes.urlAndMethodForRequest(req)
     const data = args == null ? undefined : JSON.stringify(args)
-    return (await axios(url, { method, data })).data
-  }
-
-  async requestServerError(
-    req: AmmanRequest
-  ): Promise<{ status: number; statusText: string; errMsg: string }> {
-    const { method, url } = this.routes.urlAndMethodForRequest(req)
     try {
-      const { status, statusText, data } = await axios(url, { method })
-      return { status, statusText, errMsg: data as string }
+      return (await axios(url, { method, data })).data
     } catch (error: any) {
       const err = error as AxiosError
       const { status, statusText, data } = err.response!
       const errMsg = (data as { err: string }).err
-      return { status, statusText, errMsg }
+      return { status, statusText, err: errMsg }
     }
   }
 }
