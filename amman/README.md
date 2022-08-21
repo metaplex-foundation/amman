@@ -133,7 +133,7 @@ module.exports = {
         },
         {
           label: 'Random other account',
-          programId:'4VLgNs1jXgdciSidxcaLKfrR9WjATkj6vmTm5yCwNwui',
+          accountId:'4VLgNs1jXgdciSidxcaLKfrR9WjATkj6vmTm5yCwNwui',
           // By default executable is false and is not required to be in the config
           // executable: false,
           
