@@ -42,3 +42,13 @@ export type SnapshotSaveResult = {
 export type AddressLabelsResult = {
   labels: Record<string, string>
 }
+
+export type LoadKeypairResult = {
+  id: string
+  keypair?: Uint8Array
+}
+
+export type VoidResult = {
+  void: void
+}
+export const VOID_REPLY: RelayReply<VoidResult> = { result: { void: void 0 } }

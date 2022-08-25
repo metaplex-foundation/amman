@@ -1,6 +1,7 @@
 import {
   AddressLabelsResult,
   AmmanRequest,
+  keypairSecretFromObject,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
@@ -193,15 +194,16 @@ export class RestServer {
           case MSG_REQUEST_STORE_KEYPAIR: {
             if (!assertMethod(req, res, url, method)) return
             const [id, secretKey] = await reqArgs(req)
-            const reply = this.handler.requestStoreKeypair(id, secretKey)
+            const secretKeyArray = keypairSecretFromObject(secretKey)
+            const reply = this.handler.requestStoreKeypair(id, secretKeyArray)
             send(res, reply)
             break
           }
           case MSG_REQUEST_LOAD_KEYPAIR: {
             if (!assertMethod(req, res, url, method)) return
             const [id] = await reqArgs(req)
-            const result = this.handler.requestLoadKeypair(id)
-            send(res, { result })
+            const reply = this.handler.requestLoadKeypair(id)
+            send(res, reply)
             break
           }
           // -----------------

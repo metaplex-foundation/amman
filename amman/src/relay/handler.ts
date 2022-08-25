@@ -1,6 +1,9 @@
 import {
   AccountSaveResult,
+  LoadKeypairResult,
   SnapshotSaveResult,
+  VoidResult,
+  VOID_REPLY,
 } from '@metaplex-foundation/amman-client'
 import {
   KILL_AMMAN_EXIT_CODE,
@@ -219,19 +222,22 @@ export class RelayHandler {
   // -----------------
   // Keypair
   // -----------------
-  requestStoreKeypair(id: string, secretKey: Uint8Array) {
+  requestStoreKeypair(
+    id: string,
+    secretKey: Uint8Array
+  ): RelayReply<VoidResult> {
     try {
       const keypair = Keypair.fromSecretKey(secretKey)
       this.accountStates.storeKeypair(id, keypair)
-      return {}
+      return VOID_REPLY
     } catch (err: any) {
       return { err: err.toString() }
     }
   }
 
-  requestLoadKeypair(id: string) {
+  requestLoadKeypair(id: string): RelayReply<LoadKeypairResult> {
     const keypair = this.accountStates.getKeypairById(id)
-    return [id, keypair?.secretKey]
+    return { result: { id, keypair: keypair?.secretKey } }
   }
 
   // -----------------

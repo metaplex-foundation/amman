@@ -192,8 +192,8 @@ export /* internal */ class RelayServer {
       })
       .on(MSG_REQUEST_LOAD_KEYPAIR, (idArg: string) => {
         logTrace(MSG_REQUEST_LOAD_KEYPAIR, idArg)
-        const [id, keypair] = this.handler.requestLoadKeypair(idArg)
-        socket.emit(MSG_RESPOND_LOAD_KEYPAIR, [id, keypair])
+        const reply = this.handler.requestLoadKeypair(idArg)
+        socket.emit(MSG_RESPOND_LOAD_KEYPAIR, reply)
       })
       // -----------------
       // Set Account
