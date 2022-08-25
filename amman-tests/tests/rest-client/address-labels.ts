@@ -1,4 +1,5 @@
 import {
+  AddressLabelsResult,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_UPDATE_ADDRESS_LABELS,
 } from '@metaplex-foundation/amman-client'
@@ -35,14 +36,14 @@ test('amman-client: given amman is running with relay and one loaded account', a
   })
 
   t.test('fetch: initial address labels', async (t) => {
-    const reply = await client.request<Record<string, string>>(
+    const reply = await client.request<AddressLabelsResult>(
       MSG_GET_KNOWN_ADDRESS_LABELS
     )
     assertHasResult(t, reply)
 
-    spok(t, reply, {
-      result: {
-        $topic: 'labeled addresses',
+    spok(t, reply.result, {
+      $topic: 'result',
+      labels: {
         [accAddress]: 'loaded account',
       },
     })
@@ -69,14 +70,14 @@ test('amman-client: given amman is running with relay and one loaded account', a
   )
 
   t.test('fetch: address labels again', async (t) => {
-    const reply = await client.request<Record<string, string>>(
+    const reply = await client.request<AddressLabelsResult>(
       MSG_GET_KNOWN_ADDRESS_LABELS
     )
     assertHasResult(t, reply)
 
-    spok(t, reply, {
-      result: {
-        $topic: 'labeled addresses',
+    spok(t, reply.result, {
+      $topic: 'result',
+      labels: {
         [accAddress]: 'renamed account',
       },
     })

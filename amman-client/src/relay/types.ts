@@ -38,3 +38,7 @@ export type AccountSaveResult = {
 export type SnapshotSaveResult = {
   snapshotDir: string
 }
+
+export type AddressLabelsResult = {
+  labels: Record<string, string>
+}

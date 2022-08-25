@@ -1,4 +1,5 @@
 import {
+  AddressLabelsResult,
   AmmanRequest,
   MSG_GET_KNOWN_ADDRESS_LABELS,
   MSG_REQUEST_ACCOUNT_SAVE,
@@ -13,6 +14,7 @@ import {
   MSG_REQUEST_STORE_KEYPAIR,
   MSG_REQUEST_VALIDATOR_PID,
   MSG_UPDATE_ADDRESS_LABELS,
+  RelayReply,
 } from '@metaplex-foundation/amman-client'
 import {
   IncomingMessage,
@@ -123,7 +125,10 @@ export class RestServer {
           }
           case MSG_GET_KNOWN_ADDRESS_LABELS: {
             if (!assertMethod(req, res, url, method)) return
-            send(res, { result: this.handler.allKnownLabels })
+            const reply: RelayReply<AddressLabelsResult> = {
+              result: { labels: this.handler.allKnownLabels },
+            }
+            send(res, reply)
             break
           }
           // -----------------

@@ -29,6 +29,8 @@ import {
   MSG_RESPOND_KILL_AMMAN,
   MSG_REQUEST_KILL_AMMAN,
   isReplyWithResult,
+  RelayReply,
+  AddressLabelsResult,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -119,7 +121,10 @@ export /* internal */ class RelayServer {
           const labelCount = Object.keys(this.handler.allKnownLabels).length
           logTrace(`Sending ${labelCount} known labels to requesting client.`)
         }
-        socket.emit(MSG_UPDATE_ADDRESS_LABELS, this.handler.allKnownLabels)
+        const reply: RelayReply<AddressLabelsResult> = {
+          result: { labels: this.handler.allKnownLabels },
+        }
+        socket.emit(MSG_UPDATE_ADDRESS_LABELS, reply)
       })
       // -----------------
       // Restart Validator
