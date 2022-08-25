@@ -29,3 +29,8 @@ export type AccountStatesResult = {
   pubkey: string
   states: RelayAccountState[]
 }
+
+export type AccountSaveResult = {
+  pubkey: string
+  accountPath: string
+}

@@ -1,4 +1,9 @@
-import { MSG_REQUEST_ACCOUNT_STATES } from '@metaplex-foundation/amman-client'
+import {
+  AccountSaveResult,
+  AccountStatesResult,
+  MSG_REQUEST_ACCOUNT_SAVE,
+  MSG_REQUEST_ACCOUNT_STATES,
+} from '@metaplex-foundation/amman-client'
 import path from 'path'
 import spok from 'spok'
 import test from 'tape'
@@ -13,7 +18,7 @@ const assetsDir = path.join(fixtures, 'assets')
 
 const accAddress = saved.pubkey
 
-test('amman-client: given amman is running with relay and one loaded account', async (t) => {
+test('account-states: given amman is running with relay and one loaded account', async (t) => {
   const client = await restClient()
   const state = await launchAmman({
     assetsFolder: assetsDir,
@@ -38,7 +43,7 @@ test('amman-client: given amman is running with relay and one loaded account', a
   })
 
   t.test('fetch: initial account states of loaded account', async (t) => {
-    const reply = await client.request<[string, any]>(
+    const reply = await client.request<AccountStatesResult>(
       MSG_REQUEST_ACCOUNT_STATES,
       [accAddress]
     )
@@ -46,6 +51,19 @@ test('amman-client: given amman is running with relay and one loaded account', a
 
     spok(t, reply, {
       result: { pubkey: accAddress, states: [] },
+    })
+  })
+
+  t.test('post: save account states of loaded account', async (t) => {
+    const reply = await client.request<AccountSaveResult>(
+      MSG_REQUEST_ACCOUNT_SAVE,
+      [accAddress]
+    )
+    assertHasResult(t, reply)
+    spok(t, reply.result, {
+      $topic: 'result',
+      pubkey: accAddress,
+      accountPath: spok.endsWith(`${accAddress}.json`),
     })
   })
 

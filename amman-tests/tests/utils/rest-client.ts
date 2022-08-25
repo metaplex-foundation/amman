@@ -12,7 +12,7 @@ export class RestClient {
   async request<T>(
     req: AmmanRequest,
     args: any = null
-  ): Promise<RelayReply<T>> {
+  ): Promise<RelayReply<T> & { status?: number; statusText?: string }> {
     const { method, url } = this.routes.urlAndMethodForRequest(req)
     const data = args == null ? undefined : JSON.stringify(args)
     try {

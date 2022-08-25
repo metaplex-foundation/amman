@@ -1,3 +1,4 @@
+import { AccountSaveResult } from '@metaplex-foundation/amman-client'
 import {
   KILL_AMMAN_EXIT_CODE,
   PersistedAccountInfo,
@@ -145,7 +146,10 @@ export class RelayHandler {
   // -----------------
   // Save Account
   // -----------------
-  async requestAccountSave(pubkey: string, slot?: number) {
+  async requestAccountSave(
+    pubkey: string,
+    slot?: number
+  ): Promise<RelayReply<AccountSaveResult>> {
     try {
       let data
       if (slot != null) {
@@ -156,9 +160,9 @@ export class RelayHandler {
         this.accountProvider.connection,
         data
       )
-      return [pubkey, { accountPath }]
-    } catch (err) {
-      return [pubkey, { err }]
+      return { result: { pubkey, accountPath } }
+    } catch (err: any) {
+      return { err: err.toString() }
     }
   }
 

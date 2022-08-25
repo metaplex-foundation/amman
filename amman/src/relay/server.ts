@@ -160,11 +160,8 @@ export /* internal */ class RelayServer {
         MSG_REQUEST_ACCOUNT_SAVE,
         async (pubkeyArg: string, slot?: number) => {
           logTrace(MSG_REQUEST_ACCOUNT_SAVE, pubkeyArg)
-          const [pubkey, result] = await this.handler.requestAccountSave(
-            pubkeyArg,
-            slot
-          )
-          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, pubkey, result)
+          const reply = await this.handler.requestAccountSave(pubkeyArg, slot)
+          socket.emit(MSG_RESPOND_ACCOUNT_SAVE, reply)
         }
       )
       // -----------------

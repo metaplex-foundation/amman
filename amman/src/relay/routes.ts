@@ -43,6 +43,7 @@ export class AmmanRelayRoutes {
         return 'GET'
       case MSG_UPDATE_ADDRESS_LABELS:
       case MSG_REQUEST_ACCOUNT_STATES:
+      case MSG_REQUEST_ACCOUNT_SAVE:
       case MSG_REQUEST_SNAPSHOT_SAVE:
       case MSG_REQUEST_ACCOUNT_SAVE:
       case MSG_REQUEST_STORE_KEYPAIR:
