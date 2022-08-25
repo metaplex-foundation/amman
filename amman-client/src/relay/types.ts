@@ -34,3 +34,7 @@ export type AccountSaveResult = {
   pubkey: string
   accountPath: string
 }
+
+export type SnapshotSaveResult = {
+  snapshotDir: string
+}

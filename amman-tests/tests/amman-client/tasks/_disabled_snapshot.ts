@@ -10,6 +10,9 @@
 // However I'm leaving this code here as is in order to hopefully fix it later
 // and/or to use it to just generate snapshots to use for other tests.
 
+// NOTE: that inside ../../rest-client/snapshot.ts we're ensuring that saving a
+// snapshot works, however loading one requires amman restart and thus is not
+// tested yet
 import spok from 'spok'
 import test from 'tape'
 import { Amman, LOCALHOST } from '@metaplex-foundation/amman-client'

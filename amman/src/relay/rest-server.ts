@@ -171,10 +171,8 @@ export class RestServer {
           case MSG_REQUEST_SNAPSHOT_SAVE: {
             if (!assertMethod(req, res, url, method)) return
             const [label] = await reqArgs(req)
-            // TODO(thlorenz): for consistency the handler should return a `{ result }` reply
-            // make sure we don't break amman-client that's also using the handler
-            const result = await this.handler.requestSnapshotSave(label)
-            send(res, result)
+            const reply = await this.handler.requestSnapshotSave(label)
+            send(res, reply)
             break
           }
           case MSG_REQUEST_LOAD_SNAPSHOT: {

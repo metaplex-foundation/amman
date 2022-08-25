@@ -1,4 +1,7 @@
-import { AccountSaveResult } from '@metaplex-foundation/amman-client'
+import {
+  AccountSaveResult,
+  SnapshotSaveResult,
+} from '@metaplex-foundation/amman-client'
 import {
   KILL_AMMAN_EXIT_CODE,
   PersistedAccountInfo,
@@ -169,7 +172,9 @@ export class RelayHandler {
   // -----------------
   // Snapshot
   // -----------------
-  async requestSnapshotSave(label: string): Promise<RelayReply<string>> {
+  async requestSnapshotSave(
+    label: string
+  ): Promise<RelayReply<SnapshotSaveResult>> {
     try {
       const addresses = this.accountStates.allAccountAddresses()
       const snapshotDir = await this.snapshotPersister.snapshot(
@@ -178,7 +183,7 @@ export class RelayHandler {
         this.allKnownLabels,
         this.accountStates.allKeypairs
       )
-      return { result: snapshotDir }
+      return { result: { snapshotDir } }
     } catch (err: any) {
       return { err: err.toString() }
     }
