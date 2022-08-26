@@ -68,10 +68,11 @@ test('amman-client: given amman is running with relay and one loaded account', a
   t.test(
     'fetch: update address labels to update the loaded account',
     async (t) => {
-      const reply = await client.request<void>(MSG_UPDATE_ADDRESS_LABELS, [
-        { [accAddress]: 'renamed account' },
-      ])
-      assertSuccess(t, reply)
+      const reply = await client.request<VoidResult>(
+        MSG_UPDATE_ADDRESS_LABELS,
+        [{ [accAddress]: 'renamed account' }]
+      )
+      assertHasResult(t, reply)
     }
   )
 

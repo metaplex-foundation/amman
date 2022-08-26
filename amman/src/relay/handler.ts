@@ -1,7 +1,9 @@
 import {
   AccountSaveResult,
+  AmmanVersion,
   LoadKeypairResult,
   SnapshotSaveResult,
+  ValidatorPidResult,
   VoidResult,
   VOID_REPLY,
 } from '@metaplex-foundation/amman-client'
@@ -23,7 +25,7 @@ import {
   restartValidatorWithSnapshot,
 } from '../validator'
 import { AmmanStateInternal } from '../validator/types'
-import { AmmanVersion, AMMAN_VERSION } from './types'
+import { AMMAN_VERSION } from './types'
 
 const { logDebug } = scopedLog('relay')
 
@@ -65,11 +67,12 @@ export class RelayHandler {
     return this._allKnownLabels
   }
 
-  updateAddressLabels(labels: Record<string, string>) {
+  updateAddressLabels(labels: Record<string, string>): RelayReply<VoidResult> {
     for (const [key, val] of Object.entries(labels)) {
       this._allKnownLabels[key] = val
     }
     this.accountStates.labelKeypairs(this._allKnownLabels)
+    return VOID_REPLY
   }
 
   // -----------------
@@ -111,7 +114,7 @@ export class RelayHandler {
   // -----------------
   // Validator Pid
   // -----------------
-  requestValidatorPid() {
+  requestValidatorPid(): RelayReply<ValidatorPidResult> {
     const pid = this.ammanState.validator.pid
     if (pid == null) {
       return {
@@ -124,7 +127,7 @@ export class RelayHandler {
   // -----------------
   // Kill Amman
   // -----------------
-  async requestKillAmman(): Promise<RelayReply<void>> {
+  async requestKillAmman(): Promise<RelayReply<VoidResult>> {
     if (this.ammanState.relayServer != null) {
       logDebug('Stopping relay server')
       try {
@@ -146,7 +149,7 @@ export class RelayHandler {
       process.exit(KILL_AMMAN_EXIT_CODE)
     })
 
-    return { result: void 0 }
+    return VOID_REPLY
   }
 
   // -----------------
@@ -192,7 +195,7 @@ export class RelayHandler {
     }
   }
 
-  async requestLoadSnapshot(label: string) {
+  async requestLoadSnapshot(label: string): Promise<RelayReply<VoidResult>> {
     try {
       const { persistedAccountInfos, persistedSnapshotAccountInfos, keypairs } =
         await restartValidatorWithSnapshot(
@@ -213,7 +216,7 @@ export class RelayHandler {
         keypairs
       )
 
-      return {}
+      return VOID_REPLY
     } catch (err: any) {
       return { err: err.toString() }
     }
@@ -243,7 +246,9 @@ export class RelayHandler {
   // -----------------
   // Set Account
   // -----------------
-  async requestSetAccount(account: PersistedAccountInfo) {
+  async requestSetAccount(
+    account: PersistedAccountInfo
+  ): Promise<RelayReply<VoidResult>> {
     const addresses = this.accountStates.allAccountAddresses()
     try {
       const { persistedAccountInfos, persistedSnapshotAccountInfos, keypairs } =
@@ -267,7 +272,7 @@ export class RelayHandler {
         accountInfos,
         keypairs
       )
-      return {}
+      return VOID_REPLY
     } catch (err: any) {
       return { err: err.toString() }
     }

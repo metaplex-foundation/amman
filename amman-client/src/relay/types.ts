@@ -48,6 +48,10 @@ export type LoadKeypairResult = {
   keypair?: Uint8Array
 }
 
+export type ValidatorPidResult = number
+
+export type AmmanVersion = [number, number, number]
+
 export type VoidResult = {
   void: void
 }

@@ -35,7 +35,17 @@ import {
   MSG_UPDATE_ADDRESS_LABELS,
 } from './consts'
 import { createTimeout } from './timeout'
-import { isReplyWithError, RelayAccountState, RelayReply } from './types'
+import {
+  AccountSaveResult,
+  AccountStatesResult,
+  AddressLabelsResult,
+  AmmanVersion,
+  isReplyWithError,
+  LoadKeypairResult,
+  RelayAccountState,
+  RelayReply,
+  VoidResult,
+} from './types'
 
 const { logError, logDebug, logTrace } = scopedLog('relay')
 
@@ -104,8 +114,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_AMMAN_VERSION,
       [],
       MSG_RESPOND_AMMAN_VERSION,
-      (resolve, _reject, version) => {
-        resolve(version)
+      (resolve, reject, reply: RelayReply<AmmanVersion>) => {
+        return isReplyWithError(reply)
+          ? reject(reply.err)
+          : resolve(reply.result)
       }
     )
   }
@@ -119,9 +131,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_VALIDATOR_PID,
       [],
       MSG_RESPOND_VALIDATOR_PID,
-      (resolve, reject, { err, result }) => {
-        if (err != null) return reject(new Error(err))
-        resolve(result)
+      (resolve, reject, reply) => {
+        return isReplyWithError(reply)
+          ? reject(reply.err)
+          : resolve(reply.result)
       }
     )
   }
@@ -142,6 +155,9 @@ export class ConnectedAmmanClient implements AmmanClient {
     )
   }
 
+  // -----------------
+  // Address Labels
+  // -----------------
   addAddressLabels(labels: Record<string, string>): Promise<void> {
     if (logTrace.enabled) {
       const labelCount = Object.keys(labels).length
@@ -177,7 +193,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_GET_KNOWN_ADDRESS_LABELS,
       [],
       MSG_UPDATE_ADDRESS_LABELS,
-      (resolve, _reject, labels: Record<string, string>) => {
+      (resolve, reject, reply: RelayReply<AddressLabelsResult>) => {
+        if (isReplyWithError(reply)) return reject(reply.err)
+
+        const labels = reply.result.labels
         logTrace('Got address labels %O', labels)
         resolve(labels)
       }
@@ -190,17 +209,11 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_ACCOUNT_STATES,
       [address],
       MSG_RESPOND_ACCOUNT_STATES,
-      (
-        resolve,
-        _reject,
-        accountAddress: string,
-        states: RelayAccountState[]
-      ) => {
-        logDebug(
-          'Got account states for address %s, %O',
-          accountAddress,
-          states
-        )
+      (resolve, reject, reply: RelayReply<AccountStatesResult>) => {
+        if (isReplyWithError(reply)) return reject(reply.err)
+
+        const { pubkey, states } = reply.result
+        logDebug('Got account states for address %s, %O', pubkey, states)
         resolve(states)
       }
     )
@@ -215,6 +228,7 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_RESPOND_SNAPSHOT_SAVE,
       (resolve, reject, reply: RelayReply<string>) => {
         if (isReplyWithError(reply)) return reject(new Error(reply.err))
+
         const snapshotDir = reply.result
         assert(snapshotDir != null, 'expected either error or snapshotDir')
         logDebug('Completed snapshot at %s', snapshotDir)
@@ -229,9 +243,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_LOAD_SNAPSHOT,
       [label],
       MSG_RESPOND_LOAD_SNAPSHOT,
-      (resolve, reject, reply) => {
-        if (reply?.err != null) return reject(new Error(reply.err))
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       },
       5000
     )
@@ -243,12 +256,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_ACCOUNT_SAVE,
       [address],
       MSG_RESPOND_ACCOUNT_SAVE,
-      (
-        resolve,
-        reject,
-        { err, accountPath }: { err?: string; accountPath?: string }
-      ) => {
-        if (err != null) return reject(new Error(err))
+      (resolve, reject, reply: RelayReply<AccountSaveResult>) => {
+        if (isReplyWithError(reply)) return reject(new Error(reply.err))
+
+        const { accountPath } = reply.result
         assert(accountPath != null, 'expected either error or accountPath')
         logDebug('Completed saving account at %s', accountPath)
         resolve(accountPath)
@@ -265,9 +276,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_STORE_KEYPAIR,
       [id, keypair.secretKey],
       MSG_RESPOND_STORE_KEYPAIR,
-      (resolve, reject, reply?: any) => {
-        if (reply?.err != null) return reject(new Error(reply.err))
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       }
     )
   }
@@ -278,11 +288,12 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_LOAD_KEYPAIR,
       [id],
       MSG_RESPOND_LOAD_KEYPAIR,
-      (resolve, _reject, secretKey: Uint8Array | undefined) => {
+      (resolve, reject, reply: RelayReply<LoadKeypairResult>) => {
+        if (isReplyWithError(reply)) return reject(new Error(reply.err))
+
         try {
-          resolve(
-            secretKey != null ? Keypair.fromSecretKey(secretKey) : undefined
-          )
+          const { keypair } = reply.result
+          resolve(keypair != null ? Keypair.fromSecretKey(keypair) : undefined)
         } catch (err) {
           logError('Failed to load keypair with id "%s"', id)
           logError(err)
@@ -298,9 +309,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_SET_ACCOUNT,
       [persistedAccountInfo],
       MSG_RESPOND_SET_ACCOUNT,
-      (resolve, reject, reply) => {
-        if (reply?.err != null) return reject(new Error(reply.err))
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       },
       5000
     )
@@ -312,8 +322,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_RESTART_VALIDATOR,
       [],
       MSG_RESPOND_RESTART_VALIDATOR,
-      (resolve, _reject) => {
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       },
       5000
     )

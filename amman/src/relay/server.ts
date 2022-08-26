@@ -45,7 +45,6 @@ import { killRunningServer } from '../utils/http'
 import { Account, AmmanState, Program } from '../validator/types'
 import { RelayHandler } from './handler'
 import { RestServer } from './rest-server'
-import { AMMAN_VERSION } from './types'
 
 const { logDebug, logTrace } = scopedLog('relay')
 
@@ -76,7 +75,6 @@ export /* internal */ class RelayServer {
   }
 
   hookMessages(socket: Socket) {
-    // TODO(thlorenz): After merge add method to request pid and restart validator
     const subscribedAccountStates = new Set<string>()
     socket
       // -----------------
@@ -84,7 +82,8 @@ export /* internal */ class RelayServer {
       // -----------------
       .on(MSG_REQUEST_AMMAN_VERSION, () => {
         logTrace(MSG_REQUEST_AMMAN_VERSION)
-        socket.emit(MSG_RESPOND_AMMAN_VERSION, AMMAN_VERSION)
+        const reply = this.handler.requestAmmanVersion()
+        socket.emit(MSG_RESPOND_AMMAN_VERSION, reply)
       })
       // -----------------
       // Validator Pid
@@ -142,10 +141,7 @@ export /* internal */ class RelayServer {
         const reply = this.handler.requestAccountStates(pubkeyArg)
 
         if (isReplyWithResult(reply)) {
-          const { pubkey, states } = reply.result
-          // TODO(thlorenz): Should respond with the reply here so that consumer can decide what to do in case of an
-          // error
-          socket.emit(MSG_RESPOND_ACCOUNT_STATES, pubkey, states ?? [])
+          const { pubkey } = reply.result
           if (!subscribedAccountStates.has(pubkey)) {
             subscribedAccountStates.add(pubkey)
             this.handler.accountStates.on(
@@ -157,6 +153,7 @@ export /* internal */ class RelayServer {
             )
           }
         }
+        socket.emit(MSG_RESPOND_ACCOUNT_STATES, reply)
       })
       // -----------------
       // Save Account

@@ -1,9 +1,11 @@
-import { AmmanAccountRendererMap } from '@metaplex-foundation/amman-client'
+import {
+  AmmanAccountRendererMap,
+  AmmanVersion,
+} from '@metaplex-foundation/amman-client'
 import { AmmanAccountProvider } from '../types'
 
 /** The version of amman, used by amman-explorer to detect amman compatibility */
 const { version } = require('../../package.json')
-export type AmmanVersion = [number, number, number]
 export const AMMAN_VERSION: AmmanVersion = version
   .split('.')
   .map((v: string) => parseInt(v)) as [number, number, number]

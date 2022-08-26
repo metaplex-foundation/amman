@@ -119,8 +119,8 @@ export class RestServer {
             if (labels == null) {
               fail(res, 'Need to provide a record of address labels to update')
             } else {
-              this.handler.updateAddressLabels(labels)
-              send(res, {})
+              const reply = this.handler.updateAddressLabels(labels)
+              send(res, reply)
             }
             break
           }
