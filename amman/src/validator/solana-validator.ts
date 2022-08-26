@@ -6,6 +6,7 @@ import { createTemporarySnapshot, SnapshotConfig } from '../assets'
 import { AmmanConfig } from '../types'
 import { canAccessSync } from '../utils/fs'
 import { scopedLog } from '../utils/log'
+import { getDeactivatedFeatures } from '../utils/getDeactivatedFeatures';
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { solanaConfig } from './prepare-config'
 import { processAccounts } from './process-accounts'
@@ -30,6 +31,7 @@ export async function buildSolanaValidatorArgs(
     websocketUrl,
     jsonRpcUrl,
     commitment,
+    features
   } = validatorConfig
 
   const { assetsFolder } = config
@@ -58,6 +60,20 @@ export async function buildSolanaValidatorArgs(
       args.push('--bpf-program')
       args.push(programId)
       args.push(deployPath)
+    }
+  }
+
+  if (features) {
+    if (features.constructor === Array) {
+      for (const feature of features) {
+        args.push('--deactivate-feature')
+        args.push(feature)
+      }
+    } else if (features.constructor === String) {
+      for (const feature of await getDeactivatedFeatures(features)) {
+        args.push('--deactivate-feature')
+        args.push(feature)
+      }
     }
   }
 
