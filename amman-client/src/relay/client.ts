@@ -183,7 +183,11 @@ export class ConnectedAmmanClient implements AmmanClient {
         })
       : Promise.resolve()
 
-    this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
+    const reply: RelayReply<AddressLabelsResult> = {
+      result: { labels },
+    }
+    this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, reply)
+
     return promise
   }
 

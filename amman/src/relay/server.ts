@@ -40,7 +40,7 @@ import { AccountProvider } from '../accounts/providers'
 import { AccountStates } from '../accounts/state'
 import { AccountPersister } from '../assets'
 import { AmmanAccountProvider } from '../types'
-import { scopedLog } from '../utils'
+import { logError, scopedLog } from '../utils'
 import { killRunningServer } from '../utils/http'
 import { Account, AmmanState, Program } from '../validator/types'
 import { RelayHandler } from './handler'
@@ -104,16 +104,26 @@ export /* internal */ class RelayServer {
       // -----------------
       // Address Labels
       // -----------------
-      .on(MSG_UPDATE_ADDRESS_LABELS, (labels: Record<string, string>) => {
-        if (logTrace.enabled) {
-          logTrace(MSG_UPDATE_ADDRESS_LABELS)
-          const labelCount = Object.keys(labels).length
-          logTrace(`Got ${labelCount} labels, broadcasting ...`)
+      .on(
+        MSG_UPDATE_ADDRESS_LABELS,
+        (reply: RelayReply<AddressLabelsResult>) => {
+          if (logTrace.enabled) {
+            logTrace(MSG_UPDATE_ADDRESS_LABELS)
+            if (isReplyWithResult(reply)) {
+              const labelCount = Object.keys(reply.result.labels).length
+              logTrace(`Got ${labelCount} labels, broadcasting ...`)
+            } else {
+              logError(reply.err)
+            }
+          }
+          if (isReplyWithResult(reply)) {
+            this.handler.updateAddressLabels(reply.result.labels)
+          }
+
+          socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, reply)
+          socket.emit(ACK_UPDATE_ADDRESS_LABELS)
         }
-        this.handler.updateAddressLabels(labels)
-        socket.broadcast.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
-        socket.emit(ACK_UPDATE_ADDRESS_LABELS)
-      })
+      )
       .on(MSG_GET_KNOWN_ADDRESS_LABELS, () => {
         if (logTrace.enabled) {
           logTrace(MSG_GET_KNOWN_ADDRESS_LABELS)
