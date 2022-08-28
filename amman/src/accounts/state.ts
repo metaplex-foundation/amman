@@ -82,7 +82,7 @@ export class AccountStates extends EventEmitter {
   // address:{ keypair, id (label) }
   readonly keypairs: Map<string, { keypair: Keypair; id: string }> = new Map()
 
-  private _paused = true
+  private _paused = false
 
   get paused() {
     return this._paused

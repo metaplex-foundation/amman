@@ -31,6 +31,8 @@ import {
   isReplyWithResult,
   RelayReply,
   AddressLabelsResult,
+  AccountStatesResult,
+  RelayAccountState,
 } from '@metaplex-foundation/amman-client'
 import { AccountInfo, Keypair } from '@solana/web3.js'
 import { createServer, Server as HttpServer } from 'http'
@@ -156,8 +158,14 @@ export /* internal */ class RelayServer {
             subscribedAccountStates.add(pubkey)
             this.handler.accountStates.on(
               `account-changed:${pubkey}`,
-              (states) => {
-                socket.emit(MSG_UPDATE_ACCOUNT_STATES, pubkey, states)
+              (states: RelayAccountState[]) => {
+                const reply: RelayReply<AccountStatesResult> = {
+                  result: {
+                    pubkey,
+                    states,
+                  },
+                }
+                socket.emit(MSG_UPDATE_ACCOUNT_STATES, reply)
                 logTrace(MSG_UPDATE_ACCOUNT_STATES)
               }
             )
