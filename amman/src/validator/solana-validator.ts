@@ -6,7 +6,7 @@ import { createTemporarySnapshot, SnapshotConfig } from '../assets'
 import { AmmanConfig } from '../types'
 import { canAccessSync } from '../utils/fs'
 import { scopedLog } from '../utils/log'
-import { getDeactivatedFeatures } from '../utils/getDeactivatedFeatures';
+import { getDeactivatedFeatures } from '../utils/get-deactivated-features';
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { solanaConfig } from './prepare-config'
 import { processAccounts } from './process-accounts'
