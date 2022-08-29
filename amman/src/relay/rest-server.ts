@@ -165,8 +165,6 @@ export class RestServer {
           case MSG_REQUEST_ACCOUNT_SAVE: {
             if (!assertMethod(req, res, url, method)) return
             const [pubkeyArg] = await reqArgs(req)
-            // TODO(thlorenz): for consistency the handler should return a `{ result }` reply
-            // make sure we don't break amman-client that's also using the handler
             const reply = await this.handler.requestAccountSave(pubkeyArg)
             send(res, reply)
             break
