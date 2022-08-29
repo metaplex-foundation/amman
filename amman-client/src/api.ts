@@ -22,6 +22,7 @@ import {
   DisconnectedAmmanClient,
 } from './relay/client'
 import { AMMAN_RELAY_URI } from './relay/consts'
+import { AmmanMockStorageDriver } from './storage/mock-storage-driver'
 import { TransactionChecker } from './transactions/transaction-checker'
 import {
   PayerTransactionHandler,
@@ -274,13 +275,9 @@ export class Amman {
    *
    * @category storage
    */
-  // TODO(thlorenz): add mock storage
-  /*
-  createMockStorageDriver = (
-    storageId: string,
-    options?: AmmanMockStorageDriverOptions
-  ) => AmmanMockStorageDriver.create(storageId, options)
-  */
+  createMockStorageDriver(storageId: string, costPerByte?: number) {
+    return AmmanMockStorageDriver.create(storageId, costPerByte)
+  }
 
   // -----------------
   // Disposing
