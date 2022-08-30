@@ -16,8 +16,18 @@ runs:
         path: "$HOME/.local/share/solana/install/releases/${{ inputs.solana_version }}"
         key: ${{ runner.os }}-Solana-v${{ inputs.solana_version  }}
 
+    - name: Check solana-test-validator existence
+      id: check_test_validator
+      uses: andstor/file-existence-action@v1
+      with:
+        files: "$HOME/.local/share/solana/install/releases/${{ inputs.solana_version }}/solana-release/bin/solana-test-validator"
+
+    - name: Solana Test Validator exists
+      if: steps.check_test_validator.outputs.files_exists == 'true'
+      run: echo "It exists !"
+
     - name: Install Solana
-      if: ${{ !env.ACT }} && steps.cache-solana-install.outputs.cache-hit != 'true'
+      if: steps.check_test_validator.outputs.files_exists != 'true'
       run: |
         sh -c "$(curl -sSfL https://release.solana.com/v${{ inputs.solana_version }}/install)"
       shell: bash
