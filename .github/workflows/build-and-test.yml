@@ -12,10 +12,6 @@ env:
   RUST_TOOLCHAIN: stable
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
   build-and-test:
     runs-on: ubuntu-latest
     env:
