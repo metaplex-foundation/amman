@@ -3,10 +3,12 @@
   "version": "0.0.0",
   "description": "Tests for amman.",
   "scripts": {
-    "test": "yarn test:startup && yarn test:clients && yarn test:clients/tasks",
+    "test": "yarn test:startup && yarn test:amman-client && yarn test:amman-client/tasks && yarn test:rest-client && yarn test:rest-client/tasks",
     "test:startup": "for t in ./tests/startup/*.ts; do esr $t; sleep 1; done | tap-spec",
-    "test:clients": "for t in ./tests/{amman-client,rest-client}/*.ts; do esr $t; sleep 1; done | tap-spec",
-    "test:clients/tasks": "for t in ./tests/{amman-client,rest-client}/tasks/*.ts; do esr $t; sleep 1; done | tap-spec",
+    "test:amman-client": "for t in ./tests/amman-client/*.ts; do esr $t; sleep 1; done | tap-spec",
+    "test:rest-client": "for t in ./tests/rest-client/*.ts; do esr $t; sleep 1; done | tap-spec",
+    "test:amman-client/tasks": "for t in ./tests/amman-client/tasks/*.ts; do esr $t; sleep 1; done | tap-spec",
+    "test:rest-client/tasks": "for t in ./tests/rest-client/tasks/*.ts; do esr $t; sleep 1; done | tap-spec",
     "lint": "prettier -c ./tests/",
     "lint:fix": "prettier --write ./tests"
   },
