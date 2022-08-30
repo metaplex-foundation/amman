@@ -19,6 +19,15 @@ Use this inside your tests and the browser.
 
 [Read More](./amman-client/README.md)
 
+## Amman Tests
+
+Test amman itself to make sure that configuratio of and communication with the
+_solana-test-validator_ works as expected and that requests to the relay are handled properly.
+
+Deveolpers adding/changing a feature should add a test here to ensure it works.
+
+[Read More](./amman-tests/README.md)
+
 ## LICENSE
 
 Apache-2.0
