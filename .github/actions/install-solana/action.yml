@@ -36,5 +36,6 @@ runs:
 
     - name: Verify Solana install
       run: |
+        ls -la "$HOME/.local/share/solana/install/"
         solana --version
       shell: bash
