@@ -1,4 +1,4 @@
-# Amman
+# Amman [![Build and Test](https://github.com/metaplex-foundation/amman/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/metaplex-foundation/amman/actions/workflows/build-and-test.yml)
 
 **A** **m** odern **man** datory toolbelt to help test solana SDK libraries and apps on a locally
 running validator.
