@@ -18,9 +18,47 @@ DEFAULT_TEST_CONFIG.streamTransactionLogs = false
 // by default in CI the relay is disabled but we need it on since we're testing it
 DEFAULT_TEST_CONFIG.relay.enabled = true
 
+function createTimeout(
+  ms: number,
+  rejectError: Error,
+  reject: (reason: any) => void
+) {
+  return setTimeout(() => reject(rejectError), ms)
+}
+
+function resolveWithTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  task: string
+): Promise<T> {
+  return new Promise<T>(async (resolve, reject) => {
+    const timeout = createTimeout(
+      ms,
+      new Error(`Unable to ${task}.`),
+      (reason: any) => {
+        reject(reason)
+      }
+    )
+
+    try {
+      const res = await promise
+      clearTimeout(timeout)
+      resolve(res)
+    } catch (err: any) {
+      clearTimeout(timeout)
+      reject(err)
+    }
+  })
+}
+
 export async function launchAmman(conf: DeepPartial<AmmanConfig> = {}) {
   const config = completeConfig({ ...DEFAULT_TEST_CONFIG, ...conf })
-  return initValidator(config) as Promise<AmmanStateInternal>
+  const ammanState = await resolveWithTimeout(
+    initValidator(config),
+    10e3,
+    'connect to test validator via amman'
+  )
+  return ammanState as AmmanStateInternal
 }
 
 export async function killAmman(t: Test, ammanState: AmmanStateInternal) {
