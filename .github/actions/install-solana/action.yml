@@ -22,10 +22,6 @@ runs:
       with:
         files: "$HOME/.local/share/solana/install/releases/${{ inputs.solana_version }}/solana-release/bin/solana-test-validator"
 
-    - name: Solana Test Validator exists
-      if: steps.check_test_validator.outputs.files_exists == 'true'
-      run: echo "It exists !"
-
     - name: Install Solana
       if: steps.check_test_validator.outputs.files_exists != 'true'
       run: |
