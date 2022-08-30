@@ -25,10 +25,14 @@ jobs:
           solana_version: ${{ env.SOLANA_VERSION }}
 
       # Build and Test
-      - name: install-deps-and-build
+      - name: install-root-deps-and-build
         run: |
           yarn install  
           yarn build
+
+      - name: install-amman-test-deps
+        working-directory: ./amman-tests
+        run: yarn install  
 
       # Run tests
       - name: test-amman 
