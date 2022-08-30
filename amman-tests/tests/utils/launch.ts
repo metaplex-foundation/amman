@@ -78,6 +78,9 @@ export async function killAmman(t: Test, ammanState: AmmanStateInternal) {
       )
     } catch (err) {
       t.error(err, 'amman relay failed to close properly')
+      process.kill(ammanState.validator.pid!)
+      // Ensure tests fail
+      process.exit(1)
     }
   }
   process.kill(ammanState.validator.pid!)
@@ -95,11 +98,10 @@ export async function killAmman(t: Test, ammanState: AmmanStateInternal) {
  *
  * This fixes this by exiting the process as soon as all tests are finished.
  */
-export function killStuckProcess() {
-  // Don't do this in CI since we need to ensure we get a non-zero exit code if tests fail
-  if (process.env.CI == null) {
-    test.onFinish(() => process.exit(0))
-  }
+export function killStuckProcess(exitCode = 0) {
+  // We can do this CI since we need run each test separately
+  // TODO(thlorenz): Ensure a non-zero exit code is propagated in all cases
+  test.onFinish(() => process.exit(exitCode))
 }
 
 export function relayClient() {
