@@ -71,7 +71,11 @@ export async function launchAmman(conf: DeepPartial<AmmanConfig> = {}) {
 export async function killAmman(t: Test, ammanState: AmmanStateInternal) {
   if (ammanState.relayServer != null) {
     try {
-      await ammanState.relayServer.close()
+      await resolveWithTimeout(
+        ammanState.relayServer.close(),
+        2e3,
+        'close amman relay server'
+      )
     } catch (err) {
       t.error(err, 'amman relay failed to close properly')
     }
