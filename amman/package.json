@@ -43,7 +43,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@metaplex-foundation/amman-client": "^0.1.0",
+    "@metaplex-foundation/amman-client": "^0.2.0",
     "@solana/spl-token": "^0.2.0",
     "@solana/web3.js": "^1.43.4",
     "ansi-colors": "^4.1.1",
