@@ -10,6 +10,7 @@ import {
 import { initValidator } from '@metaplex-foundation/amman/src/validator/init-validator'
 import { AmmanStateInternal } from '@metaplex-foundation/amman/src/validator/types'
 import { DeepPartial } from '@metaplex-foundation/amman/src/types'
+import { logError } from '@metaplex-foundation/amman/dist/utils'
 
 const DEFAULT_TEST_CONFIG: Required<AmmanConfig> = { ...DEFAULT_START_CONFIG }
 
@@ -53,12 +54,18 @@ function resolveWithTimeout<T>(
 
 export async function launchAmman(conf: DeepPartial<AmmanConfig> = {}) {
   const config = completeConfig({ ...DEFAULT_TEST_CONFIG, ...conf })
-  const ammanState = await resolveWithTimeout(
-    initValidator(config),
-    10e3,
-    'connect to test validator via amman'
-  )
-  return ammanState as AmmanStateInternal
+  try {
+    const ammanState = await resolveWithTimeout(
+      initValidator(config),
+      5e3,
+      'connect to test validator via amman'
+    )
+    return ammanState as AmmanStateInternal
+  } catch (err: any) {
+    logError(err)
+    logError('Ending test due to above isssue')
+    process.exit(1)
+  }
 }
 
 export async function killAmman(t: Test, ammanState: AmmanStateInternal) {
