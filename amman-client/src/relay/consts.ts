@@ -66,3 +66,28 @@ export const MSG_RESPOND_AMMAN_VERSION = 'respond:relay-version'
 export const MSG_REQUEST_VALIDATOR_PID = 'request:validator-pid'
 /** @private */
 export const MSG_RESPOND_VALIDATOR_PID = 'respond:validator-pid'
+
+/** @private */
+export const MSG_REQUEST_KILL_AMMAN = 'request:kill-amman'
+/** @private */
+export const MSG_RESPOND_KILL_AMMAN = 'respond:kill-amman'
+
+export const AmmanRequests = [
+  MSG_UPDATE_ADDRESS_LABELS,
+  MSG_GET_KNOWN_ADDRESS_LABELS,
+  MSG_REQUEST_ACCOUNT_STATES,
+  MSG_REQUEST_SNAPSHOT_SAVE,
+  MSG_REQUEST_ACCOUNT_SAVE,
+  MSG_REQUEST_STORE_KEYPAIR,
+  MSG_REQUEST_LOAD_KEYPAIR,
+  MSG_REQUEST_SET_ACCOUNT,
+  MSG_REQUEST_LOAD_SNAPSHOT,
+  MSG_REQUEST_RESTART_VALIDATOR,
+  MSG_REQUEST_AMMAN_VERSION,
+  MSG_REQUEST_VALIDATOR_PID,
+  MSG_REQUEST_KILL_AMMAN,
+] as const
+
+export type AmmanRequest = typeof AmmanRequests[number]
+
+export const KILL_AMMAN_EXIT_CODE = 0xbad

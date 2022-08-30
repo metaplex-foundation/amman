@@ -1,4 +1,5 @@
 dist/
 .idea/
 yarn.lock
-**/yarn.lock
+**/Cargo.lock
+**/target/

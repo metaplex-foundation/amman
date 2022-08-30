@@ -42,7 +42,7 @@
   "dependencies": {
     "@metaplex-foundation/cusper": "^0.0.2",
     "@solana/spl-token-registry": "^0.2.2405",
-    "@solana/web3.js": "^1.43.4",
+    "@solana/web3.js": "^1.54.1",
     "bn.js": "^5.2.1",
     "debug": "^4.3.3",
     "js-sha3": "^0.8.0",
@@ -58,6 +58,6 @@
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "typedoc": "^0.22.10",
-    "typescript": "^4.5.2"
+    "typescript": "^4.8.2"
   }
 }

@@ -19,25 +19,18 @@ export const ammanMockStorage = (
   costPerByte?: number
 ): MetaplexPlugin => ({
   install(metaplex: any /* Metaplex */) {
-    const driver = ammanMockStorageDriver(storageId, costPerByte)
+    const driver = AmmanMockStorageDriver.create(storageId, costPerByte)
     metaplex.storage().setDriver(driver)
   },
 })
 
-export function ammanMockStorageDriver(
-  storageId?: string,
-  costPerByte?: number
-) {
-  return new AmmanMockStorageDriver(storageId, costPerByte)
-}
-
-class AmmanMockStorageDriver implements StorageDriver {
+export class AmmanMockStorageDriver implements StorageDriver {
   private cache: Record<string, MetaplexFile> = {}
 
   readonly baseResourceUrl: string
   readonly baseUploadUrl: string
 
-  constructor(
+  private constructor(
     readonly storageId: string = AMMAN_DEFAULT_MOCK_STORAGE_ID,
     readonly costPerByte: number = 1
   ) {
@@ -89,6 +82,10 @@ class AmmanMockStorageDriver implements StorageDriver {
 
   static readonly getUploadToStorageUri = (storageId: string) =>
     `${AMMAN_STORAGE_UPLOAD_URI}/${storageId}`
+
+  static create(storageId?: string, costPerByte?: number) {
+    return new AmmanMockStorageDriver(storageId, costPerByte)
+  }
 }
 
 // -----------------

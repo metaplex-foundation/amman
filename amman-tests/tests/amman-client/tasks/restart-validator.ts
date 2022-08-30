@@ -1,6 +1,6 @@
 import spok from 'spok'
 import test from 'tape'
-import { killAmman, launchAmman, relayClient } from '../utils/launch'
+import { killAmman, launchAmman, relayClient } from '../../utils/launch'
 
 test('amman-client: given amman is running with the relay enabled', async (t) => {
   const client = relayClient()
@@ -30,7 +30,6 @@ test('amman-client: given amman is running with the relay enabled', async (t) =>
       pidBeforeRestart,
       'a new validator with different pid has started up'
     )
-    pidBeforeRestart = pid
   })
 
   t.test('kill amman', async (t) => {
