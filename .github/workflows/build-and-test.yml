@@ -29,3 +29,6 @@ jobs:
           yarn build
 
       # Run tests
+      - name: test-amman 
+        working-directory: ./amman-tests
+        run: DEBUG=amman* yarn test 
