@@ -15,6 +15,8 @@ const DEFAULT_TEST_CONFIG: Required<AmmanConfig> = { ...DEFAULT_START_CONFIG }
 
 DEFAULT_TEST_CONFIG.storage.enabled = false
 DEFAULT_TEST_CONFIG.streamTransactionLogs = false
+// by default in CI the relay is disabled but we need it on since we're testing it
+DEFAULT_TEST_CONFIG.relay.enabled = true
 
 export async function launchAmman(conf: DeepPartial<AmmanConfig> = {}) {
   const config = completeConfig({ ...DEFAULT_TEST_CONFIG, ...conf })
