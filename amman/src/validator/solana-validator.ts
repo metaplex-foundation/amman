@@ -64,12 +64,12 @@ export async function buildSolanaValidatorArgs(
   }
 
   if (features) {
-    if (features.constructor === Array) {
+    if (Array.isArray(features)) {
       for (const feature of features) {
         args.push('--deactivate-feature')
         args.push(feature)
       }
-    } else if (features.constructor === String) {
+    } else if (typeof features === 'string') {
       for (const feature of await getDeactivatedFeatures(features)) {
         args.push('--deactivate-feature')
         args.push(feature)
