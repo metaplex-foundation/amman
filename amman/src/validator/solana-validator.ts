@@ -63,7 +63,7 @@ export async function buildSolanaValidatorArgs(
     }
   }
 
-  if (features) {
+  if (features != null) {
     if (Array.isArray(features)) {
       for (const feature of features) {
         args.push('--deactivate-feature')
