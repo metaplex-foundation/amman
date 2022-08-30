@@ -23,6 +23,7 @@ runs:
       shell: bash
 
     - name: Set Active Solana Version
+      if: steps.cache-solana-install.outputs.cache-hit != 'true'
       run: |
         rm -f "$HOME/.local/share/solana/install/active_release"
         ln -s "$HOME/.local/share/solana/install/releases/${{ inputs.solana_version }}/solana-release" "$HOME/.local/share/solana/install/active_release"
