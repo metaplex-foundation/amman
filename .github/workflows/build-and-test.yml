@@ -17,18 +17,18 @@ jobs:
     steps:
       # Setup Solana Test Validator required by Amman
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-linux-build-deps
+        #      - uses: ./.github/actions/install-linux-build-deps
       - uses: ./.github/actions/install-solana
         with: 
           solana_version: ${{ env.SOLANA_VERSION }}
 
       # Build and Test
-      - name: install-deps-and-build
-        run: |
-          yarn install  
-          yarn build
+      #  - name: install-deps-and-build
+      #    run: |
+      #      yarn install  
+      #      yarn build
 
-      # Run tests
-      - name: test-amman 
-        working-directory: ./amman-tests
-        run: DEBUG=amman* yarn test 
+      #  # Run tests
+      #  - name: test-amman 
+      #    working-directory: ./amman-tests
+      #    run: DEBUG=amman* yarn test 
