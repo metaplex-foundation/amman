@@ -20,7 +20,7 @@ runs:
       id: check_test_validator
       uses: andstor/file-existence-action@v1
       with:
-        files: "$HOME/.local/share/solana/install/releases/${{ inputs.solana_version }}/solana-release/bin/solana-test-validator"
+        files: "/home/runner/.local/share/solana/install/releases/${{ inputs.solana_version }}/solana-release/bin/solana-test-validator"
 
     - name: Install Solana
       if: steps.check_test_validator.outputs.files_exists != 'true'
