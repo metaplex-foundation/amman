@@ -30,10 +30,6 @@ jobs:
           yarn install  
           yarn build
 
-      - name: install-amman-test-deps
-        working-directory: ./amman-tests
-        run: yarn install  
-
       # Run tests
       - name: test-amman 
         working-directory: ./amman-tests

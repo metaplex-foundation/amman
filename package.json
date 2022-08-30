@@ -13,7 +13,7 @@
     "packages": [
       "amman",
       "amman-client",
-      "amman-test"
+      "amman-tests"
     ]
   },
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
