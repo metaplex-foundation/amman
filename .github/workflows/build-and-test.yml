@@ -17,7 +17,6 @@ jobs:
     steps:
       # Setup Solana Test Validator required by Amman
       - uses: actions/checkout@v2
-        #      - uses: ./.github/actions/install-linux-build-deps
       - uses: ./.github/actions/install-solana
         with: 
           solana_version: ${{ env.SOLANA_VERSION }}
