@@ -64,7 +64,7 @@ export type Account = {
  * @property detached if `true` the `solana-test-validator` will run detached
  * which allows `amman` to exit while the validator keeps running. This
  * defaults to `true` when run in CI.
- * 
+ *
  * @property feature is the feature flags you want to disable for the validator or emulate feature set of the specific network.
  */
 export type ValidatorConfig = {
@@ -92,4 +92,17 @@ export type AmmanState = {
 /** @private only used in tests */
 export type AmmanStateInternal = AmmanState & {
   relayServer?: RelayServer
+}
+
+/**
+ * The type that is returned when invoking `solana feature status ...` in order
+ * to obtain the features that a validator running on a specific network
+ * supports.
+ *
+ * @private
+ */
+export type ValidatorFeature = {
+  id: string
+  description: string
+  status: string
 }
