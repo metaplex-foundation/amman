@@ -1,12 +1,13 @@
 import path from 'path'
+import { ValidatorConfig } from 'src/validator/types'
 import {
   ACCOUNTS_FOLDER,
   DEFAULT_ASSETS_FOLDER,
   DEFAULT_SNAPSHOT_CONFIG,
 } from '../assets'
-import { DEFAULT_RELAY_CONFIG } from '../relay/types'
+import { DEFAULT_RELAY_CONFIG, RelayConfig } from '../relay/types'
 import { DEFAULT_STORAGE_CONFIG } from '../storage/types'
-import { AmmanConfig } from '../types'
+import { AmmanConfig, DeepPartial } from '../types'
 import { DEFAULT_VALIDATOR_CONFIG } from '../validator'
 
 export const DEFAULT_STREAM_TRANSACTION_LOGS = process.env.CI == null
@@ -27,10 +28,13 @@ export const DEFAULT_START_CONFIG: Required<AmmanConfig> = {
  * @private
  */
 export function completeConfig(
-  config: Partial<AmmanConfig> = {}
+  config: DeepPartial<AmmanConfig> = {}
 ): Required<AmmanConfig> {
-  const validator = { ...DEFAULT_VALIDATOR_CONFIG, ...config.validator }
-  const relay = { ...DEFAULT_RELAY_CONFIG, ...config.relay }
+  const relay = { ...DEFAULT_RELAY_CONFIG, ...config.relay } as RelayConfig
+  const validator = {
+    ...DEFAULT_VALIDATOR_CONFIG,
+    ...config.validator,
+  } as ValidatorConfig
   const snapshot = { ...DEFAULT_SNAPSHOT_CONFIG, ...config.snapshot }
   const storage = { ...DEFAULT_STORAGE_CONFIG, ...config.storage }
   snapshot.snapshotFolder = path.resolve(process.cwd(), snapshot.snapshotFolder)

@@ -1,0 +1,34 @@
+name: Build and Test 
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  SOLANA_VERSION: 1.10.35
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      cache_id: amman 
+    steps:
+      - uses: actions/checkout@v2
+
+      # Setup Solana Test Validator required by Amman
+      - uses: ./.github/actions/install-solana
+        with: 
+          solana_version: ${{ env.SOLANA_VERSION }}
+
+      # Build and Test
+      - name: install-deps-and-build
+        run: |
+          yarn install  
+          yarn build
+
+      # Run tests
+      - name: test-amman 
+        working-directory: ./amman-tests
+        run: DEBUG=amman* yarn test 

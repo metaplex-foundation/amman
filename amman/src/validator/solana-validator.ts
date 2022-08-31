@@ -201,21 +201,23 @@ export async function restartValidator(
 
   accountStates.paused = true
 
-  await killValidatorChild(ammanState.validator)
+  try {
+    await killValidatorChild(ammanState.validator)
 
-  const { args, cleanupConfig, ...rest } = await buildSolanaValidatorArgs(
-    config,
-    false
-  )
-  const validator = await startSolanaValidator(args, ammanState.detached)
-  ammanState.validator = validator
+    const { args, cleanupConfig, ...rest } = await buildSolanaValidatorArgs(
+      config,
+      false
+    )
+    const validator = await startSolanaValidator(args, ammanState.detached)
+    ammanState.validator = validator
 
-  await waitForValidator(
-    config.validator.jsonRpcUrl,
-    config.validator.verifyFees,
-    cleanupConfig
-  )
-  accountStates.paused = false
-
-  return { args, ...rest }
+    await waitForValidator(
+      config.validator.jsonRpcUrl,
+      config.validator.verifyFees,
+      cleanupConfig
+    )
+    return { args, ...rest }
+  } finally {
+    accountStates.paused = false
+  }
 }

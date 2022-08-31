@@ -22,6 +22,7 @@ import {
   DisconnectedAmmanClient,
 } from './relay/client'
 import { AMMAN_RELAY_URI } from './relay/consts'
+import { AmmanMockStorageDriver } from './storage/mock-storage-driver'
 import { TransactionChecker } from './transactions/transaction-checker'
 import {
   PayerTransactionHandler,
@@ -162,6 +163,9 @@ export class Amman {
     const receiver = receiverLabel == null ? '' : ` -> ${receiverLabel}`
     await this.addr.addLabel(`🪂 ${sol} SOL${receiver}`, sig)
 
+    // TODO(thlorenz): Tried to fix deprecated method use but am running into
+    // 'signature should be bas58 encoded' issue. After attempting to fix this
+    // for way too much time I put this off for now.
     const signatureResult = await connection.confirmTransaction(sig)
     return { signature: sig, signatureResult }
   }
@@ -274,13 +278,9 @@ export class Amman {
    *
    * @category storage
    */
-  // TODO(thlorenz): add mock storage
-  /*
-  createMockStorageDriver = (
-    storageId: string,
-    options?: AmmanMockStorageDriverOptions
-  ) => AmmanMockStorageDriver.create(storageId, options)
-  */
+  createMockStorageDriver(storageId: string, costPerByte?: number) {
+    return AmmanMockStorageDriver.create(storageId, costPerByte)
+  }
 
   // -----------------
   // Disposing

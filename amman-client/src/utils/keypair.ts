@@ -47,3 +47,16 @@ export function deriveInsecure(message: Message) {
 
   return Keypair.fromSeed(digest)
 }
+
+/**
+ * Deserialization of the secretKey Uint8Array results in an object which we
+ * this function adapts. Therefore use this to restore {@link Keypair}s that
+ * were sent over the wire.
+ *
+ * @param secretKey hash with keys being array indices of the Uint8Array
+ *
+ * @returns array of keypair secret
+ */
+export function keypairSecretFromObject(secretKey: object) {
+  return Uint8Array.from(Array.from(Object.values(secretKey)))
+}

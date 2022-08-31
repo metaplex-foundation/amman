@@ -13,6 +13,7 @@ import {
   MSG_REQUEST_ACCOUNT_SAVE,
   MSG_REQUEST_ACCOUNT_STATES,
   MSG_REQUEST_AMMAN_VERSION,
+  MSG_REQUEST_KILL_AMMAN,
   MSG_REQUEST_LOAD_KEYPAIR,
   MSG_REQUEST_LOAD_SNAPSHOT,
   MSG_REQUEST_RESTART_VALIDATOR,
@@ -23,6 +24,7 @@ import {
   MSG_RESPOND_ACCOUNT_SAVE,
   MSG_RESPOND_ACCOUNT_STATES,
   MSG_RESPOND_AMMAN_VERSION,
+  MSG_RESPOND_KILL_AMMAN,
   MSG_RESPOND_LOAD_KEYPAIR,
   MSG_RESPOND_LOAD_SNAPSHOT,
   MSG_RESPOND_RESTART_VALIDATOR,
@@ -33,7 +35,23 @@ import {
   MSG_UPDATE_ADDRESS_LABELS,
 } from './consts'
 import { createTimeout } from './timeout'
-import { RelayAccountState } from './types'
+import {
+  AccountSaveResult,
+  AccountStatesResult,
+  AddressLabelsResult,
+  AmmanVersion,
+  isReplyWithError,
+  LoadKeypairResult,
+  RelayAccountState,
+  RelayReply,
+  VoidResult,
+} from './types'
+import {
+  ENSURE_VERSION,
+  MIN_AMMAN_CLI_VERSION_REQUIRED,
+  requiredVersionSatisfied,
+  versionString,
+} from './version'
 
 const { logError, logDebug, logTrace } = scopedLog('relay')
 
@@ -51,6 +69,7 @@ export type AmmanClient = {
   requestLoadKeypair(id: string): Promise<Keypair | undefined>
   requestSetAccount(persistedAccountInfo: PersistedAccountInfo): Promise<void>
   requestRestartValidator(): Promise<void>
+  requestKillAmman(): Promise<void>
   disconnect(): void
   destroy(): void
 }
@@ -71,6 +90,7 @@ export class ConnectedAmmanClient implements AmmanClient {
   private readonly socket: Socket
   private readonly ack: boolean
   private _reqId = 0
+  private _verifiedAmmanVersion = false
   private constructor(readonly url: string, opts: AmmanClientOpts = {}) {
     const { autoUnref = !isBrowser, ack = false } = opts
     this.ack = ack
@@ -92,7 +112,59 @@ export class ConnectedAmmanClient implements AmmanClient {
     // TODO(thlorenz): this should ack to resolve a promise
     this.socket.emit(MSG_CLEAR_TRANSACTIONS)
   }
+  // -----------------
+  // Amman Version
+  // -----------------
+  async fetchAmmanVersion(): Promise<[number, number, number]> {
+    return this._handleRequest(
+      'fetch version',
+      MSG_REQUEST_AMMAN_VERSION,
+      [],
+      MSG_RESPOND_AMMAN_VERSION,
+      (resolve, reject, reply: RelayReply<AmmanVersion>) => {
+        return isReplyWithError(reply)
+          ? reject(reply.err)
+          : resolve(reply.result)
+      }
+    )
+  }
 
+  // -----------------
+  // Validator Pid
+  // -----------------
+  async fetchValidatorPid(): Promise<number> {
+    return this._handleRequest(
+      'fetch validator pid',
+      MSG_REQUEST_VALIDATOR_PID,
+      [],
+      MSG_RESPOND_VALIDATOR_PID,
+      (resolve, reject, reply) => {
+        return isReplyWithError(reply)
+          ? reject(reply.err)
+          : resolve(reply.result)
+      }
+    )
+  }
+  // -----------------
+  // Kill Amman
+  // -----------------
+  async requestKillAmman(): Promise<void> {
+    return this._handleRequest(
+      'fetch validator pid',
+      MSG_REQUEST_KILL_AMMAN,
+      [],
+      MSG_RESPOND_KILL_AMMAN,
+      (resolve, reject, { err }) => {
+        if (err != null) return reject(new Error(err))
+        resolve()
+      },
+      5000
+    )
+  }
+
+  // -----------------
+  // Address Labels
+  // -----------------
   addAddressLabels(labels: Record<string, string>): Promise<void> {
     if (logTrace.enabled) {
       const labelCount = Object.keys(labels).length
@@ -118,7 +190,11 @@ export class ConnectedAmmanClient implements AmmanClient {
         })
       : Promise.resolve()
 
-    this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, labels)
+    const reply: RelayReply<AddressLabelsResult> = {
+      result: { labels },
+    }
+    this.socket.emit(MSG_UPDATE_ADDRESS_LABELS, reply)
+
     return promise
   }
 
@@ -128,7 +204,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_GET_KNOWN_ADDRESS_LABELS,
       [],
       MSG_UPDATE_ADDRESS_LABELS,
-      (resolve, _reject, labels: Record<string, string>) => {
+      (resolve, reject, reply: RelayReply<AddressLabelsResult>) => {
+        if (isReplyWithError(reply)) return reject(reply.err)
+
+        const labels = reply.result.labels
         logTrace('Got address labels %O', labels)
         resolve(labels)
       }
@@ -141,45 +220,15 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_ACCOUNT_STATES,
       [address],
       MSG_RESPOND_ACCOUNT_STATES,
-      (
-        resolve,
-        _reject,
-        accountAddress: string,
-        states: RelayAccountState[]
-      ) => {
-        logDebug(
-          'Got account states for address %s, %O',
-          accountAddress,
-          states
-        )
+      (resolve, reject, reply: RelayReply<AccountStatesResult>) => {
+        if (isReplyWithError(reply)) return reject(reply.err)
+
+        const { pubkey, states } = reply.result
+        logDebug('Got account states for address %s, %O', pubkey, states)
         resolve(states)
       }
     )
   }
-  async fetchAmmanVersion(): Promise<[number, number, number]> {
-    return this._handleRequest(
-      'fetch version',
-      MSG_REQUEST_AMMAN_VERSION,
-      [],
-      MSG_RESPOND_AMMAN_VERSION,
-      (resolve, _reject, version) => {
-        resolve(version)
-      }
-    )
-  }
-
-  async fetchValidatorPid(): Promise<number> {
-    return this._handleRequest(
-      'fetch validator pid',
-      MSG_REQUEST_VALIDATOR_PID,
-      [],
-      MSG_RESPOND_VALIDATOR_PID,
-      (resolve, _reject, pid) => {
-        resolve(pid)
-      }
-    )
-  }
-
   async requestSnapshot(label?: string): Promise<string> {
     label ??= new Date().toJSON().replace(/[:.]/g, '_')
 
@@ -188,12 +237,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_SNAPSHOT_SAVE,
       [label],
       MSG_RESPOND_SNAPSHOT_SAVE,
-      (
-        resolve,
-        reject,
-        { err, snapshotDir }: { err?: string; snapshotDir?: string }
-      ) => {
-        if (err != null) return reject(new Error(err))
+      (resolve, reject, reply: RelayReply<string>) => {
+        if (isReplyWithError(reply)) return reject(new Error(reply.err))
+
+        const snapshotDir = reply.result
         assert(snapshotDir != null, 'expected either error or snapshotDir')
         logDebug('Completed snapshot at %s', snapshotDir)
         resolve(snapshotDir)
@@ -207,9 +254,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_LOAD_SNAPSHOT,
       [label],
       MSG_RESPOND_LOAD_SNAPSHOT,
-      (resolve, reject, err) => {
-        if (err != null) return reject(new Error(err))
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       },
       5000
     )
@@ -221,12 +267,10 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_ACCOUNT_SAVE,
       [address],
       MSG_RESPOND_ACCOUNT_SAVE,
-      (
-        resolve,
-        reject,
-        { err, accountPath }: { err?: string; accountPath?: string }
-      ) => {
-        if (err != null) return reject(new Error(err))
+      (resolve, reject, reply: RelayReply<AccountSaveResult>) => {
+        if (isReplyWithError(reply)) return reject(new Error(reply.err))
+
+        const { accountPath } = reply.result
         assert(accountPath != null, 'expected either error or accountPath')
         logDebug('Completed saving account at %s', accountPath)
         resolve(accountPath)
@@ -243,9 +287,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_STORE_KEYPAIR,
       [id, keypair.secretKey],
       MSG_RESPOND_STORE_KEYPAIR,
-      (resolve, reject, err?: any) => {
-        if (err != null) return reject(new Error(err))
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       }
     )
   }
@@ -256,11 +299,12 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_LOAD_KEYPAIR,
       [id],
       MSG_RESPOND_LOAD_KEYPAIR,
-      (resolve, _reject, secretKey: Uint8Array | undefined) => {
+      (resolve, reject, reply: RelayReply<LoadKeypairResult>) => {
+        if (isReplyWithError(reply)) return reject(new Error(reply.err))
+
         try {
-          resolve(
-            secretKey != null ? Keypair.fromSecretKey(secretKey) : undefined
-          )
+          const { keypair } = reply.result
+          resolve(keypair != null ? Keypair.fromSecretKey(keypair) : undefined)
         } catch (err) {
           logError('Failed to load keypair with id "%s"', id)
           logError(err)
@@ -276,8 +320,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_SET_ACCOUNT,
       [persistedAccountInfo],
       MSG_RESPOND_SET_ACCOUNT,
-      (resolve, _reject) => {
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       },
       5000
     )
@@ -289,8 +333,8 @@ export class ConnectedAmmanClient implements AmmanClient {
       MSG_REQUEST_RESTART_VALIDATOR,
       [],
       MSG_RESPOND_RESTART_VALIDATOR,
-      (resolve, _reject) => {
-        resolve()
+      (resolve, reject, reply: RelayReply<VoidResult>) => {
+        return isReplyWithError(reply) ? reject(reply.err) : resolve()
       },
       5000
     )
@@ -308,7 +352,13 @@ export class ConnectedAmmanClient implements AmmanClient {
     ) => Promise<void> | void,
     timeoutMs = RELAY_TIMEOUT_MS
   ) {
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<T>(async (resolve, reject) => {
+      try {
+        await this._verifyAmmanVersion()
+      } catch (err) {
+        return reject(err)
+      }
+
       const reqId = this._reqId++
       const onResponse = (...args: any[]) => {
         logTrace('<- [%s][%d]', action, reqId)
@@ -334,6 +384,46 @@ export class ConnectedAmmanClient implements AmmanClient {
 
       logTrace('-> [%s][%d]', action, reqId)
     })
+  }
+
+  private async _verifyAmmanVersion() {
+    if (this._verifiedAmmanVersion) return Promise.resolve()
+    // Setting this early to avoid endless loop due to using _handleRequest below
+    this._verifiedAmmanVersion = true
+
+    return this._handleRequest(
+      'fetch version',
+      MSG_REQUEST_AMMAN_VERSION,
+      [],
+      MSG_RESPOND_AMMAN_VERSION,
+      (resolve, reject, reply: RelayReply<AmmanVersion> | AmmanVersion) => {
+        if (Array.isArray(reply)) {
+          const msg =
+            `It appears you're using an outdated amman cli version ${versionString(
+              reply
+            )}\n` + ENSURE_VERSION
+          reject(new Error(msg))
+        } else if (isReplyWithError(reply)) {
+          const msg =
+            `Encountered error when trying to verify amman compatibility:\n${reply.err.toString()}\n` +
+            ENSURE_VERSION
+          reject(new Error(`${reply.err}\n${msg})`))
+        } else if (!requiredVersionSatisfied(reply.result)) {
+          const msg =
+            `It appears you're using an outdated amman cli version ${versionString(
+              reply.result
+            )}\n` + ENSURE_VERSION
+          reject(new Error(msg))
+        } else {
+          logDebug(
+            `Verified that ${versionString(reply.result)} >= ${versionString(
+              MIN_AMMAN_CLI_VERSION_REQUIRED
+            )}.`
+          )
+          resolve()
+        }
+      }
+    )
   }
 
   /**
@@ -401,6 +491,9 @@ export class DisconnectedAmmanClient implements AmmanClient {
     return Promise.resolve()
   }
   requestRestartValidator(): Promise<void> {
+    return Promise.resolve()
+  }
+  requestKillAmman(): Promise<void> {
     return Promise.resolve()
   }
   disconnect() {}

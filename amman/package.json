@@ -1,6 +1,6 @@
 {
   "name": "@metaplex-foundation/amman",
-  "version": "0.10.0",
+  "version": "0.11.1",
   "description": "A modern mandatory toolbelt to help test solana SDK libraries and apps on a locally running validator.",
   "main": "dist/amman.js",
   "types": "dist/amman.d.ts",
@@ -43,7 +43,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@metaplex-foundation/amman-client": "^0.1.0",
+    "@metaplex-foundation/amman-client": "^0.2.0",
     "@solana/spl-token": "^0.2.0",
     "@solana/web3.js": "^1.43.4",
     "ansi-colors": "^4.1.1",
@@ -59,6 +59,7 @@
     "split2": "^4.1.0",
     "text-table": "^0.2.0",
     "timeago.js": "^4.0.2",
+    "ts-essentials": "^9.3.0",
     "wait-on": "^6.0.0",
     "yargs": "^17.3.0"
   },
@@ -79,6 +80,6 @@
     "rimraf": "^3.0.2",
     "supports-color": "^9.2.1",
     "typedoc": "^0.22.10",
-    "typescript": "^4.5.2"
+    "typescript": "^4.8.2"
   }
 }
