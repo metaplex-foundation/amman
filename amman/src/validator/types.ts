@@ -80,7 +80,7 @@ export type ValidatorConfig = {
   limitLedgerSize: number
   verifyFees: boolean
   detached: boolean
-  features: 'mainnet' | 'devnet' | 'testnet' | string[]
+  features?: 'mainnet' | 'devnet' | 'testnet' | string[]
 }
 
 export type AmmanState = {
