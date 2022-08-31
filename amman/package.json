@@ -59,6 +59,7 @@
     "split2": "^4.1.0",
     "text-table": "^0.2.0",
     "timeago.js": "^4.0.2",
+    "ts-essentials": "^9.3.0",
     "wait-on": "^6.0.0",
     "yargs": "^17.3.0"
   },
@@ -78,7 +79,6 @@
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "supports-color": "^9.2.1",
-    "ts-essentials": "^9.2.0",
     "typedoc": "^0.22.10",
     "typescript": "^4.8.2"
   }
