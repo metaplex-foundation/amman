@@ -46,6 +46,12 @@ import {
   RelayReply,
   VoidResult,
 } from './types'
+import {
+  ENSURE_VERSION,
+  MIN_AMMAN_CLI_VERSION_REQUIRED,
+  requiredVersionSatisfied,
+  versionString,
+} from './version'
 
 const { logError, logDebug, logTrace } = scopedLog('relay')
 
@@ -84,6 +90,7 @@ export class ConnectedAmmanClient implements AmmanClient {
   private readonly socket: Socket
   private readonly ack: boolean
   private _reqId = 0
+  private _verifiedAmmanVersion = false
   private constructor(readonly url: string, opts: AmmanClientOpts = {}) {
     const { autoUnref = !isBrowser, ack = false } = opts
     this.ack = ack
@@ -345,7 +352,13 @@ export class ConnectedAmmanClient implements AmmanClient {
     ) => Promise<void> | void,
     timeoutMs = RELAY_TIMEOUT_MS
   ) {
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<T>(async (resolve, reject) => {
+      try {
+        await this._verifyAmmanVersion()
+      } catch (err) {
+        return reject(err)
+      }
+
       const reqId = this._reqId++
       const onResponse = (...args: any[]) => {
         logTrace('<- [%s][%d]', action, reqId)
@@ -371,6 +384,46 @@ export class ConnectedAmmanClient implements AmmanClient {
 
       logTrace('-> [%s][%d]', action, reqId)
     })
+  }
+
+  private async _verifyAmmanVersion() {
+    if (this._verifiedAmmanVersion) return Promise.resolve()
+    // Setting this early to avoid endless loop due to using _handleRequest below
+    this._verifiedAmmanVersion = true
+
+    return this._handleRequest(
+      'fetch version',
+      MSG_REQUEST_AMMAN_VERSION,
+      [],
+      MSG_RESPOND_AMMAN_VERSION,
+      (resolve, reject, reply: RelayReply<AmmanVersion> | AmmanVersion) => {
+        if (Array.isArray(reply)) {
+          const msg =
+            `It appears you're using an outdated amman cli version ${versionString(
+              reply
+            )}\n` + ENSURE_VERSION
+          reject(new Error(msg))
+        } else if (isReplyWithError(reply)) {
+          const msg =
+            `Encountered error when trying to verify amman compatibility:\n${reply.err.toString()}\n` +
+            ENSURE_VERSION
+          reject(new Error(`${reply.err}\n${msg})`))
+        } else if (!requiredVersionSatisfied(reply.result)) {
+          const msg =
+            `It appears you're using an outdated amman cli version ${versionString(
+              reply.result
+            )}\n` + ENSURE_VERSION
+          reject(new Error(msg))
+        } else {
+          logDebug(
+            `Verified that ${versionString(reply.result)} >= ${versionString(
+              MIN_AMMAN_CLI_VERSION_REQUIRED
+            )}.`
+          )
+          resolve()
+        }
+      }
+    )
   }
 
   /**

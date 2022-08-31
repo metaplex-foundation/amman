@@ -4,6 +4,7 @@
   "description": "Client piece of amman which supports with the running validator, relay and storage.",
   "main": "dist/amman-client.js",
   "types": "dist/amman-client.d.ts",
+  "minAmmanCliVersion": "0.11.0",
   "scripts": {
     "check:publish-ready": "yarn build",
     "preversion": "yarn check:publish-ready",
