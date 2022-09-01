@@ -1,4 +1,4 @@
-import { Commitment } from '@solana/web3.js'
+import { Cluster, Commitment } from '@solana/web3.js'
 import { ChildProcess } from 'child_process'
 import { RelayServer } from 'src/relay/server'
 import { AmmanConfig } from '../types'
@@ -65,7 +65,12 @@ export type Account = {
  * which allows `amman` to exit while the validator keeps running. This
  * defaults to `true` when run in CI.
  *
- * @property feature is the feature flags you want to disable for the validator or emulate feature set of the specific network.
+ * @property matchFeatures if set will activate only the features that are activated
+ * for the specific network in order to make the local test validator match its
+ * behavior
+ *
+ * @property deactivateFeatures if provided will deactivate them when starting
+ * the the local test-validator
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean
@@ -80,7 +85,8 @@ export type ValidatorConfig = {
   limitLedgerSize: number
   verifyFees: boolean
   detached: boolean
-  features?: 'mainnet' | 'devnet' | 'testnet' | string[]
+  matchFeatures?: Cluster
+  deactivateFeatures?: string[]
 }
 
 export type AmmanState = {

@@ -4,9 +4,9 @@ import { ChildProcess, spawn } from 'child_process'
 import { AccountStates } from 'src/accounts/state'
 import { createTemporarySnapshot, SnapshotConfig } from '../assets'
 import { AmmanConfig } from '../types'
+import { maybeDeactivateFeatures } from '../utils/deactivate-features'
 import { canAccessSync } from '../utils/fs'
 import { scopedLog } from '../utils/log'
-import { getDeactivatedFeatures } from '../utils/get-deactivated-features';
 import { ensureValidatorIsUp } from './ensure-validator-up'
 import { solanaConfig } from './prepare-config'
 import { processAccounts } from './process-accounts'
@@ -31,7 +31,8 @@ export async function buildSolanaValidatorArgs(
     websocketUrl,
     jsonRpcUrl,
     commitment,
-    features
+    matchFeatures,
+    deactivateFeatures,
   } = validatorConfig
 
   const { assetsFolder } = config
@@ -63,19 +64,10 @@ export async function buildSolanaValidatorArgs(
     }
   }
 
-  if (features != null) {
-    if (Array.isArray(features)) {
-      for (const feature of features) {
-        args.push('--deactivate-feature')
-        args.push(feature)
-      }
-    } else if (typeof features === 'string') {
-      for (const feature of await getDeactivatedFeatures(features)) {
-        args.push('--deactivate-feature')
-        args.push(feature)
-      }
-    }
-  }
+  // -----------------
+  // Deactivate Features
+  // -----------------
+  maybeDeactivateFeatures(args, matchFeatures, deactivateFeatures)
 
   // -----------------
   // Add Cloned Accounts
