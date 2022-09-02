@@ -8,8 +8,8 @@ pub enum AmmanClientError {
     RequestToRelayFailed(#[from] reqwest::Error),
 
     #[error("relay responded with with error: {0}")]
-    RelayResponseHasError(String),
+    RelayReplayHasError(String),
 
     #[error("relay responded with with neither result nor error")]
-    RelayResponseHasNeitherResultAndError,
+    RelayReplyHasNeitherResultNorError,
 }

@@ -9,33 +9,42 @@ use crate::{
         MSG_REQUEST_AMMAN_VERSION, MSG_UPDATE_ADDRESS_LABELS,
     },
     errors::{AmmanClientError, AmmanClientResult},
-    payloads::{AccountState, AddressLabels, AmmanVersion, Outcome, ResultOutcome},
+    payloads::{AccountState, AddressLabels, AddressLabelsMap, AmmanVersion, Outcome, RelayReply},
 };
 
 pub struct AmmanClient {
     uri: String,
+    debug: bool,
 }
 
 impl AmmanClient {
     pub fn new(amman_relay_uri: Option<String>) -> Self {
         let uri = amman_relay_uri.unwrap_or_else(|| AMMAN_RELAY_URI.to_string());
-        Self { uri }
+        Self { uri, debug: false }
     }
 
-    fn amman_get<T: DeserializeOwned + Debug>(&self, path: &str) -> AmmanClientResult<T> {
-        // let result = req::get(format!("{uri}/{path}", uri = self.uri, path = path))?.text()?;
-        // eprintln!("{:#?}", result);
-        let result = req::get(format!("{uri}/{path}", uri = self.uri, path = path))?
-            .json::<ResultOutcome<T>>()?;
+    pub(crate) fn new_debug(amman_relay_uri: Option<String>) -> Self {
+        let uri = amman_relay_uri.unwrap_or_else(|| AMMAN_RELAY_URI.to_string());
+        Self { uri, debug: true }
+    }
 
-        if let Some(err) = result.err {
-            return Err(AmmanClientError::RelayResponseHasError(err));
-        };
+    fn amman_get<T: DeserializeOwned + Debug + Default>(&self, path: &str) -> AmmanClientResult<T> {
+        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
 
-        if let Some(result) = result.result {
-            Ok(result)
+        if self.debug {
+            eprintln!("RelayReply: {:#?}", req::get(uri)?.text()?);
+            Ok(Default::default())
         } else {
-            Err(AmmanClientError::RelayResponseHasNeitherResultAndError)
+            let result = req::get(uri)?.json::<RelayReply<T>>()?;
+            if let Some(err) = result.err {
+                return Err(AmmanClientError::RelayReplayHasError(err));
+            };
+
+            if let Some(result) = result.result {
+                Ok(result)
+            } else {
+                Err(AmmanClientError::RelayReplyHasNeitherResultNorError)
+            }
         }
     }
 
@@ -44,14 +53,15 @@ impl AmmanClient {
         path: &str,
         payload: &Args,
     ) -> AmmanClientResult<()> {
+        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
         let result = req::Client::new()
-            .post(format!("{uri}/{req}", uri = self.uri, req = path))
+            .post(uri)
             .json(payload)
             .send()?
             .json::<Outcome>()?;
 
         if let Some(err) = result.err {
-            return Err(AmmanClientError::RelayResponseHasError(err));
+            return Err(AmmanClientError::RelayReplayHasError(err));
         };
         Ok(())
     }
@@ -60,7 +70,7 @@ impl AmmanClient {
         &self,
         path: &str,
         payload: &Args,
-    ) -> AmmanClientResult<ResultOutcome<T>> {
+    ) -> AmmanClientResult<RelayReply<T>> {
         #[cfg(test)]
         {
             let body = req::Client::new()
@@ -75,7 +85,7 @@ impl AmmanClient {
             .post(format!("{uri}/{req}", uri = self.uri, req = path))
             .json(payload)
             .send()?
-            .json::<ResultOutcome<T>>()?;
+            .json::<RelayReply<T>>()?;
 
         Ok(result)
     }
@@ -93,7 +103,7 @@ impl AmmanClient {
 
     pub fn request_update_address_labels(
         &self,
-        address_labels: &AddressLabels,
+        address_labels: &AddressLabelsMap,
     ) -> AmmanClientResult<()> {
         self.amman_post(MSG_UPDATE_ADDRESS_LABELS, &vec![address_labels])
     }
@@ -104,7 +114,7 @@ impl AmmanClient {
     pub fn request_account_states(
         &self,
         address: &str,
-    ) -> AmmanClientResult<ResultOutcome<(String, Vec<AccountState>)>> {
+    ) -> AmmanClientResult<RelayReply<(String, Vec<AccountState>)>> {
         self.amman_post_with_result::<(String, Vec<AccountState>), _>(
             MSG_REQUEST_ACCOUNT_STATES,
             &vec![address],
@@ -122,7 +132,7 @@ mod tests {
 
     #[test]
     fn amman_version() {
-        let client = AmmanClient::new(None);
+        let client = AmmanClient::new_debug(None);
         let version = client
             .request_amman_version()
             .expect("should return OK amman version");
@@ -159,14 +169,15 @@ mod tests {
     // -----------------
     // Accounts
     // -----------------
-    #[test]
+    // TODO #[test]
     fn request_account_states() {
         let client = AmmanClient::new(None);
-        let labels = client
+        let result = client
             .request_known_address_labels()
             .expect("should get address labels");
 
-        let game_pda_address = labels
+        let game_pda_address = result
+            .labels
             .iter()
             .find_map(|(k, v)| if v == "gamePda" { Some(k) } else { None })
             .expect("Make sure to populate amman with game data first");
