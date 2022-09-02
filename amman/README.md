@@ -145,6 +145,38 @@ module.exports = {
 }
 ```
 
+### Config with Disabled features
+
+In solana there are features that are disabled on the different clusters. By default this is not set as a normal test validator has all features enabled. Below is an example of a config where the currenlty disabled features are  being pulled from a specific cluster and being applied.
+
+```js
+module.exports = {
+  validator: {
+    ...
+    // if set will activate only the features that are activated for the specific network in order to make the local test validator match its behavior
+    matchFeatures: 'mainnet',
+  }
+}
+```
+
+**OR** we can set the specific features we want to disable by their pubkey
+
+```js
+module.exports = {
+  validator: {
+    ...
+    // if provided will deactivate them when starting the the local test-validator
+   deactivateFeatures: ['21AWDosvp3pBamFW91KB35pNoaoZVTM7ess8nr2nt53B'],
+  }
+}
+```
+
+For further information on solana features status checkout
+
+https://docs.solana.com/developing/test-validator#appendix-ii-runtime-features
+
+https://docs.solana.com/developing/programming-model/runtime#new-features
+
 ## LICENSE
 
 Apache-2.0
