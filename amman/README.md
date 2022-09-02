@@ -13,6 +13,8 @@ running validator.
 - [Example Configs](#example-configs)
   - [Validator/Relay/Storage Config with Defaults](#validatorrelaystorage-config-with-defaults)
   - [Config with Remote Accounts](#config-with-remote-accounts)
+  - [Config with Disabled features](#config-with-disabled-features)
+    - [Resources](#resources)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
