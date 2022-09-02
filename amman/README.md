@@ -147,35 +147,42 @@ module.exports = {
 
 ### Config with Disabled features
 
-In solana there are features that are disabled on the different clusters. By default this is not set as a normal test validator has all features enabled. Below is an example of a config where the currenlty disabled features are  being pulled from a specific cluster and being applied.
+For the different clusters like _devnet_ some features are disabled. By default the locally
+running solana-test-validator does not disable any features and thus behaves differently than
+the provided clusters. 
+
+In order to run tests in a scenario that is closer to how they would run against a specific
+cluster you can match the features of it via the _matchFeatures_ config property:
+
 
 ```js
 module.exports = {
   validator: {
     ...
-    // if set will activate only the features that are activated for the specific network in order to make the local test validator match its behavior
-    matchFeatures: 'mainnet',
+    // The below disables any features that are deactivated for the `mainnet-beta` cluster
+    matchFeatures: 'mainnet-beta',
   }
 }
 ```
 
-**OR** we can set the specific features we want to disable by their pubkey
+If you want to explicitly disable a set of features you can do so via the _deactivateFeatures_
+property:
 
 ```js
 module.exports = {
   validator: {
     ...
-    // if provided will deactivate them when starting the the local test-validator
    deactivateFeatures: ['21AWDosvp3pBamFW91KB35pNoaoZVTM7ess8nr2nt53B'],
   }
 }
 ```
 
-For further information on solana features status checkout
+**NOTE**: that only one of the above properties can be set
 
-https://docs.solana.com/developing/test-validator#appendix-ii-runtime-features
+#### Resources
 
-https://docs.solana.com/developing/programming-model/runtime#new-features
+- [test validator runtime features](https://docs.solana.com/developing/test-validator#appendix-ii-runtime-features)
+- [runtime new features](https://docs.solana.com/developing/programming-model/runtime#new-features)
 
 ## LICENSE
 
