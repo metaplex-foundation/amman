@@ -6,7 +6,8 @@ use reqwest::blocking as req;
 use crate::{
     consts::{
         AMMAN_RELAY_URI, MSG_GET_KNOWN_ADDRESS_LABELS, MSG_REQUEST_ACCOUNT_STATES,
-        MSG_REQUEST_AMMAN_VERSION, MSG_UPDATE_ADDRESS_LABELS,
+        MSG_REQUEST_AMMAN_VERSION, MSG_REQUEST_KILL_AMMAN, MSG_REQUEST_VALIDATOR_PID,
+        MSG_UPDATE_ADDRESS_LABELS,
     },
     errors::{AmmanClientError, AmmanClientResult},
     payloads::{AccountState, AddressLabels, AddressLabelsMap, AmmanVersion, Outcome, RelayReply},
@@ -66,23 +67,30 @@ impl AmmanClient {
         Ok(())
     }
 
+    fn amman_post_no_args(&self, path: &str) -> AmmanClientResult<()> {
+        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
+        let result = req::Client::new().post(uri).send()?.json::<Outcome>()?;
+
+        if let Some(err) = result.err {
+            return Err(AmmanClientError::RelayReplayHasError(err));
+        };
+        Ok(())
+    }
+
     fn amman_post_with_result<T: DeserializeOwned, Args: Serialize + ?Sized>(
         &self,
         path: &str,
         payload: &Args,
     ) -> AmmanClientResult<RelayReply<T>> {
+        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
         #[cfg(test)]
         {
-            let body = req::Client::new()
-                .post(format!("{uri}/{req}", uri = self.uri, req = path))
-                .json(payload)
-                .send()?
-                .text()?;
+            let body = req::Client::new().post(uri.clone()).send()?.text()?;
             eprintln!("{:#?}", body);
         }
 
         let result = req::Client::new()
-            .post(format!("{uri}/{req}", uri = self.uri, req = path))
+            .post(uri)
             .json(payload)
             .send()?
             .json::<RelayReply<T>>()?;
@@ -90,8 +98,44 @@ impl AmmanClient {
         Ok(result)
     }
 
+    fn amman_post_with_result_no_args<T: DeserializeOwned>(
+        &self,
+        path: &str,
+    ) -> AmmanClientResult<RelayReply<T>> {
+        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
+        #[cfg(test)]
+        {
+            let body = req::Client::new().post(uri.clone()).send()?.text()?;
+            eprintln!("{:#?}", body);
+        }
+
+        let result = req::Client::new()
+            .post(uri)
+            .send()?
+            .json::<RelayReply<T>>()?;
+
+        Ok(result)
+    }
+
+    // -----------------
+    // Amman Version
+    // -----------------
     pub fn request_amman_version(&self) -> Result<AmmanVersion, AmmanClientError> {
         self.amman_get::<AmmanVersion>(MSG_REQUEST_AMMAN_VERSION)
+    }
+
+    // -----------------
+    // Validator PID
+    // -----------------
+    pub fn request_validator_pid(&self) -> Result<u32, AmmanClientError> {
+        self.amman_get::<u32>(MSG_REQUEST_VALIDATOR_PID)
+    }
+
+    // -----------------
+    // Kill Amman
+    // -----------------
+    pub fn request_kill_amman(&self) -> Result<(), AmmanClientError> {
+        self.amman_post_no_args(MSG_REQUEST_KILL_AMMAN)
     }
 
     // -----------------
@@ -132,7 +176,7 @@ mod tests {
 
     #[test]
     fn amman_version() {
-        let client = AmmanClient::new_debug(None);
+        let client = AmmanClient::new(None);
         let version = client
             .request_amman_version()
             .expect("should return OK amman version");
@@ -149,6 +193,29 @@ mod tests {
             .request_known_address_labels()
             .expect("should return OK address labels response");
         eprintln!("{:#?}", labels);
+    }
+    //
+    // -----------------
+    // Validator PID
+    // -----------------
+    #[test]
+    fn validator_pid() {
+        let client = AmmanClient::new(None);
+        let result = client
+            .request_validator_pid()
+            .expect("should return OK result");
+        eprintln!("{:#?}", result);
+    }
+
+    // -----------------
+    // Kill Amman
+    // -----------------
+    #[test]
+    fn kill_amman() {
+        let client = AmmanClient::new(None);
+        let result = client
+            .request_kill_amman()
+            .expect("should return OK result");
     }
 
     #[test]

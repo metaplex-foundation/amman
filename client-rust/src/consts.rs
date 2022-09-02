@@ -36,4 +36,5 @@ pub(crate) const MSG_REQUEST_LOAD_SNAPSHOT: &str = "request:load-snapshot";
 pub(crate) const MSG_RESPOND_LOAD_SNAPSHOT: &str = "respond:load-snapshot";
 
 pub(crate) const MSG_REQUEST_AMMAN_VERSION: &str = "request:relay-version";
-pub(crate) const MSG_RESPOND_AMMAN_VERSION: &str = "respond:relay-version";
+pub(crate) const MSG_REQUEST_KILL_AMMAN: &str = "request:kill-amman";
+pub(crate) const MSG_REQUEST_VALIDATOR_PID: &str = "request:validator-pid";
