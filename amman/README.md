@@ -13,7 +13,7 @@ running validator.
 - [Example Configs](#example-configs)
   - [Validator/Relay/Storage Config with Defaults](#validatorrelaystorage-config-with-defaults)
   - [Config with Remote Accounts](#config-with-remote-accounts)
-  - [Config with Disabled features](#config-with-disabled-features)
+  - [Deactivating Test Validator Features](#deactivating-test-validator-features)
     - [Resources](#resources)
 - [LICENSE](#license)
 
@@ -147,7 +147,7 @@ module.exports = {
 }
 ```
 
-### Config with Disabled features
+### Deactivating Test Validator Features
 
 For the different clusters like _devnet_ some features are disabled. By default the locally
 running solana-test-validator does not disable any features and thus behaves differently than
