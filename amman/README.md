@@ -13,6 +13,8 @@ running validator.
 - [Example Configs](#example-configs)
   - [Validator/Relay/Storage Config with Defaults](#validatorrelaystorage-config-with-defaults)
   - [Config with Remote Accounts](#config-with-remote-accounts)
+  - [Deactivating Test Validator Features](#deactivating-test-validator-features)
+    - [Resources](#resources)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -144,6 +146,45 @@ module.exports = {
   }
 }
 ```
+
+### Deactivating Test Validator Features
+
+For the different clusters like _devnet_ some features are disabled. By default the locally
+running solana-test-validator does not disable any features and thus behaves differently than
+the provided clusters. 
+
+In order to run tests in a scenario that is closer to how they would run against a specific
+cluster you can match the features of it via the _matchFeatures_ config property:
+
+
+```js
+module.exports = {
+  validator: {
+    ...
+    // The below disables any features that are deactivated for the `mainnet-beta` cluster
+    matchFeatures: 'mainnet-beta',
+  }
+}
+```
+
+If you want to explicitly disable a set of features you can do so via the _deactivateFeatures_
+property:
+
+```js
+module.exports = {
+  validator: {
+    ...
+   deactivateFeatures: ['21AWDosvp3pBamFW91KB35pNoaoZVTM7ess8nr2nt53B'],
+  }
+}
+```
+
+**NOTE**: that only one of the above properties can be set
+
+#### Resources
+
+- [test validator runtime features](https://docs.solana.com/developing/test-validator#appendix-ii-runtime-features)
+- [runtime new features](https://docs.solana.com/developing/programming-model/runtime#new-features)
 
 ## LICENSE
 

@@ -1,4 +1,4 @@
-import { Commitment } from '@solana/web3.js'
+import { Cluster, Commitment } from '@solana/web3.js'
 import { ChildProcess } from 'child_process'
 import { RelayServer } from 'src/relay/server'
 import { AmmanConfig } from '../types'
@@ -64,6 +64,13 @@ export type Account = {
  * @property detached if `true` the `solana-test-validator` will run detached
  * which allows `amman` to exit while the validator keeps running. This
  * defaults to `true` when run in CI.
+ *
+ * @property matchFeatures if set will activate only the features that are activated
+ * for the specific network in order to make the local test validator match its
+ * behavior
+ *
+ * @property deactivateFeatures if provided will deactivate them when starting
+ * the the local test-validator
  */
 export type ValidatorConfig = {
   killRunningValidators: boolean
@@ -78,6 +85,8 @@ export type ValidatorConfig = {
   limitLedgerSize: number
   verifyFees: boolean
   detached: boolean
+  matchFeatures?: Cluster
+  deactivateFeatures?: string[]
 }
 
 export type AmmanState = {
@@ -89,4 +98,17 @@ export type AmmanState = {
 /** @private only used in tests */
 export type AmmanStateInternal = AmmanState & {
   relayServer?: RelayServer
+}
+
+/**
+ * The type that is returned when invoking `solana feature status ...` in order
+ * to obtain the features that a validator running on a specific network
+ * supports.
+ *
+ * @private
+ */
+export type ValidatorFeature = {
+  id: string
+  description: string
+  status: string
 }
