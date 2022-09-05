@@ -168,6 +168,7 @@ impl AmmanClient {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::pid_of_amman_running_on_machine;
     use lazy_static::lazy_static;
     use std::collections::HashMap;
 
@@ -177,7 +178,14 @@ mod tests {
 
     lazy_static! {
         static ref AMMAN: AmmanProcess = {
-            let mut amman = AmmanProcess::new();
+            let client = AmmanClient::new(None);
+            if pid_of_amman_running_on_machine(&client).is_some() {
+                client
+                    .request_kill_amman()
+                    .expect("failed to kill running amman");
+                while pid_of_amman_running_on_machine(&client).is_some() {}
+            }
+            let mut amman = AmmanProcess::new(client);
             amman.start().unwrap();
             amman
         };
@@ -216,17 +224,6 @@ mod tests {
             .request_validator_pid()
             .expect("should return OK result");
         eprintln!("{:#?}", result);
-    }
-
-    // -----------------
-    // Kill Amman
-    // -----------------
-    #[test]
-    fn kill_amman() {
-        let client = AmmanClient::new(None);
-        let result = client
-            .request_kill_amman()
-            .expect("should return OK result");
     }
 
     #[test]

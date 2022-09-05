@@ -25,11 +25,15 @@ pub enum AmmanProcessError {
 
 pub struct AmmanProcess {
     process: Option<Child>,
+    client: AmmanClient,
 }
 
 impl AmmanProcess {
-    pub fn new() -> Self {
-        Self { process: None }
+    pub fn new(client: AmmanClient) -> Self {
+        Self {
+            process: None,
+            client,
+        }
     }
 
     pub fn ensure_started(&mut self) -> AmmanProcessResult<()> {
@@ -43,11 +47,11 @@ impl AmmanProcess {
         if self.process.is_some() {
             return Err(AmmanProcessError::AmmanWasAlreadyStarted);
         }
-        if let Some(pid) = pid_of_amman_running_on_machine() {
+        if let Some(pid) = pid_of_amman_running_on_machine(&self.client) {
             return Err(AmmanProcessError::AmmanAlreadyRunning(pid));
         }
         let process = Command::new("amman_").arg("start").spawn()?;
-        while pid_of_amman_running_on_machine().is_none() {}
+        while pid_of_amman_running_on_machine(&self.client).is_none() {}
         self.process = Some(process);
         Ok(())
     }
@@ -56,8 +60,14 @@ impl AmmanProcess {
         if self.process.is_none() {
             return Err(AmmanProcessError::AmmanCannotBeKilledIfNotRunning);
         }
+
+        self.client
+            .request_kill_amman()
+            .expect("should kill amman properly");
+
         let process: &mut Child = self.process.as_mut().unwrap();
         process.kill()?;
+        process.wait()?;
         self.process = None;
         Ok(())
     }
@@ -66,9 +76,15 @@ impl AmmanProcess {
         self.process.is_some()
     }
 }
+impl Drop for AmmanProcess {
+    fn drop(&mut self) {
+        if self.started() {
+            self.kill().unwrap();
+        }
+    }
+}
 
-fn pid_of_amman_running_on_machine() -> Option<u32> {
-    let client = AmmanClient::new(None);
+pub fn pid_of_amman_running_on_machine(client: &AmmanClient) -> Option<u32> {
     match client.request_validator_pid() {
         Ok(pid) => Some(pid),
         Err(_) => None,
