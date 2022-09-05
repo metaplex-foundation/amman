@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Default)]
 pub struct AmmanVersion([u8; 3]);
-pub const CURRENT_AMMAN_VERSION: AmmanVersion = AmmanVersion([0, 11, 1]);
+pub const CURRENT_AMMAN_VERSION: AmmanVersion = AmmanVersion([0, 12, 0]);
 
 pub type AddressLabelsMap = HashMap<String, String>;
 #[derive(Deserialize, Debug, PartialEq, Eq, Default)]

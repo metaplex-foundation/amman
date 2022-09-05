@@ -168,14 +168,25 @@ impl AmmanClient {
 
 #[cfg(test)]
 mod tests {
+    use lazy_static::lazy_static;
     use std::collections::HashMap;
 
-    use crate::payloads::CURRENT_AMMAN_VERSION;
+    use crate::{payloads::CURRENT_AMMAN_VERSION, AmmanProcess};
 
     use super::*;
 
+    lazy_static! {
+        static ref AMMAN: AmmanProcess = {
+            let mut amman = AmmanProcess::new();
+            amman.start().unwrap();
+            amman
+        };
+    }
+
     #[test]
     fn amman_version() {
+        assert!(AMMAN.started(), "amman should start first");
+
         let client = AmmanClient::new(None);
         let version = client
             .request_amman_version()
