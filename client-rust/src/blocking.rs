@@ -24,6 +24,7 @@ impl AmmanClient {
         Self { uri, debug: false }
     }
 
+    #[allow(unused)]
     pub(crate) fn new_debug(amman_relay_uri: Option<String>) -> Self {
         let uri = amman_relay_uri.unwrap_or_else(|| AMMAN_RELAY_URI.to_string());
         Self { uri, debug: true }
@@ -32,20 +33,21 @@ impl AmmanClient {
     fn amman_get<T: DeserializeOwned + Debug + Default>(&self, path: &str) -> AmmanClientResult<T> {
         let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
 
+        #[cfg(test)]
         if self.debug {
             eprintln!("RelayReply: {:#?}", req::get(uri)?.text()?);
-            Ok(Default::default())
-        } else {
-            let result = req::get(uri)?.json::<RelayReply<T>>()?;
-            if let Some(err) = result.err {
-                return Err(AmmanClientError::RelayReplayHasError(err));
-            };
+            return Ok(Default::default());
+        }
 
-            if let Some(result) = result.result {
-                Ok(result)
-            } else {
-                Err(AmmanClientError::RelayReplyHasNeitherResultNorError)
-            }
+        let result = req::get(uri)?.json::<RelayReply<T>>()?;
+        if let Some(err) = result.err {
+            return Err(AmmanClientError::RelayReplayHasError(err));
+        };
+
+        if let Some(result) = result.result {
+            Ok(result)
+        } else {
+            Err(AmmanClientError::RelayReplyHasNeitherResultNorError)
         }
     }
 
@@ -84,7 +86,7 @@ impl AmmanClient {
     ) -> AmmanClientResult<RelayReply<T>> {
         let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
         #[cfg(test)]
-        {
+        if self.debug {
             let body = req::Client::new().post(uri.clone()).send()?.text()?;
             eprintln!("{:#?}", body);
         }
@@ -98,13 +100,14 @@ impl AmmanClient {
         Ok(result)
     }
 
+    #[allow(unused)]
     fn amman_post_with_result_no_args<T: DeserializeOwned>(
         &self,
         path: &str,
     ) -> AmmanClientResult<RelayReply<T>> {
         let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
         #[cfg(test)]
-        {
+        if self.debug {
             let body = req::Client::new().post(uri.clone()).send()?.text()?;
             eprintln!("{:#?}", body);
         }
@@ -168,77 +171,64 @@ impl AmmanClient {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::pid_of_amman_running_on_machine;
-    use lazy_static::lazy_static;
     use std::collections::HashMap;
 
-    use crate::{payloads::CURRENT_AMMAN_VERSION, AmmanProcess};
+    use crate::payloads::CURRENT_AMMAN_VERSION;
+    use crate::test_utils::AMMAN;
 
     use super::*;
 
-    lazy_static! {
-        static ref AMMAN: AmmanProcess = {
-            let client = AmmanClient::new(None);
-            if pid_of_amman_running_on_machine(&client).is_some() {
-                client
-                    .request_kill_amman()
-                    .expect("failed to kill running amman");
-                while pid_of_amman_running_on_machine(&client).is_some() {}
-            }
-            let mut amman = AmmanProcess::new(client);
-            amman.start().unwrap();
-            amman
-        };
+    fn setup() -> AmmanClient {
+        assert!(AMMAN.started(), "amman should start first");
+        AmmanClient::new(None)
     }
 
     #[test]
     fn amman_version() {
-        assert!(AMMAN.started(), "amman should start first");
-
-        let client = AmmanClient::new(None);
+        let client = setup();
         let version = client
             .request_amman_version()
             .expect("should return OK amman version");
         assert_eq!(version, CURRENT_AMMAN_VERSION, "fetches correct version");
     }
 
-    // -----------------
-    // Address Labels
-    // -----------------
-    #[test]
-    fn known_address_labels() {
-        let client = AmmanClient::new(None);
-        let labels = client
-            .request_known_address_labels()
-            .expect("should return OK address labels response");
-        eprintln!("{:#?}", labels);
-    }
     //
     // -----------------
     // Validator PID
     // -----------------
     #[test]
     fn validator_pid() {
-        let client = AmmanClient::new(None);
-        let result = client
+        let client = setup();
+        let pid = client
             .request_validator_pid()
             .expect("should return OK result");
-        eprintln!("{:#?}", result);
+        assert!(pid > 0, "finds the pid of running validator");
     }
 
+    // -----------------
+    // Address Labels
+    // -----------------
     #[test]
-    fn update_address_labels() {
-        let client = AmmanClient::new(None);
+    fn update_and_get_known_address_labels() {
+        let key1 = "some address";
+        let val1 = "some label";
+        let key2 = "some other address";
+        let val2 = "some other label";
+        let client = setup();
         let labels = {
             let mut map = HashMap::<String, String>::new();
-            map.insert("some address".to_string(), "some label".to_string());
+            map.insert(key1.to_string(), val1.to_string());
+            map.insert(key2.to_string(), val2.to_string());
             map
         };
         client
             .request_update_address_labels(&labels)
             .expect("should work");
-        let labels = client.request_known_address_labels().expect("should work");
-        eprintln!("{:#?}", labels);
+
+        let AddressLabels { labels } = client.request_known_address_labels().expect("should work");
+        assert_eq!(labels.len(), 2, "returns the two added labels");
+        assert_eq!(labels.get(key1), Some(val1.to_string()).as_ref());
+        assert_eq!(labels.get(key2), Some(val2.to_string()).as_ref());
     }
 
     // -----------------
@@ -246,7 +236,7 @@ mod tests {
     // -----------------
     // TODO #[test]
     fn request_account_states() {
-        let client = AmmanClient::new(None);
+        let client = setup();
         let result = client
             .request_known_address_labels()
             .expect("should get address labels");

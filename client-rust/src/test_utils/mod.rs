@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use std::{
     io,
     process::{Child, Command},
@@ -23,8 +24,18 @@ pub enum AmmanProcessError {
     FailedToKillAmman(#[from] io::Error),
 }
 
+lazy_static! {
+    pub static ref AMMAN: AmmanProcess = {
+        let client = AmmanClient::new(None);
+        let mut amman = AmmanProcess::new(client);
+        amman.ensure_started().unwrap();
+        amman
+    };
+}
+
 pub struct AmmanProcess {
     process: Option<Child>,
+    pid: Option<u32>,
     client: AmmanClient,
 }
 
@@ -32,15 +43,20 @@ impl AmmanProcess {
     pub fn new(client: AmmanClient) -> Self {
         Self {
             process: None,
+            pid: None,
             client,
         }
     }
 
     pub fn ensure_started(&mut self) -> AmmanProcessResult<()> {
-        if self.process.is_none() {
-            return self.start();
+        if self.process.is_some() {
+            return Ok(());
         }
-        Ok(())
+        if let Some(pid) = self.client.request_validator_pid().ok() {
+            self.pid = Some(pid);
+            return Ok(());
+        }
+        self.start()
     }
 
     pub fn start(&mut self) -> AmmanProcessResult<()> {
@@ -57,7 +73,7 @@ impl AmmanProcess {
     }
 
     pub fn kill(&mut self) -> AmmanProcessResult<()> {
-        if self.process.is_none() {
+        if self.process.is_none() && self.pid.is_none() {
             return Err(AmmanProcessError::AmmanCannotBeKilledIfNotRunning);
         }
 
@@ -65,22 +81,30 @@ impl AmmanProcess {
             .request_kill_amman()
             .expect("should kill amman properly");
 
-        let process: &mut Child = self.process.as_mut().unwrap();
-        process.kill()?;
-        process.wait()?;
-        self.process = None;
+        if let Some(process) = self.process.as_mut() {
+            process.kill()?;
+            process.wait()?;
+            self.process = None;
+        } else if let Some(pid) = self.pid {
+            eprintln!("Refusing to kill process that was not created by this runner ({:#?}). Please kill via `amman stop`",  pid);
+        }
+
         Ok(())
     }
 
     pub fn started(&self) -> bool {
-        self.process.is_some()
+        self.process.is_some() || self.pid.is_some()
     }
 }
-impl Drop for AmmanProcess {
-    fn drop(&mut self) {
-        if self.started() {
-            self.kill().unwrap();
-        }
+
+pub fn shutdown_amman() {
+    let client = AmmanClient::new(None);
+
+    if pid_of_amman_running_on_machine(&client).is_some() {
+        client
+            .request_kill_amman()
+            .expect("failed to kill running amman");
+        while pid_of_amman_running_on_machine(&client).is_some() {}
     }
 }
 
@@ -90,3 +114,11 @@ pub fn pid_of_amman_running_on_machine(client: &AmmanClient) -> Option<u32> {
         Err(_) => None,
     }
 }
+
+/*
+#[cfg(test)]
+#[ctor::ctor]
+fn init() {
+    env_logger::init();
+}
+*/
