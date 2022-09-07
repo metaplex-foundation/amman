@@ -54,13 +54,26 @@ async function resolveConfig({ config }: StartCommandArgs): Promise<{
   if (config == null) {
     const { config: localConfig, configPath } = await tryLoadLocalConfigRc()
     return { config: completeConfig(localConfig), configPath }
-  } else {
+  }
+  if (isPath(config)) {
     const configPath = path.resolve(config)
     return {
       config: completeConfig(require(configPath)),
       configPath,
     }
+  } else {
+    try {
+      logInfo('Config is not a path, treating it as JSON')
+      return { config: completeConfig(JSON.parse(config)), configPath: null }
+    } catch (err: any) {
+      logError(err)
+      throw Error(`Failed to parse config: ${config}`)
+    }
   }
+}
+
+function isPath(p: string): boolean {
+  return /\.ammanrc/.test(p) || /\.js$/.test(p) || !p.includes('\n')
 }
 
 async function tryLoadLocalConfigRc() {
