@@ -13,6 +13,7 @@ use crate::{
     payloads::{AccountState, AddressLabels, AddressLabelsMap, AmmanVersion, Outcome, RelayReply},
 };
 
+#[derive(Clone)]
 pub struct AmmanClient {
     uri: String,
     debug: bool,
@@ -174,18 +175,20 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::payloads::CURRENT_AMMAN_VERSION;
-    use crate::test_utils::AMMAN;
+    use crate::AmmanProcess;
 
     use super::*;
 
-    fn setup() -> AmmanClient {
-        assert!(AMMAN.started(), "amman should start first");
-        AmmanClient::new(None)
+    fn setup() -> (AmmanClient, AmmanProcess) {
+        let client = AmmanClient::new(None);
+        let mut amman = AmmanProcess::new(client.clone());
+        amman.ensure_started().unwrap();
+        (client, amman)
     }
 
     #[test]
     fn amman_version() {
-        let client = setup();
+        let (client, _) = setup();
         let version = client
             .request_amman_version()
             .expect("should return OK amman version");
@@ -198,7 +201,7 @@ mod tests {
     // -----------------
     #[test]
     fn validator_pid() {
-        let client = setup();
+        let (client, _) = setup();
         let pid = client
             .request_validator_pid()
             .expect("should return OK result");
@@ -214,7 +217,7 @@ mod tests {
         let val1 = "some label";
         let key2 = "some other address";
         let val2 = "some other label";
-        let client = setup();
+        let (client, _) = setup();
         let labels = {
             let mut map = HashMap::<String, String>::new();
             map.insert(key1.to_string(), val1.to_string());
@@ -234,9 +237,11 @@ mod tests {
     // -----------------
     // Accounts
     // -----------------
-    // TODO #[test]
+    // #[test]
     fn request_account_states() {
-        let client = setup();
+        let (client, mut amman) = setup();
+        amman.restart().expect("failed to restart amman");
+
         let result = client
             .request_known_address_labels()
             .expect("should get address labels");
