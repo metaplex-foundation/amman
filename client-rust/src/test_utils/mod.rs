@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Read},
+    io,
     net::TcpStream,
     process::{Child, Command, Stdio},
     str,
@@ -162,11 +162,3 @@ fn scan_port(port: u16) -> bool {
 fn wait_for_port(port: u16) {
     while !scan_port(port) {}
 }
-
-/*
-#[cfg(test)]
-#[ctor::ctor]
-fn init() {
-    env_logger::init();
-}
-*/

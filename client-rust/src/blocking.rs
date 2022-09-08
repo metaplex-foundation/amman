@@ -237,7 +237,7 @@ mod tests {
     // -----------------
     // Accounts
     // -----------------
-    // #[test]
+    #[test]
     fn request_account_states() {
         let (client, mut amman) = setup();
         amman.restart().expect("failed to restart amman");
