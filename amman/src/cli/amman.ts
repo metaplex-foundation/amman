@@ -201,7 +201,10 @@ async function main() {
     // start
     // -----------------
     case 'start': {
-      const { needHelp } = await handleStartCommand(args as StartCommandArgs)
+      const { needHelp } = await handleStartCommand({
+        ...args,
+        config: cs[1],
+      } as StartCommandArgs)
       if (needHelp) {
         logInfo('Rerun `amman --help` for more information')
       }
