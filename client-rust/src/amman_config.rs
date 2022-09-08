@@ -176,9 +176,13 @@ impl AmmanConfig {
         self
     }
 
-    pub fn json(&self) -> String {
+    pub fn json_pretty(&self) -> String {
         serde_json::to_string_pretty(self)
             .expect(&format!("Failed to convert to JSON. {:#?}", self))
+    }
+
+    pub fn json(&self) -> String {
+        serde_json::to_string(self).expect(&format!("Failed to convert to JSON. {:#?}", self))
     }
 
     pub fn from_json(json: &str) -> Self {
@@ -192,7 +196,7 @@ mod tests {
 
     use super::*;
     fn roundtrip(config: &AmmanConfig) {
-        let json = config.json();
+        let json = config.json_pretty();
         let deserialized = AmmanConfig::from_json(&json);
 
         if std::env::var(consts::DUMP_CONFIG).is_ok() {

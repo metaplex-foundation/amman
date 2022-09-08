@@ -8,12 +8,14 @@ use thiserror::Error;
 use crate::{
     amman_config::AmmanConfig,
     blocking::AmmanClient,
+    fs::write_amman_config,
     test_utils::consts::{VALIDATOR_PORT, VALIDATOR_RPC_PORT},
 };
 
 pub type AmmanProcessResult<T> = Result<T, AmmanProcessError>;
 
 pub mod consts;
+pub mod fs;
 
 #[derive(Error, Debug)]
 pub enum AmmanProcessError {
@@ -84,15 +86,22 @@ impl AmmanProcess {
         }
 
         let mut cmd = Command::new(consts::AMMAN_EXECUTABLE);
-        cmd.arg("start");
-        if let Some(config) = amman_config {
-            let json = config.json();
-            cmd.arg(json);
-        }
-        eprintln!("Cmd: {:#?}", cmd);
         if std::env::var(consts::DUMP_AMMAN).is_err() {
             cmd.stdout(Stdio::null()).stderr(Stdio::null());
         }
+        // we hold on to the config_file to ensure it doesn't get dropped before we started amman
+        let (config_path, _config_file) = match amman_config {
+            Some(config) => {
+                let (path, file) = write_amman_config(&config);
+                (Some(path), Some(file))
+            }
+            None => (None, None),
+        };
+        cmd.arg("start");
+        if let Some(config_path) = config_path {
+            cmd.arg(config_path.to_str().unwrap());
+        }
+        eprintln!("Cmd: {:#?}", cmd);
         let process = cmd.spawn()?;
 
         eprint!("\nWaiting for pid");

@@ -1,5 +1,6 @@
 mod utils;
 use amman_rust_client::amman_config::{Account, AmmanConfig, ValidatorConfig};
+use amman_rust_client::fs::write_amman_config;
 use utils::TestSetup;
 
 use amman_rust_client::blocking::AmmanClient;
@@ -30,6 +31,7 @@ fn request_accounts_and_states() {
         }]),
         ..Default::default()
     });
+    write_amman_config(&amman_config);
     amman
         .restart(&amman_config)
         .expect("failed to restart amman");
