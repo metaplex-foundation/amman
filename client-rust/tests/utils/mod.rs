@@ -1,11 +1,16 @@
 use std::{fs, path::PathBuf};
 
-use amman_rust_client::amman_config::Account;
+use serde::Deserialize;
 
 pub struct TestSetup {
-    fixtures: PathBuf,
-    assets_dir: PathBuf,
-    accounts_dir: PathBuf,
+    pub fixtures: PathBuf,
+    pub assets_dir: PathBuf,
+    pub accounts_dir: PathBuf,
+}
+
+#[derive(Deserialize)]
+pub struct SavedAccount {
+    pub pubkey: String,
 }
 
 impl TestSetup {
@@ -23,14 +28,14 @@ impl TestSetup {
         }
     }
 
-    pub fn load_account(&self, pubkey: &str) -> (PathBuf, Account) {
+    pub fn load_account(&self, pubkey: &str) -> (SavedAccount, PathBuf) {
         let account_path = &mut self.accounts_dir.clone();
         account_path.push(PathBuf::from(format!("{}.json", pubkey)));
 
         let account_json = fs::read_to_string(&account_path).expect("Failed to read account");
-        let account = serde_json::from_str::<Account>(&account_json)
+        let account = serde_json::from_str::<SavedAccount>(&account_json)
             .expect(&format!("Unable to parse account from {}", account_json));
 
-        (account_path.to_path_buf(), account)
+        (account, account_path.to_path_buf())
     }
 }

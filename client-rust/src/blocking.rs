@@ -16,15 +16,25 @@ use crate::{
 #[derive(Clone)]
 pub struct AmmanClient {
     uri: String,
+    #[cfg(test)]
     debug: bool,
 }
 
 impl AmmanClient {
     pub fn new(amman_relay_uri: Option<String>) -> Self {
         let uri = amman_relay_uri.unwrap_or_else(|| AMMAN_RELAY_URI.to_string());
-        Self { uri, debug: false }
+        #[cfg(test)]
+        {
+            Self { uri, debug: false }
+        }
+
+        #[cfg(not(test))]
+        {
+            Self { uri }
+        }
     }
 
+    #[cfg(test)]
     #[allow(unused)]
     pub(crate) fn new_debug(amman_relay_uri: Option<String>) -> Self {
         let uri = amman_relay_uri.unwrap_or_else(|| AMMAN_RELAY_URI.to_string());
@@ -232,29 +242,5 @@ mod tests {
         assert_eq!(labels.len(), 2, "returns the two added labels");
         assert_eq!(labels.get(key1), Some(val1.to_string()).as_ref());
         assert_eq!(labels.get(key2), Some(val2.to_string()).as_ref());
-    }
-
-    // -----------------
-    // Accounts
-    // -----------------
-    #[test]
-    fn request_account_states() {
-        let (client, mut amman) = setup();
-        amman.restart().expect("failed to restart amman");
-
-        let result = client
-            .request_known_address_labels()
-            .expect("should get address labels");
-
-        let game_pda_address = result
-            .labels
-            .iter()
-            .find_map(|(k, v)| if v == "gamePda" { Some(k) } else { None })
-            .expect("Make sure to populate amman with game data first");
-
-        let states = client
-            .request_account_states(game_pda_address)
-            .expect("request_account_states should work");
-        eprintln!("{:#?}", states);
     }
 }

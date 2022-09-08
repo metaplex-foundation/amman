@@ -2,16 +2,18 @@ use std::{
     io,
     net::TcpStream,
     process::{Child, Command, Stdio},
-    str,
 };
 use thiserror::Error;
 
-use crate::blocking::AmmanClient;
+use crate::{
+    amman_config::AmmanConfig,
+    blocking::AmmanClient,
+    test_utils::consts::{VALIDATOR_PORT, VALIDATOR_RPC_PORT},
+};
 
 pub type AmmanProcessResult<T> = Result<T, AmmanProcessError>;
 
-// TODO(thlorenz): may have to get this from env in the future
-const AMMAN_EXECUTABLE: &str = "amman_";
+pub mod consts;
 
 #[derive(Error, Debug)]
 pub enum AmmanProcessError {
@@ -49,9 +51,10 @@ impl Clone for AmmanProcess {
 
 impl AmmanProcess {
     pub fn new(client: AmmanClient) -> Self {
+        let pid = pid_of_amman_running_on_machine(&client);
         Self {
             process: None,
-            pid: None,
+            pid,
             client,
         }
     }
@@ -68,6 +71,11 @@ impl AmmanProcess {
     }
 
     pub fn start(&mut self) -> AmmanProcessResult<()> {
+        self._start(None)?;
+        Ok(())
+    }
+
+    fn _start(&mut self, amman_config: Option<&AmmanConfig>) -> AmmanProcessResult<()> {
         if self.process.is_some() {
             return Err(AmmanProcessError::AmmanWasAlreadyStarted);
         }
@@ -75,8 +83,16 @@ impl AmmanProcess {
             return Err(AmmanProcessError::AmmanAlreadyRunning(pid));
         }
 
-        let mut cmd = Command::new(AMMAN_EXECUTABLE);
-        cmd.arg("start").stdout(Stdio::null()).stderr(Stdio::null());
+        let mut cmd = Command::new(consts::AMMAN_EXECUTABLE);
+        cmd.arg("start");
+        if let Some(config) = amman_config {
+            let json = config.json();
+            cmd.arg(json);
+        }
+        eprintln!("Cmd: {:#?}", cmd);
+        if std::env::var(consts::DUMP_AMMAN).is_err() {
+            cmd.stdout(Stdio::null()).stderr(Stdio::null());
+        }
         let process = cmd.spawn()?;
 
         eprint!("\nWaiting for pid");
@@ -91,35 +107,42 @@ impl AmmanProcess {
         }
 
         eprint!("Waiting for validator to be ready: ");
-        wait_for_port(8900);
+        wait_for_port(VALIDATOR_PORT);
+        wait_for_port(VALIDATOR_RPC_PORT);
         eprint!("✔️\n");
         self.process = Some(process);
+
         Ok(())
     }
 
-    pub fn restart(&mut self) -> AmmanProcessResult<()> {
-        self.kill(true)?;
-        self.start()?;
+    pub fn restart(&mut self, amman_config: &AmmanConfig) -> AmmanProcessResult<()> {
+        if self.started() {
+            self.kill(true)?;
+        }
+        self._start(Some(amman_config))?;
         Ok(())
     }
 
     pub fn kill(&mut self, kill_external: bool) -> AmmanProcessResult<()> {
-        if self.process.is_none() && self.pid.is_none() {
+        if !self.started() {
             return Err(AmmanProcessError::AmmanCannotBeKilledIfNotRunning);
         }
 
-        self.client
-            .request_kill_amman()
-            .expect("should kill amman properly");
-
         if let Some(process) = self.process.as_mut() {
+            self.client
+                .request_kill_amman()
+                .expect("should kill amman properly");
+
             process.kill()?;
             process.wait()?;
             self.process = None;
         } else if let Some(pid) = self.pid {
             if kill_external {
-                let mut process = Command::new(AMMAN_EXECUTABLE).arg("stop").spawn()?;
+                let mut process = Command::new(consts::AMMAN_EXECUTABLE).arg("stop").spawn()?;
                 process.wait()?;
+                eprintln!("Waiting for validator to shut down");
+                wait_for_port_free(VALIDATOR_PORT);
+                wait_for_port_free(VALIDATOR_RPC_PORT);
                 self.pid = None;
             } else {
                 eprintln!("Refusing to kill process that was not created by this runner ({:#?}). Please kill via `amman stop`",  pid);
@@ -161,4 +184,8 @@ fn scan_port(port: u16) -> bool {
 
 fn wait_for_port(port: u16) {
     while !scan_port(port) {}
+}
+
+fn wait_for_port_free(port: u16) {
+    while scan_port(port) {}
 }

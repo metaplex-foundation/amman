@@ -22,46 +22,55 @@ type ValidatorConfig = {
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ValidatorConfig {
     #[serde(rename = "killRunningValidators")]
-    kill_running_validators: bool,
+    pub kill_running_validators: bool,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    programs: Option<Vec<Program>>,
+    pub programs: Option<Vec<Program>>,
+
     #[serde(rename = "accountsCluster")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    accounts_cluster: Option<String>,
+    pub accounts_cluster: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    accounts: Option<Vec<Account>>,
+    pub accounts: Option<Vec<Account>>,
+
     #[serde(rename = "jsonRpcUrl")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    json_rpc_url: Option<String>,
+    pub json_rpc_url: Option<String>,
+
     #[serde(rename = "websocketUrl")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    websocket_url: Option<String>,
+    pub websocket_url: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    commitment: Option<String>,
+    pub commitment: Option<String>,
+
     #[serde(rename = "ledgerDir")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    ledger_dir: Option<String>,
+    pub ledger_dir: Option<String>,
+
     #[serde(rename = "resetLedger")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    reset_ledger: Option<bool>,
+    pub reset_ledger: Option<bool>,
+
     #[serde(rename = "limitLedgerSize")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    limit_ledger_size: Option<u64>,
+    pub limit_ledger_size: Option<u64>,
+
     #[serde(rename = "verifyFees")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    verify_fees: Option<bool>,
+    pub verify_fees: Option<bool>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    detached: Option<bool>,
+    pub detached: Option<bool>,
+
     #[serde(rename = "matchFeatures")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    match_features: Option<String>,
+    pub match_features: Option<String>,
+
     #[serde(rename = "deactivateFeatures")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    deactivate_features: Option<Vec<String>>,
+    pub deactivate_features: Option<Vec<String>>,
 }
 
 /*
@@ -75,16 +84,16 @@ type Account = {
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Account {
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    label: Option<String>,
+    pub label: Option<String>,
 
     #[serde(rename = "accountId")]
-    account_id: String,
+    pub account_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    cluster: Option<String>,
+    pub cluster: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    executable: Option<bool>,
+    pub executable: Option<bool>,
 }
 /*
 type Program = {
@@ -179,18 +188,20 @@ impl AmmanConfig {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::consts;
+
     use super::*;
     fn roundtrip(config: &AmmanConfig) {
         let json = config.json();
         let deserialized = AmmanConfig::from_json(&json);
 
-        if std::env::var("DUMP_CONFIG").is_ok() {
+        if std::env::var(consts::DUMP_CONFIG).is_ok() {
             eprintln!("Config: {:#?}", config);
         }
-        if std::env::var("DUMP_JSON").is_ok() {
+        if std::env::var(consts::DUMP_JSON).is_ok() {
             eprintln!("JSON: {}", json);
         }
-        if std::env::var("DUMP_DESERIALIZED").is_ok() {
+        if std::env::var(consts::DUMP_DESERIALIZED).is_ok() {
             eprintln!("Deserialized: {:#?}", deserialized);
         }
         assert_eq!(&deserialized, config);

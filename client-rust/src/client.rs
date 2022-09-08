@@ -1,3 +1,4 @@
+#![allow(unused)]
 use serde::de::DeserializeOwned;
 
 use crate::{
