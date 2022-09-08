@@ -1,5 +1,6 @@
 use std::{fs, path::PathBuf};
 
+use amman_rust_client::amman_config::{AmmanConfig, RelayConfig};
 use serde::Deserialize;
 
 pub struct TestSetup {
@@ -37,5 +38,16 @@ impl TestSetup {
             .expect(&format!("Unable to parse account from {}", account_json));
 
         (account, account_path.to_path_buf())
+    }
+
+    /// Returns a preinitialized config that prevents amman stop from killing the process running the
+    /// relay which ends up being the process running the tests due to the amman child process not
+    /// being detached.
+    pub fn amman_config(&self) -> AmmanConfig {
+        let relay = RelayConfig {
+            enabled: true,
+            kill_running_relay: false,
+        };
+        AmmanConfig::new().set_relay(relay)
     }
 }

@@ -1,6 +1,5 @@
 mod utils;
-use amman_rust_client::amman_config::{Account, AmmanConfig, ValidatorConfig};
-use amman_rust_client::fs::write_amman_config;
+use amman_rust_client::amman_config::{Account, ValidatorConfig};
 use utils::TestSetup;
 
 use amman_rust_client::blocking::AmmanClient;
@@ -10,6 +9,7 @@ fn setup() -> (AmmanClient, AmmanProcess, TestSetup) {
     let client = AmmanClient::new(None);
     let amman = AmmanProcess::new(client.clone());
     let test_setup = TestSetup::new();
+
     (client, amman, test_setup)
 }
 
@@ -22,24 +22,47 @@ fn request_accounts_and_states() {
     let (startup_account, _) =
         test_setup.load_account("13DX32Lou1qH62xUosRyk9QnQpetbuxtEgPzbkKvQmVu");
 
-    let amman_config = AmmanConfig::new().set_validator(ValidatorConfig {
-        kill_running_validators: true,
-        accounts: Some(vec![Account {
-            label: Some("loaded account".to_string()),
-            account_id: startup_account.pubkey,
+    // when started without accounts loaded
+    {
+        amman
+            .restart(&mut test_setup.amman_config())
+            .expect("failed to restart amman");
+
+        let result = client
+            .request_known_address_labels()
+            .expect("should get address labels");
+
+        let labels = &result.labels;
+        assert_eq!(labels.len(), 0, "retrieves empty account labels");
+    }
+
+    // restart amman loading an account
+    {
+        let mut amman_config = test_setup.amman_config().set_validator(ValidatorConfig {
+            accounts: Some(vec![Account {
+                label: Some("loaded account".to_string()),
+                account_id: startup_account.pubkey.clone(),
+                ..Default::default()
+            }]),
             ..Default::default()
-        }]),
-        ..Default::default()
-    });
-    write_amman_config(&amman_config);
-    amman
-        .restart(&amman_config)
-        .expect("failed to restart amman");
+        });
+        amman
+            .restart(&mut amman_config)
+            .expect("failed to restart amman");
 
-    let result = client
-        .request_known_address_labels()
-        .expect("should get address labels");
+        let result = client
+            .request_known_address_labels()
+            .expect("should get address labels");
 
+        let labels = &result.labels;
+        assert_eq!(labels.len(), 1, "retrieves one account label");
+        assert_eq!(
+            labels.get(&startup_account.pubkey),
+            Some("loaded account".to_owned()).as_ref()
+        );
+    }
+
+    /*
     let game_pda_address = result
         .labels
         .iter()
@@ -50,4 +73,5 @@ fn request_accounts_and_states() {
         .request_account_states(game_pda_address)
         .expect("request_account_states should work");
     eprintln!("{:#?}", states);
+    */
 }

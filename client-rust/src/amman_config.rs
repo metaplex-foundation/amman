@@ -113,8 +113,13 @@ pub struct Program;
   accountRenderers: AmmanAccountRendererMap
 }
 */
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct RelayConfig;
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RelayConfig {
+    pub enabled: bool,
+
+    #[serde(rename = "killRunningRelay")]
+    pub kill_running_relay: bool,
+}
 
 /*
 type StorageConfig = {
@@ -159,11 +164,13 @@ pub struct AmmanConfig {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub snapshot: Option<SnapshotConfig>,
 
+    #[serde(rename = "streamTransactionLogs")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub stream_transaction_logs: Option<bool>,
 
+    #[serde(rename = "assetsFolder")]
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub assets_folder: Option<bool>,
+    pub assets_folder: Option<String>,
 }
 
 impl AmmanConfig {
@@ -173,6 +180,11 @@ impl AmmanConfig {
 
     pub fn set_validator(mut self, conf: ValidatorConfig) -> Self {
         self.validator = Some(conf);
+        self
+    }
+
+    pub fn set_relay(mut self, conf: RelayConfig) -> Self {
+        self.relay = Some(conf);
         self
     }
 
@@ -231,6 +243,14 @@ mod tests {
                 ..Default::default()
             }]),
             ..Default::default()
+        }));
+    }
+
+    #[test]
+    fn relay() {
+        roundtrip(&AmmanConfig::new().set_relay(RelayConfig {
+            enabled: true,
+            kill_running_relay: false,
         }));
     }
 }

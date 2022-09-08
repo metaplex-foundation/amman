@@ -1,6 +1,7 @@
 use std::{
     io,
     net::TcpStream,
+    path::PathBuf,
     process::{Child, Command, Stdio},
 };
 use thiserror::Error;
@@ -36,6 +37,8 @@ pub struct AmmanProcess {
     process: Option<Child>,
     pid: Option<u32>,
     client: AmmanClient,
+    fixtures: PathBuf,
+    assets_dir: PathBuf,
 }
 
 impl Clone for AmmanProcess {
@@ -47,6 +50,8 @@ impl Clone for AmmanProcess {
             process: None,
             pid: self.pid.clone(),
             client: self.client.clone(),
+            fixtures: self.fixtures.clone(),
+            assets_dir: self.assets_dir.clone(),
         }
     }
 }
@@ -54,10 +59,15 @@ impl Clone for AmmanProcess {
 impl AmmanProcess {
     pub fn new(client: AmmanClient) -> Self {
         let pid = pid_of_amman_running_on_machine(&client);
+        let fixtures = std::fs::canonicalize(PathBuf::from("./tests/fixtures")).expect("fixtures");
+        let assets_dir =
+            std::fs::canonicalize(PathBuf::from("./tests/fixtures/assets")).expect("assets");
         Self {
             process: None,
             pid,
             client,
+            fixtures,
+            assets_dir,
         }
     }
 
@@ -77,7 +87,7 @@ impl AmmanProcess {
         Ok(())
     }
 
-    fn _start(&mut self, amman_config: Option<&AmmanConfig>) -> AmmanProcessResult<()> {
+    fn _start(&mut self, amman_config: Option<&mut AmmanConfig>) -> AmmanProcessResult<()> {
         if self.process.is_some() {
             return Err(AmmanProcessError::AmmanWasAlreadyStarted);
         }
@@ -86,12 +96,17 @@ impl AmmanProcess {
         }
 
         let mut cmd = Command::new(consts::AMMAN_EXECUTABLE);
+        cmd.current_dir(&self.fixtures);
+
         if std::env::var(consts::DUMP_AMMAN).is_err() {
             cmd.stdout(Stdio::null()).stderr(Stdio::null());
         }
         // we hold on to the config_file to ensure it doesn't get dropped before we started amman
         let (config_path, _config_file) = match amman_config {
             Some(config) => {
+                if config.assets_folder.is_none() {
+                    config.assets_folder = self.assets_dir.to_str().map(str::to_owned);
+                }
                 let (path, file) = write_amman_config(&config);
                 (Some(path), Some(file))
             }
@@ -124,7 +139,7 @@ impl AmmanProcess {
         Ok(())
     }
 
-    pub fn restart(&mut self, amman_config: &AmmanConfig) -> AmmanProcessResult<()> {
+    pub fn restart(&mut self, amman_config: &mut AmmanConfig) -> AmmanProcessResult<()> {
         if self.started() {
             self.kill(true)?;
         }
