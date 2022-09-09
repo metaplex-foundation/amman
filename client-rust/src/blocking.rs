@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
 
-use reqwest::blocking as req;
+use reqwest::blocking::{self as req, Client};
 
 use crate::{
     consts::{
@@ -10,7 +10,9 @@ use crate::{
         MSG_UPDATE_ADDRESS_LABELS,
     },
     errors::{AmmanClientError, AmmanClientResult},
-    payloads::{AccountState, AddressLabels, AddressLabelsMap, AmmanVersion, Outcome, RelayReply},
+    payloads::{
+        AccountStates, AddressLabels, AddressLabelsMap, AmmanVersion, NoArgs, Outcome, RelayReply,
+    },
 };
 
 #[derive(Clone)]
@@ -41,7 +43,11 @@ impl AmmanClient {
         Self { uri, debug: true }
     }
 
-    fn amman_get<T: DeserializeOwned + Debug + Default>(&self, path: &str) -> AmmanClientResult<T> {
+    fn amman_get<T: DeserializeOwned + Debug + Default, Args: Serialize + ?Sized>(
+        &self,
+        path: &str,
+        payload: Option<&Args>,
+    ) -> AmmanClientResult<T> {
         let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
 
         #[cfg(test)]
@@ -50,15 +56,19 @@ impl AmmanClient {
             return Ok(Default::default());
         }
 
-        let result = req::get(uri)?.json::<RelayReply<T>>()?;
+        let builder = Client::builder().build()?.get(uri);
+        let response = match payload {
+            Some(payload) => builder.json(payload).send(),
+            None => builder.send(),
+        }?;
+        let result = response.json::<RelayReply<T>>()?;
         if let Some(err) = result.err {
             return Err(AmmanClientError::RelayReplayHasError(err));
         };
 
-        if let Some(result) = result.result {
-            Ok(result)
-        } else {
-            Err(AmmanClientError::RelayReplyHasNeitherResultNorError)
+        match result.result {
+            Some(result) => Ok(result),
+            None => Err(AmmanClientError::RelayReplyHasNeitherResultNorError),
         }
     }
 
@@ -94,7 +104,7 @@ impl AmmanClient {
         &self,
         path: &str,
         payload: &Args,
-    ) -> AmmanClientResult<RelayReply<T>> {
+    ) -> AmmanClientResult<T> {
         let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
         #[cfg(test)]
         if self.debug {
@@ -108,7 +118,14 @@ impl AmmanClient {
             .send()?
             .json::<RelayReply<T>>()?;
 
-        Ok(result)
+        if let Some(err) = result.err {
+            return Err(AmmanClientError::RelayReplayHasError(err));
+        };
+
+        match result.result {
+            Some(result) => Ok(result),
+            None => Err(AmmanClientError::RelayReplyHasNeitherResultNorError),
+        }
     }
 
     #[allow(unused)]
@@ -135,14 +152,14 @@ impl AmmanClient {
     // Amman Version
     // -----------------
     pub fn request_amman_version(&self) -> Result<AmmanVersion, AmmanClientError> {
-        self.amman_get::<AmmanVersion>(MSG_REQUEST_AMMAN_VERSION)
+        self.amman_get::<AmmanVersion, NoArgs>(MSG_REQUEST_AMMAN_VERSION, None)
     }
 
     // -----------------
     // Validator PID
     // -----------------
     pub fn request_validator_pid(&self) -> Result<u32, AmmanClientError> {
-        self.amman_get::<u32>(MSG_REQUEST_VALIDATOR_PID)
+        self.amman_get::<u32, NoArgs>(MSG_REQUEST_VALIDATOR_PID, None)
     }
 
     // -----------------
@@ -156,7 +173,7 @@ impl AmmanClient {
     // Address Labels
     // -----------------
     pub fn request_known_address_labels(&self) -> Result<AddressLabels, AmmanClientError> {
-        self.amman_get::<AddressLabels>(MSG_GET_KNOWN_ADDRESS_LABELS)
+        self.amman_get::<AddressLabels, NoArgs>(MSG_GET_KNOWN_ADDRESS_LABELS, None)
     }
 
     pub fn request_update_address_labels(
@@ -169,14 +186,8 @@ impl AmmanClient {
     // -----------------
     // Accounts
     // -----------------
-    pub fn request_account_states(
-        &self,
-        address: &str,
-    ) -> AmmanClientResult<RelayReply<(String, Vec<AccountState>)>> {
-        self.amman_post_with_result::<(String, Vec<AccountState>), _>(
-            MSG_REQUEST_ACCOUNT_STATES,
-            &vec![address],
-        )
+    pub fn request_account_states(&self, address: &str) -> AmmanClientResult<AccountStates> {
+        self.amman_get::<AccountStates, Vec<&str>>(MSG_REQUEST_ACCOUNT_STATES, Some(&vec![address]))
     }
 }
 

@@ -50,28 +50,30 @@ fn request_accounts_and_states() {
             .restart(&mut amman_config)
             .expect("failed to restart amman");
 
-        let result = client
-            .request_known_address_labels()
-            .expect("should get address labels");
+        // Account Labels
+        {
+            let result = client
+                .request_known_address_labels()
+                .expect("should get address labels");
 
-        let labels = &result.labels;
-        assert_eq!(labels.len(), 1, "retrieves one account label");
-        assert_eq!(
-            labels.get(&startup_account.pubkey),
-            Some("loaded account".to_owned()).as_ref()
-        );
+            let labels = &result.labels;
+            assert_eq!(labels.len(), 1, "retrieves one account label");
+            assert_eq!(
+                labels.get(&startup_account.pubkey),
+                Some("loaded account".to_owned()).as_ref()
+            );
+        }
+
+        // Account States
+        {
+            let result = client
+                .request_account_states(&startup_account.pubkey)
+                .expect("should get account states");
+            assert_eq!(
+                result.pubkey, startup_account.pubkey,
+                "account states pubkey"
+            );
+            assert_eq!(result.states.len(), 0, "empty states");
+        }
     }
-
-    /*
-    let game_pda_address = result
-        .labels
-        .iter()
-        .find_map(|(k, v)| if v == "gamePda" { Some(k) } else { None })
-        .expect("Make sure to populate amman with game data first");
-
-    let states = client
-        .request_account_states(game_pda_address)
-        .expect("request_account_states should work");
-    eprintln!("{:#?}", states);
-    */
 }
