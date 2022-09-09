@@ -11,7 +11,7 @@ use crate::{
     },
     errors::{AmmanClientError, AmmanClientResult},
     payloads::{
-        AccountStates, AddressLabels, AddressLabelsMap, AmmanVersion, NoArgs, Outcome, RelayReply,
+        AccountStates, AddressLabels, AddressLabelsMap, AmmanVersion, NoArgs, NoResult, RelayReply,
     },
 };
 
@@ -57,11 +57,11 @@ impl AmmanClient {
         }
 
         let builder = Client::builder().build()?.get(uri);
-        let response = match payload {
-            Some(payload) => builder.json(payload).send(),
-            None => builder.send(),
-        }?;
-        let result = response.json::<RelayReply<T>>()?;
+        let builder = match payload {
+            Some(payload) => builder.json(payload),
+            None => builder,
+        };
+        let result = builder.send()?.json::<RelayReply<T>>()?;
         if let Some(err) = result.err {
             return Err(AmmanClientError::RelayReplayHasError(err));
         };
@@ -72,51 +72,19 @@ impl AmmanClient {
         }
     }
 
-    fn amman_post<Args: Serialize + ?Sized>(
+    fn amman_post<T: DeserializeOwned, Args: Serialize + ?Sized>(
         &self,
         path: &str,
-        payload: &Args,
-    ) -> AmmanClientResult<()> {
-        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
-        let result = req::Client::new()
-            .post(uri)
-            .json(payload)
-            .send()?
-            .json::<Outcome>()?;
-
-        if let Some(err) = result.err {
-            return Err(AmmanClientError::RelayReplayHasError(err));
-        };
-        Ok(())
-    }
-
-    fn amman_post_no_args(&self, path: &str) -> AmmanClientResult<()> {
-        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
-        let result = req::Client::new().post(uri).send()?.json::<Outcome>()?;
-
-        if let Some(err) = result.err {
-            return Err(AmmanClientError::RelayReplayHasError(err));
-        };
-        Ok(())
-    }
-
-    fn amman_post_with_result<T: DeserializeOwned, Args: Serialize + ?Sized>(
-        &self,
-        path: &str,
-        payload: &Args,
+        payload: Option<&Args>,
     ) -> AmmanClientResult<T> {
         let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
-        #[cfg(test)]
-        if self.debug {
-            let body = req::Client::new().post(uri.clone()).send()?.text()?;
-            eprintln!("{:#?}", body);
-        }
+        let builder = req::Client::new().post(uri);
 
-        let result = req::Client::new()
-            .post(uri)
-            .json(payload)
-            .send()?
-            .json::<RelayReply<T>>()?;
+        let builder = match payload {
+            Some(payload) => builder.json(payload),
+            None => builder,
+        };
+        let result = builder.send()?.json::<RelayReply<T>>()?;
 
         if let Some(err) = result.err {
             return Err(AmmanClientError::RelayReplayHasError(err));
@@ -126,26 +94,6 @@ impl AmmanClient {
             Some(result) => Ok(result),
             None => Err(AmmanClientError::RelayReplyHasNeitherResultNorError),
         }
-    }
-
-    #[allow(unused)]
-    fn amman_post_with_result_no_args<T: DeserializeOwned>(
-        &self,
-        path: &str,
-    ) -> AmmanClientResult<RelayReply<T>> {
-        let uri = format!("{uri}/relay/{path}", uri = self.uri, path = path);
-        #[cfg(test)]
-        if self.debug {
-            let body = req::Client::new().post(uri.clone()).send()?.text()?;
-            eprintln!("{:#?}", body);
-        }
-
-        let result = req::Client::new()
-            .post(uri)
-            .send()?
-            .json::<RelayReply<T>>()?;
-
-        Ok(result)
     }
 
     // -----------------
@@ -166,7 +114,7 @@ impl AmmanClient {
     // Kill Amman
     // -----------------
     pub fn request_kill_amman(&self) -> Result<(), AmmanClientError> {
-        self.amman_post_no_args(MSG_REQUEST_KILL_AMMAN)
+        self.amman_post::<NoResult, NoArgs>(MSG_REQUEST_KILL_AMMAN, None)
     }
 
     // -----------------
@@ -180,7 +128,10 @@ impl AmmanClient {
         &self,
         address_labels: &AddressLabelsMap,
     ) -> AmmanClientResult<()> {
-        self.amman_post(MSG_UPDATE_ADDRESS_LABELS, &vec![address_labels])
+        self.amman_post::<NoResult, Vec<&AddressLabelsMap>>(
+            MSG_UPDATE_ADDRESS_LABELS,
+            Some(&vec![address_labels]),
+        )
     }
 
     // -----------------

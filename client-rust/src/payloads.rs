@@ -13,6 +13,11 @@ pub const CURRENT_AMMAN_VERSION: AmmanVersion = AmmanVersion([0, 12, 0]);
 pub struct NoArgs;
 
 // -----------------
+// Empty Result
+// -----------------
+pub type NoResult = ();
+
+// -----------------
 // Address Labels
 // -----------------
 pub type AddressLabelsMap = HashMap<String, String>;
@@ -47,10 +52,5 @@ pub struct AccountState {
 #[derive(Deserialize, Debug, PartialEq, Eq, Default)]
 pub struct RelayReply<T> {
     pub result: Option<T>,
-    pub err: Option<String>,
-}
-
-#[derive(Deserialize, Debug, PartialEq, Eq, Default)]
-pub struct Outcome {
     pub err: Option<String>,
 }
