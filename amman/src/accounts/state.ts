@@ -7,9 +7,14 @@ import {
   AccountInfo,
   Connection,
   Context,
+  GetVersionedTransactionConfig,
   Keypair,
   Logs,
+  Message,
   PublicKey,
+  TransactionResponse,
+  VersionedMessage,
+  VersionedTransactionResponse,
 } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import BN from 'bn.js'
@@ -188,16 +193,58 @@ export class AccountStates extends EventEmitter {
   private _onLog = async (logs: Logs, ctx: Context) => {
     if (this._paused) return
 
-    const tx = await this.connection.getTransaction(logs.signature, {
+    const config: GetVersionedTransactionConfig = {
       commitment: 'confirmed',
-    })
+      maxSupportedTransactionVersion: 1,
+    }
+    const tx: VersionedTransactionResponse | TransactionResponse | null =
+      await this.connection.getTransaction(logs.signature, config)
     if (tx == null) {
       logDebug(`Could not find transaction ${logs.signature}`)
       return
     }
-    const nonProgramAddresses = tx.transaction.message
-      .nonProgramIds()
-      .map((x) => x.toBase58())
+    // TODO(thlorenz): versioned message doesn't have nonProgramIds method, so
+    // need to figure out another way to filter
+    //
+    // IMPORTANT: At this point we also fail to add VersionedTransaction properly and
+    // they don't show up in the amman-explorer.
+    // Additionally even looking up that type of transaction amman-explorer
+    // fails to properly show it's instructions while they show up fine inside
+    // the solana-explorer.
+    // Sample Code:
+    //
+    // ```ts
+    // function transferIx() {
+    //   const params: TransferParams = {
+    //     fromPubkey: payer,
+    //     toPubkey: recvr,
+    //     lamports: LAMPORTS_PER_SOL,
+    //   }
+    //   return SystemProgram.transfer(params)
+    // }
+    //
+    // const { blockhash } = await connection.getLatestBlockhash()
+
+    // const ix = transferIx()
+    // const message = new TransactionMessage({
+    //   payerKey: payer,
+    //   instructions: [ix],
+    //   recentBlockhash: blockhash,
+    // })
+    // const compiledMsg = message.compileToV0Message()
+    // const tx = new VersionedTransaction(compiledMsg)
+    // tx.sign([payerSigner])
+
+    // const sig = await connection.sendTransaction(tx, options)
+    // ```
+    const msg: VersionedMessage | Message = tx.transaction.message
+    const nonProgramKeys =
+      typeof (msg as Message).nonProgramIds === 'function'
+        ? (msg as Message).nonProgramIds()
+        : msg.staticAccountKeys
+    const nonProgramAddresses = nonProgramKeys.map((x: PublicKey) =>
+      x.toBase58()
+    )
 
     for (const key of nonProgramAddresses) {
       if (this._paused) return
