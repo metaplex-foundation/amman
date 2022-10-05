@@ -17,10 +17,10 @@ fn setup() -> (AmmanClient, AmmanProcess, TestSetup) {
 // Accounts
 // -----------------
 #[test]
-fn request_accounts_and_states() {
+fn request_account_labels_and_states() {
     let (client, mut amman, test_setup) = setup();
     let (startup_account, _) =
-        test_setup.load_account("13DX32Lou1qH62xUosRyk9QnQpetbuxtEgPzbkKvQmVu");
+        test_setup.load_account_info("13DX32Lou1qH62xUosRyk9QnQpetbuxtEgPzbkKvQmVu");
 
     // when started without accounts loaded
     {
@@ -77,3 +77,12 @@ fn request_accounts_and_states() {
         }
     }
 }
+
+/*
+#[test]
+fn update_account_labels() {
+    let (client, mut amman, test_setup) = setup();
+    let (startup_account, _) =
+        test_setup.load_account_info("13DX32Lou1qH62xUosRyk9QnQpetbuxtEgPzbkKvQmVu");
+}
+*/

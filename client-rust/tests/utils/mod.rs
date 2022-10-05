@@ -29,7 +29,7 @@ impl TestSetup {
         }
     }
 
-    pub fn load_account(&self, pubkey: &str) -> (SavedAccount, PathBuf) {
+    pub fn load_account_info(&self, pubkey: &str) -> (SavedAccount, PathBuf) {
         let account_path = &mut self.accounts_dir.clone();
         account_path.push(PathBuf::from(format!("{}.json", pubkey)));
 
