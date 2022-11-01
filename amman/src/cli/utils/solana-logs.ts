@@ -1,29 +1,45 @@
 import { Amman, LOCALHOST } from '@metaplex-foundation/amman-client'
+import {
+  Commitment,
+  Connection,
+  Context,
+  Logs,
+  TransactionError,
+} from '@solana/web3.js'
 import colors from 'ansi-colors'
-import { spawn } from 'child_process'
-import split from 'split2'
 import { Cluster, LogMessage, PrettyLogger } from '../../diagnostics/programs'
 import { logTrace } from '../../utils'
 
-export async function pipeSolanaLogs(amman?: Amman) {
+export async function pipeSolanaLogs(amman?: Amman, commitment?: Commitment) {
   const logger = new PrettyLogger(amman)
-  const child = spawn('solana', ['logs', '--url', LOCALHOST], {
-    detached: false,
-    stdio: 'pipe',
-  })
-  for await (const line of child.stdout?.pipe(split())) {
-    try {
-      await logLine(logger, line)
-    } catch (err) {
-      logTrace('Logger encountered an error', err)
-    }
-  }
+  commitment ??= 'confirmed'
+  const connection = new Connection(LOCALHOST, commitment)
+  connection.onLogs(
+    'all',
+    async (logs: Logs, _ctx: Context) => {
+      for (let i = 0; i < logs.logs.length; i++) {
+        const line = logs.logs[i]
+        const last = i === logs.logs.length - 1
+        try {
+          // only include transaction err for last line, otherwise we'd log it for each
+          await logLine(logger, line, last ? logs.err : null)
+        } catch (err) {
+          logTrace('Logger encountered an error', err)
+        }
+      }
+    },
+    commitment
+  )
 }
 
-async function logLine(logger: PrettyLogger, line: string) {
+async function logLine(
+  logger: PrettyLogger,
+  line: string,
+  error: TransactionError | null
+) {
   const { newLogs, newInstruction, newOuterInstruction } = await logger.addLine(
     line,
-    null,
+    error,
     Cluster.Amman
   )
   if (newOuterInstruction) {
