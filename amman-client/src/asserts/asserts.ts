@@ -139,6 +139,7 @@ export function assertTransactionError<Err extends Function>(
       type: err,
       msgRx: rx,
       txSignature: details.txSignature,
+      logMessages: details.txSummary.logMessages,
     })
   }
 }
@@ -191,6 +192,9 @@ export function assertContainMessages(
   }
 }
 
+const errorFromLogsRx = /^Program.+failed: (.+)/
+const errorExcludeRx = /^Program log:/
+
 /**
  * Asserts that the provided error is defined and matches the provided
  * requirements.
@@ -203,13 +207,30 @@ export function assertContainMessages(
  * @param opts
  * @param opts.type the type of the error to expect
  * @param opts.msgRx a {@link RegExp} that the error message is expected to match
+ * @param opts.logMessages list of log messages parse for an error in case that {@link err} is not defined
  */
 export function assertErrorMatches<Err extends Function>(
   t: Assert,
   err: MaybeErrorWithCode,
-  opts: { type?: Err; msgRx?: RegExp; txSignature?: string } = {}
+  opts: {
+    type?: Err
+    msgRx?: RegExp
+    txSignature?: string
+    logMessages?: string[]
+  } = {}
 ) {
-  if (err == null) {
+  let errMsgFromLogs = null
+  if (err == null && opts.logMessages != null) {
+    for (const msg of opts.logMessages) {
+      const m = msg.match(errorFromLogsRx)
+      if (m != null && !errorExcludeRx.test(msg)) {
+        errMsgFromLogs = m[1]
+        break
+      }
+    }
+  }
+
+  if (err == null && errMsgFromLogs == null) {
     t.fail(`Expected an error`)
     if (opts.txSignature != null) {
       logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${opts.txSignature}`)
@@ -217,13 +238,29 @@ export function assertErrorMatches<Err extends Function>(
     return
   }
   if (opts.type != null) {
-    t.ok(err instanceof opts.type, `error is of type ${opts.type.name}`)
+    if (err == null && errMsgFromLogs != null) {
+      t.fail(
+        `Expected an error of type ${opts.type.name}, but did not get a typed error, but got: '${errMsgFromLogs}' in the logs insted`
+      )
+    } else {
+      t.ok(
+        err instanceof opts.type,
+        `error is of type ${opts.type.name}, but is ${err}`
+      )
+    }
   }
   if (opts.msgRx != null) {
-    t.match(
-      err.message,
-      opts.msgRx,
-      `error message matches ${opts.msgRx.toString()}`
-    )
+    const msg = err?.message ?? errMsgFromLogs
+    if (msg == null) {
+      t.fail(
+        `Expected error to match ${opts.msgRx.toString()}, but did not find an error on the transaction nor in the logs`
+      )
+    } else {
+      t.match(
+        msg,
+        opts.msgRx,
+        `error message ('${msg}') matches ${opts.msgRx.toString()}`
+      )
+    }
   }
 }
