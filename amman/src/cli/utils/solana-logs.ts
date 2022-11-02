@@ -17,15 +17,18 @@ export async function pipeSolanaLogs(amman?: Amman, commitment?: Commitment) {
   connection.onLogs(
     'all',
     async (logs: Logs, _ctx: Context) => {
+      // only include transaction err for last line, otherwise we'd log it for each
       for (let i = 0; i < logs.logs.length; i++) {
         const line = logs.logs[i]
-        const last = i === logs.logs.length - 1
         try {
           // only include transaction err for last line, otherwise we'd log it for each
-          await logLine(logger, line, last ? logs.err : null)
+          await logLine(logger, line, null)
         } catch (err) {
           logTrace('Logger encountered an error', err)
         }
+      }
+      if (logs.err != null) {
+        await logLine(logger, '', logs.err)
       }
     },
     commitment
