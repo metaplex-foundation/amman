@@ -59,7 +59,10 @@ export function assertTransactionSummary(
 ) {
   const { failed = false } = args
   if (failed) {
-    t.ok(summary.transactionError, 'transaction summary has transaction error')
+    t.ok(
+      summary.transactionError != null,
+      'transaction summary has transaction error'
+    )
   } else {
     t.ok(
       summary.transactionError == null,
@@ -204,7 +207,7 @@ type AssertErrorMatchesOpts<Err> = {
 
 function maybeLogTxUrl(signature?: string) {
   if (signature != null) {
-    logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${signature}`)
+    logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${signature}`)
   }
 }
 
@@ -269,7 +272,7 @@ export function assertErrorMatches<Err extends Function>(
       maybeLogTxUrl(opts.txSignature)
     } else {
       if (msgRx.test(msg)) {
-        t.ok(`error message ('${msg}') matches ${msgRx.toString()}`)
+        t.ok(true, `error message ('${msg}') matches ${msgRx.toString()}`)
       } else {
         t.fail(`error message ('${msg}') does not match ${msgRx.toString()}`)
         maybeLogTxUrl(opts.txSignature)
