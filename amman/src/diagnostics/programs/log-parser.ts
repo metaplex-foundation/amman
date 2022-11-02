@@ -157,9 +157,13 @@ export class PrettyLogger {
       }
     }
 
-    // If the instruction's simulation returned an error without any logs then add an empty log entry for Runtime error
-    // For example BpfUpgradableLoader fails without returning any logs for Upgrade instruction with buffer that doesn't exist
-    if (prettyError && this.prettyLogs.length === 0) {
+    // If the instruction's simulation returned an error without any logs then
+    // add an empty log entry for Runtime error For example BpfUpgradableLoader
+    // fails without returning any logs for Upgrade instruction with buffer
+    // that doesn't exist.
+    // However we saw cases where there are logs without the error and we end
+    // not logging the error at all which is worse than logging it twice.
+    if (prettyError != null) {
       this.prettyLogs.push({
         logs: [],
         failed: true,
