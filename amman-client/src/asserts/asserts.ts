@@ -195,6 +195,19 @@ export function assertContainMessages(
 const errorFromLogsRx = /^Program.+failed: (.+)/
 const errorExcludeRx = /^Program log:/
 
+type AssertErrorMatchesOpts<Err> = {
+  type?: Err
+  msgRx?: RegExp
+  txSignature?: string
+  logMessages?: string[]
+}
+
+function maybeLogTxUrl(signature?: string) {
+  if (signature != null) {
+    logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${signature}`)
+  }
+}
+
 /**
  * Asserts that the provided error is defined and matches the provided
  * requirements.
@@ -212,12 +225,7 @@ const errorExcludeRx = /^Program log:/
 export function assertErrorMatches<Err extends Function>(
   t: Assert,
   err: MaybeErrorWithCode,
-  opts: {
-    type?: Err
-    msgRx?: RegExp
-    txSignature?: string
-    logMessages?: string[]
-  } = {}
+  opts: AssertErrorMatchesOpts<Err> = {}
 ) {
   let errMsgFromLogs = null
   if (err == null && opts.logMessages != null) {
@@ -232,35 +240,40 @@ export function assertErrorMatches<Err extends Function>(
 
   if (err == null && errMsgFromLogs == null) {
     t.fail(`Expected an error`)
-    if (opts.txSignature != null) {
-      logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${opts.txSignature}`)
-    }
+    maybeLogTxUrl(opts.txSignature)
     return
   }
   if (opts.type != null) {
     if (err == null && errMsgFromLogs != null) {
       t.fail(
-        `Expected an error of type ${opts.type.name}, but did not get a typed error, but got: '${errMsgFromLogs}' in the logs insted`
+        `Expected an error of type ${opts.type.name}, but did not get a typed error.` +
+          ` Got: '${errMsgFromLogs}' in the logs instead`
       )
+      maybeLogTxUrl(opts.txSignature)
     } else {
-      t.ok(
-        err instanceof opts.type,
-        `error is of type ${opts.type.name}, but is ${err}`
-      )
+      if (err instanceof opts.type) {
+        t.ok(true, `error is of type ${opts.type.name}`)
+      } else {
+        t.fail(`error is of type ${opts.type.name}, but is ${err}`)
+        maybeLogTxUrl(opts.txSignature)
+      }
     }
   }
-  if (opts.msgRx != null) {
+  const msgRx = opts.msgRx
+  if (msgRx != null) {
     const msg = err?.message ?? errMsgFromLogs
     if (msg == null) {
       t.fail(
-        `Expected error to match ${opts.msgRx.toString()}, but did not find an error on the transaction nor in the logs`
+        `Expected error to match ${msgRx.toString()}, but did not find an error on the transaction nor in the logs`
       )
+      maybeLogTxUrl(opts.txSignature)
     } else {
-      t.match(
-        msg,
-        opts.msgRx,
-        `error message ('${msg}') matches ${opts.msgRx.toString()}`
-      )
+      if (msgRx.test(msg)) {
+        t.ok(`error message ('${msg}') matches ${msgRx.toString()}`)
+      } else {
+        t.fail(`error message ('${msg}') does not match ${msgRx.toString()}`)
+        maybeLogTxUrl(opts.txSignature)
+      }
     }
   }
 }
