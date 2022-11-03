@@ -70,8 +70,8 @@ export class ConfirmedTransactionAssertablePromise
       ) => void,
       reject: (reason?: any) => void
     ) => void,
-    // It seems that this constructor is invoked from outside our code, possibly due to being a promise
-    // In that case this seconde param is not passed, so we need to account for that
+    // It seems that this constructor is invoked from outside our code, possibly due to being a promise.
+    // In that case this second param is not passed, so we need to account for that.
     opts?: ConfirmedTransactionAssertablePromiseOpts
   ) {
     super(executor)
