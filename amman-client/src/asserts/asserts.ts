@@ -107,7 +107,7 @@ export function assertTransactionSuccess(
     t.fail(`Transaction ('${label}') failed ${errMsg}`)
     logError({ logs: summary.logMessages })
     if (details.txSignature != null) {
-      logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${details.txSignature}`)
+      logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${details.txSignature}`)
     }
     return
   }
@@ -211,7 +211,7 @@ export function assertContainMessages(
       logError('Failed to find %s inside', msgRx.toString())
       logError(logs.join('\n  '))
       if (opts.txSignature != null) {
-        logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${opts.txSignature}`)
+        logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${opts.txSignature}`)
       }
     }
 
@@ -224,7 +224,7 @@ export function assertContainMessages(
       t.fail(
         `Transaction logs for '${txLabel}' do not match '${msgRx.toString()}' in ${label}`
       )
-      logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${opts.txSignature}`)
+      logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${opts.txSignature}`)
     }
   }
 }
