@@ -11,7 +11,7 @@ import {
   TransactionResponse,
   TransactionSignature,
 } from '@solana/web3.js'
-import { Assert, assertContainMessages } from '../asserts/asserts'
+import { Assert, assertContainMessages, AssertOpts } from '../asserts/asserts'
 
 export type { MaybeErrorWithCode } from '@metaplex-foundation/cusper'
 
@@ -84,9 +84,16 @@ export class ConfirmedTransactionDetails {
    * Call this if to assert that the log messages match a given set of regular expressions.
    *
    * @param msgRxs it is verified that the logs match all these {@link RegExp}es
+   * @param opts options to customize the assertion diagnostics
    */
-  async assertLogs(t: Assert, msgRxs: RegExp[]) {
-    assertContainMessages(t, this.txSummary.logMessages, msgRxs, 'log messages')
+  async assertLogs(t: Assert, msgRxs: RegExp[], opts: AssertOpts) {
+    assertContainMessages(
+      t,
+      this.txSummary.logMessages,
+      msgRxs,
+      opts,
+      'log messages'
+    )
   }
 }
 
