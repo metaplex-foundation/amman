@@ -8,6 +8,7 @@ import { strict as assert } from 'assert'
 import {
   Assert,
   assertContainMessages,
+  AssertOpts,
   assertTransactionError,
   assertTransactionSuccess,
 } from '../asserts/asserts'
@@ -103,20 +104,28 @@ export class TransactionChecker {
    * This does not check for success or failure of the transaction.
    *
    * @param msgRxs it is verified that the logs match all these {@link RegExp}es
+   * @param opts options to customize the assertion diagnostics
    * @category transactions
    * @category asserts
    */
   async assertLogs(
     t: Assert,
     txSignature: TransactionSignature,
-    msgRxs: RegExp[]
+    msgRxs: RegExp[],
+    opts: AssertOpts
   ) {
     const { txSummary, txConfirmed } = await fetchTransactionSummary(
       this.connection,
       txSignature,
       this.errorResolver
     )
-    assertContainMessages(t, txSummary.logMessages, msgRxs, 'log messages')
+    assertContainMessages(
+      t,
+      txSummary.logMessages,
+      msgRxs,
+      opts,
+      'log messages'
+    )
     return new TransactionCheckerAssertReturn({ txSummary, txConfirmed })
   }
 }

@@ -99,7 +99,10 @@ export class PayerTransactionHandler implements TransactionHandler {
           reject(err)
         }
       },
-      confirmOptions.skipPreflight ?? false
+      {
+        requireAssert: confirmOptions.skipPreflight ?? false,
+        transactionLabel: addressLabel,
+      }
     )
   }
 }

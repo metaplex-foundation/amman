@@ -43,6 +43,11 @@ await txHandler.sendAndConfirmTransaction(
   signers,
 ).assertNone()`
 
+type ConfirmedTransactionAssertablePromiseOpts = {
+  requireAssert: boolean
+  transactionLabel?: string
+}
+
 /**
  * A {@link Promise} that is returned by {@link PayerTransactionHandler} `sendAndConfirmTransaction`.
  * Aside from regular promise functionality it includes `assert` methods that
@@ -54,6 +59,7 @@ export class ConfirmedTransactionAssertablePromise
   implements ConfirmedTransactionAsserts
 {
   private calledAssert: boolean
+  private transactionLabel?: string
   private errorStack?: string
   constructor(
     executor: (
@@ -64,12 +70,15 @@ export class ConfirmedTransactionAssertablePromise
       ) => void,
       reject: (reason?: any) => void
     ) => void,
-    requireAssert: boolean
+    // It seems that this constructor is invoked from outside our code, possibly due to being a promise.
+    // In that case this second param is not passed, so we need to account for that.
+    opts?: ConfirmedTransactionAssertablePromiseOpts
   ) {
     super(executor)
     this.errorStack = new Error().stack?.split('\n').slice(2).join('\n')
+    this.transactionLabel = opts?.transactionLabel
     this.calledAssert = false
-    if (requireAssert) {
+    if (opts?.requireAssert ?? false) {
       setImmediate(() => {
         if (!this.calledAssert) {
           throw new Error(
@@ -94,7 +103,11 @@ ${this.errorStack}`
   async assertSuccess(t: Assert, msgRxs?: RegExp[]) {
     this.calledAssert = true
     const details = await this
-    assertTransactionSuccess(t, details, msgRxs)
+    assertTransactionSuccess(
+      t,
+      { ...details, txLabel: this.transactionLabel },
+      msgRxs
+    )
     return details
   }
 
@@ -114,7 +127,12 @@ ${this.errorStack}`
   ) {
     this.calledAssert = true
     const details = await this
-    assertTransactionError(t, details, errOrRx, msgRx)
+    assertTransactionError(
+      t,
+      { ...details, txLabel: this.transactionLabel },
+      errOrRx,
+      msgRx
+    )
     return details
   }
 
@@ -135,21 +153,27 @@ ${this.errorStack}`
     this.calledAssert = true
     try {
       const details = await this
+      const label = this.transactionLabel ?? details.txSignature
       t.fail(
-        'expected to throw an error when sending/confirming the transaction'
+        `Transaction '${label}' was expected to throw an error when sending/confirming the transaction but it succeeded.`
       )
       return details
     } catch (err: any) {
       const error = typeof errOrRx === 'function' ? errOrRx : undefined
       const rx = typeof errOrRx === 'function' ? msgRx : errOrRx
+      const label = this.transactionLabel ?? 'N/A'
       if (error != null) {
-        t.ok(err instanceof error, `error is of type ${error.name}`)
+        t.ok(
+          err instanceof error,
+          `Error found inside transaction '${label}' is of type ${error.name}`
+        )
       }
       if (rx != null) {
         assertContainMessages(
           t,
           err.toString().split('\n'),
           [rx],
+          { txLabel: this.transactionLabel },
           'error message'
         )
       }
@@ -171,6 +195,7 @@ ${this.errorStack}`
       t,
       details.txSummary.logMessages,
       msgRxs,
+      { txLabel: this.transactionLabel, txSignature: details.txSignature },
       'log messages'
     )
   }

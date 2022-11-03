@@ -21,6 +21,13 @@ export type Assert = {
 }
 
 /**
+ * Options to pass to asserts to allow providing more diagnostics.
+ *
+ * @property txLabel label of the transaction to include in the error message
+ */
+export type AssertOpts = { txLabel?: string; txSignature?: string }
+
+/**
  * Asserts details about a confirmed transaction
  *
  * @deprecated use {@link assertTransactionSuccess} or {@link assertTransactionError} instead
@@ -76,7 +83,7 @@ export function assertTransactionSummary(
     t.equal(summary.fee, args.fee, 'transaction summary fee matches')
   }
   if (args.msgRxs != null) {
-    assertContainMessages(t, summary.logMessages, args.msgRxs)
+    assertContainMessages(t, summary.logMessages, args.msgRxs, {})
   }
 }
 
@@ -89,24 +96,27 @@ export function assertTransactionSuccess(
   t: Assert,
   details: Pick<ConfirmedTransactionDetails, 'txSummary'> & {
     txSignature?: TransactionSignature
+    txLabel?: string
   },
   msgRxs?: RegExp[]
 ) {
+  const label = details.txLabel ?? details.txSignature ?? 'N/A'
   const summary = details.txSummary
   if (summary.loggedError != null) {
-    t.fail(summary.loggedError.stack ?? summary.loggedError.toString())
+    const errMsg = summary.loggedError.stack ?? summary.loggedError.toString()
+    t.fail(`Transaction ('${label}') failed ${errMsg}`)
     logError({ logs: summary.logMessages })
     if (details.txSignature != null) {
-      logInfo(`Inspect via: ${AMMAN_EXPLORER}#/tx/${details.txSignature}`)
+      logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${details.txSignature}`)
     }
     return
   }
   t.ok(
     summary.transactionError == null,
-    'transaction summary has no transaction error'
+    `transaction summary of '${label}' has no transaction error`
   )
   if (msgRxs != null) {
-    assertContainMessages(t, summary.logMessages, msgRxs)
+    assertContainMessages(t, summary.logMessages, msgRxs, details)
   }
 }
 
@@ -128,6 +138,7 @@ export function assertTransactionError<Err extends Function>(
   t: Assert,
   details: Pick<ConfirmedTransactionDetails, 'txSummary'> & {
     txSignature?: TransactionSignature
+    txLabel?: string
   },
   errOrRx?: Err | RegExp,
   msgRx?: RegExp
@@ -156,9 +167,15 @@ export function assertTransactionError<Err extends Function>(
  * @param t
  * @param err error to verify
  * @param msgRxs list of {@link RegExp} which will be matched on the error _message_ or `err.logs`.
+ * @param opts options to customize the assertion diagnostics
  * @category asserts
  */
-export function assertError(t: Assert, err: Error, msgRxs: RegExp[]) {
+export function assertError(
+  t: Assert,
+  err: Error,
+  msgRxs: RegExp[],
+  opts: AssertOpts = {}
+) {
   t.ok(err != null, 'error encountered')
   const errWithLogs = err as Error & { logs?: string[] }
   t.ok(errWithLogs.logs != null, 'error has logs')
@@ -166,7 +183,7 @@ export function assertError(t: Assert, err: Error, msgRxs: RegExp[]) {
     .toString()
     .split('\n')
     .concat(errWithLogs.logs ?? [])
-  assertContainMessages(t, errorMessages, msgRxs)
+  assertContainMessages(t, errorMessages, msgRxs, opts)
 }
 
 /**
@@ -175,6 +192,8 @@ export function assertError(t: Assert, err: Error, msgRxs: RegExp[]) {
  * @param t
  * @param logs containing messages to match
  * @param msgRxs list of {@link RegExp} which will be matched on the {@link logs}.
+ * @param opts options to customize the assertion diagnostics
+ * @param label label of the container we check for messages to include in the error message
  * @category asserts
  * @private
  */
@@ -182,16 +201,31 @@ export function assertContainMessages(
   t: Assert,
   logs: string[],
   msgRxs: RegExp[],
+  opts: AssertOpts,
   label: string = 'log messages'
 ) {
+  const txLabel = opts.txLabel ?? opts.txSignature ?? 'N/A'
   for (const msgRx of msgRxs) {
     const hasMatch = logs.some((x) => msgRx.test(x))
     if (!hasMatch) {
-      console.error('Failed to find %s inside', msgRx.toString())
-      console.error(logs.join('\n  '))
+      logError('Failed to find %s inside', msgRx.toString())
+      logError(logs.join('\n  '))
+      if (opts.txSignature != null) {
+        logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${opts.txSignature}`)
+      }
     }
 
-    t.ok(hasMatch, `match '${msgRx.toString()}' in ${label}`)
+    if (hasMatch) {
+      t.ok(
+        true,
+        `Transaction logs for '${txLabel}' match '${msgRx.toString()}' in ${label}`
+      )
+    } else {
+      t.fail(
+        `Transaction logs for '${txLabel}' do not match '${msgRx.toString()}' in ${label}`
+      )
+      logInfo(`Inspect via: ${AMMAN_EXPLORER}/#/tx/${opts.txSignature}`)
+    }
   }
 }
 
