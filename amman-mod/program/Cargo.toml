@@ -1,0 +1,29 @@
+[package]
+name = "amman_mod"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "amman_mod"
+doctest = false
+
+[features]
+no-entrypoint = []
+cpi = ["no-entrypoint"]
+test-sbf = []
+
+[dependencies]
+borsh = "0.9.3"
+solana-program = "^1.14.5"
+shank = { version = "0.0.11", git = "https://github.com/metaplex-foundation/shank", branch = "thlorenz/feat/pda-knowledge" }
+
+num-derive = "0.3.3"
+num-traits = "0.2.15"
+thiserror = "1.0.37"
+
+[dev-dependencies]
+assert_matches = "1.5.0"
+solana-program-test = "1.14.10"
+solana-sdk = "1.14.10"
