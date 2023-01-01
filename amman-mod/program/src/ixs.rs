@@ -1,5 +1,13 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::ShankInstruction;
+use solana_program::{
+    instruction::{AccountMeta, Instruction},
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    system_program,
+};
+
+use crate::amman_mod_id;
 
 #[derive(BorshSerialize, BorshDeserialize, Debug, ShankInstruction)]
 pub enum AmmanModInstruction {
@@ -13,14 +21,42 @@ pub enum AmmanModInstruction {
         /// Public key of the created account
         to_pubkey: Pubkey,
 
-        /// Amount of lamports to transfer to the created account
-        /// Defaults to lamports needed to keep account rent exempt
-        lamports: Option<u64>,
-
         /// Public key of the account to assign as the owner of the created account
         owner: Pubkey,
 
         /// Data to initialize the account with
-        data: [u8],
+        data: Vec<u8>,
+
+        /// Amount of lamports to transfer to the created account
+        /// Defaults to lamports needed to keep account rent exempt
+        lamports: Option<u64>,
     },
+}
+
+pub fn add_account<T: Into<Vec<u8>>>(
+    from_pubkey: Pubkey,
+    to_pubkey: Pubkey,
+    owner: Pubkey,
+    data: T,
+    lamports: Option<u64>,
+) -> Result<Instruction, ProgramError> {
+    let accounts = vec![
+        AccountMeta::new(from_pubkey, true),
+        AccountMeta::new(to_pubkey, true),
+        AccountMeta::new_readonly(system_program::id(), false),
+    ];
+    let ix = Instruction {
+        program_id: amman_mod_id(),
+        accounts,
+        data: AmmanModInstruction::AddAccount {
+            from_pubkey,
+            to_pubkey,
+            owner,
+            data: data.into(),
+            lamports,
+        }
+        .try_to_vec()?,
+    };
+
+    Ok(ix)
 }
