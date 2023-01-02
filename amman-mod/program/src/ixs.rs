@@ -43,6 +43,7 @@ pub fn add_account<T: Into<Vec<u8>>>(
     let accounts = vec![
         AccountMeta::new(from_pubkey, true),
         AccountMeta::new(to_pubkey, true),
+        AccountMeta::new_readonly(owner, false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
     let ix = Instruction {

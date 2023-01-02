@@ -85,7 +85,7 @@ fn process_add_account<'a>(
             from_pubkey, payer_info.key
         )
     })?;
-    assert_keys_equal(&to_pubkey, payer_info.key, || {
+    assert_keys_equal(&to_pubkey, target_info.key, || {
         format!(
             "to_pubkey: ({}) != target account ({}), ",
             to_pubkey, target_info.key
@@ -109,9 +109,11 @@ fn process_add_account<'a>(
         lamports,
     })?;
 
-    // Serialize data into account
-    // let acc_data = target_info.try_borrow_mut_data()?.as_mut();
-    // *acc_data = data.as_slice();
+    // Store data into account
+    target_info
+        .try_borrow_mut_data()?
+        .as_mut()
+        .copy_from_slice(&data);
 
     Ok(())
 }
