@@ -41,12 +41,11 @@ pub fn minimum_rent_exempt(size: usize) -> Result<u64, ProgramError> {
     Ok(required_lamports)
 }
 
-pub struct AllocateAndAssignAccountArgs<'a, 'b> {
+pub struct AllocateAndAssignAccountArgs<'a> {
     pub payer_info: &'a AccountInfo<'a>,
     pub account_info: &'a AccountInfo<'a>,
     pub owner: &'a Pubkey,
     pub size: usize,
-    pub signer_seeds: &'b [&'b [u8]],
     pub lamports: u64,
 }
 
@@ -54,13 +53,11 @@ pub struct AllocateAndAssignAccountArgs<'a, 'b> {
 pub fn allocate_account_and_assign_owner(
     args: AllocateAndAssignAccountArgs,
 ) -> Result<(), ProgramError> {
-    let rent = Rent::get()?;
     let AllocateAndAssignAccountArgs {
         payer_info,
         account_info,
         owner,
         size,
-        signer_seeds,
         lamports,
     } = args;
 
@@ -77,7 +74,7 @@ pub fn allocate_account_and_assign_owner(
         ),
         // 0. `[WRITE, SIGNER]` New account
         &[account_info.clone()],
-        &[signer_seeds],
+        &[],
     )?;
 
     // 3. Assign the owner of the account so that it can sign on its behalf
@@ -86,7 +83,7 @@ pub fn allocate_account_and_assign_owner(
         &system_instruction::assign(account_info.key, owner),
         // 0. `[WRITE, SIGNER]` Assigned account public key
         &[account_info.clone()],
-        &[signer_seeds],
+        &[],
     )?;
 
     Ok(())

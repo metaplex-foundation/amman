@@ -105,7 +105,6 @@ fn process_add_account<'a>(
         account_info: target_info,
         owner: owner_info.key,
         size: data.len(),
-        signer_seeds: &[],
         lamports,
     })?;
 
