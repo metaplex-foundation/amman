@@ -7,7 +7,7 @@ mod processor;
 pub(crate) mod utils;
 pub use error::*;
 
-declare_id!("AmmanModXXXYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("FkS48aB7A6TdKUqXWZ3g1WpAGXFnYtN7mj5URUGhRbNJ");
 
 pub fn amman_mod_id() -> Pubkey {
     id()

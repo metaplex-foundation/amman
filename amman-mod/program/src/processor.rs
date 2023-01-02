@@ -1,9 +1,11 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::BorshDeserialize;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
+    program::invoke_signed,
     pubkey::Pubkey,
+    system_instruction,
 };
 
 use crate::{
@@ -33,17 +35,17 @@ pub fn process<'a>(
         AddAccount {
             from_pubkey,
             to_pubkey,
-            owner,
             data,
             lamports,
         } => process_add_account(
             from_pubkey,
             to_pubkey,
-            owner,
             data,
             lamports,
             accounts,
+            program_id,
         )?,
+        AssignOwner => process_assign_owner(accounts, program_id)?,
     }
 
     Ok(())
@@ -52,10 +54,10 @@ pub fn process<'a>(
 fn process_add_account<'a>(
     from_pubkey: Pubkey,
     to_pubkey: Pubkey,
-    owner: Pubkey,
     data: Vec<u8>,
     lamports: Option<u64>,
     accounts: &'a [AccountInfo<'a>],
+    program_id: &'a Pubkey,
 ) -> ProgramResult {
     msg!("IX: add account");
 
@@ -76,7 +78,7 @@ fn process_add_account<'a>(
     let account_info_iter = &mut accounts.iter();
     let payer_info = next_account_info(account_info_iter)?;
     let target_info = next_account_info(account_info_iter)?;
-    let owner_info = next_account_info(account_info_iter)?;
+    let program_info = next_account_info(account_info_iter)?;
 
     // Verify accounts match the instruction arg keys
     assert_keys_equal(&from_pubkey, payer_info.key, || {
@@ -91,8 +93,11 @@ fn process_add_account<'a>(
             to_pubkey, target_info.key
         )
     })?;
-    assert_keys_equal(&owner, owner_info.key, || {
-        format!("owner: ({}) != owner account ({}), ", owner, owner_info.key)
+    assert_keys_equal(program_id, program_info.key, || {
+        format!(
+            "program_id: ({}) != program account ({})",
+            program_id, program_info.key
+        )
     })?;
 
     // Verify signers
@@ -100,10 +105,11 @@ fn process_add_account<'a>(
     assert_is_signer(target_info, "to_pubkey  (target)")?;
 
     // Allocate and assign account
+    // An account's data can only be modified by the account's Owner program
     allocate_account_and_assign_owner(AllocateAndAssignAccountArgs {
         payer_info,
         account_info: target_info,
-        owner: owner_info.key,
+        owner: program_info.key,
         size: data.len(),
         lamports,
     })?;
@@ -115,4 +121,29 @@ fn process_add_account<'a>(
         .copy_from_slice(&data);
 
     Ok(())
+}
+
+fn process_assign_owner(
+    accounts: &[AccountInfo],
+    program_id: &Pubkey,
+) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter();
+    let target_info = next_account_info(account_info_iter)?;
+    let owner_info = next_account_info(account_info_iter)?;
+    let program_info = next_account_info(account_info_iter)?;
+
+    assert_keys_equal(program_id, program_info.key, || {
+        format!(
+            "program_id: ({}) != program account ({})",
+            program_id, program_info.key
+        )
+    })?;
+
+    // Fails: instruction illegally modified the program id of an account
+    invoke_signed(
+        &system_instruction::assign(target_info.key, owner_info.key),
+        // 0. `[WRITE, SIGNER]` Assigned account public key
+        &[target_info.clone(), owner_info.clone()],
+        &[],
+    )
 }

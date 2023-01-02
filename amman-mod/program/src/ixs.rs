@@ -21,9 +21,6 @@ pub enum AmmanModInstruction {
         /// Public key of the created account
         to_pubkey: Pubkey,
 
-        /// Public key of the account to assign as the owner of the created account
-        owner: Pubkey,
-
         /// Data to initialize the account with
         data: Vec<u8>,
 
@@ -31,19 +28,21 @@ pub enum AmmanModInstruction {
         /// Defaults to lamports needed to keep account rent exempt
         lamports: Option<u64>,
     },
+    AssignOwner,
 }
 
 pub fn add_account<T: Into<Vec<u8>>>(
     from_pubkey: Pubkey,
     to_pubkey: Pubkey,
-    owner: Pubkey,
     data: T,
     lamports: Option<u64>,
 ) -> Result<Instruction, ProgramError> {
+    // Create the account with the given data and for now keep the owner
+    // as the amman_mod program as otherwise we cannot set its data.
     let accounts = vec![
         AccountMeta::new(from_pubkey, true),
         AccountMeta::new(to_pubkey, true),
-        AccountMeta::new_readonly(owner, false),
+        AccountMeta::new_readonly(amman_mod_id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
     let ix = Instruction {
@@ -52,11 +51,30 @@ pub fn add_account<T: Into<Vec<u8>>>(
         data: AmmanModInstruction::AddAccount {
             from_pubkey,
             to_pubkey,
-            owner,
             data: data.into(),
             lamports,
         }
         .try_to_vec()?,
+    };
+
+    Ok(ix)
+}
+
+pub fn assign_owner(
+    target_pubkey: Pubkey,
+    owner_pubkey: Pubkey,
+) -> Result<Instruction, ProgramError> {
+    let accounts = vec![
+        AccountMeta::new(target_pubkey, true),
+        AccountMeta::new(owner_pubkey, true),
+        AccountMeta::new_readonly(amman_mod_id(), false),
+        AccountMeta::new_readonly(system_program::id(), false),
+    ];
+
+    let ix = Instruction {
+        program_id: amman_mod_id(),
+        accounts,
+        data: AmmanModInstruction::AssignOwner.try_to_vec()?,
     };
 
     Ok(ix)

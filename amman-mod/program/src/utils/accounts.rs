@@ -88,38 +88,3 @@ pub fn allocate_account_and_assign_owner(
 
     Ok(())
 }
-
-pub struct ReallocateAccountArgs<'a> {
-    pub payer_info: &'a AccountInfo<'a>,
-    pub account_info: &'a AccountInfo<'a>,
-    pub new_size: usize,
-    pub zero_init: bool,
-}
-
-pub fn reallocate_account(
-    args: ReallocateAccountArgs,
-) -> Result<(), ProgramError> {
-    msg!("  reallocate_account()");
-
-    let ReallocateAccountArgs {
-        payer_info,
-        account_info,
-        new_size,
-        zero_init,
-    } = args;
-
-    // 1. Transfer the extra rent to the account
-    let rent = Rent::get()?;
-    let required_lamports = rent
-        .minimum_balance(new_size)
-        .max(1)
-        .saturating_sub(account_info.lamports());
-
-    if required_lamports > 0 {
-        msg!("  reallocate_account() transfer extra rent");
-        transfer_lamports(payer_info, account_info, required_lamports)?;
-    }
-
-    // 2. Reallocate to the new size
-    account_info.realloc(new_size, zero_init)
-}
