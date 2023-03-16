@@ -18,7 +18,7 @@
   },
   "author": "Thorsten Lorenz <thlorenz@gmx.de>",
   "repository": {
-    "url": "https://github.com/metaple-foundationx/amman.git"
+    "url": "https://github.com/metaplex-foundation/amman.git"
   },
   "private": true,
   "devDependencies": {
