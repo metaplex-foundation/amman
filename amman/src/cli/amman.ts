@@ -4,7 +4,7 @@ import {
   AMMAN_STORAGE_PORT,
   Amman,
 } from '@metaplex-foundation/amman-client'
-import { Connection } from '@solana/web3.js'
+import { Commitment, Connection } from '@solana/web3.js'
 import { strict as assert } from 'assert'
 import { execSync as exec } from 'child_process'
 import path from 'path'
@@ -245,13 +245,13 @@ async function main() {
           destination != null,
           'public key string or keypair file is required'
         )
-        assertCommitment(commitment)
+        assertCommitment(commitment as string)
 
         const { connection } = await handleAirdropCommand(
           destination,
           amount,
-          label!,
-          commitment
+          label! as string,
+          commitment as Commitment
         )
 
         await closeConnection(connection, true)
@@ -296,7 +296,7 @@ async function main() {
       )
 
       const { connection, rendered, savedAccountPath } =
-        await handleAccountCommand(address, includeTx, save)
+        await handleAccountCommand(address, includeTx as boolean, save as boolean)
 
       console.log(rendered)
 
@@ -328,7 +328,7 @@ async function main() {
     // run
     // -----------------
     case 'run': {
-      let labels: string | string[] = args.label ?? []
+      let labels: string | string[] = args.label as string | string[] ?? []
       if (!Array.isArray(labels)) {
         labels = [labels]
       }
@@ -343,8 +343,8 @@ async function main() {
         const { stdout, stderr } = await handleRunCommand(
           labels,
           cmdArgs,
-          txOnly,
-          accOnly
+          txOnly as boolean,
+          accOnly as boolean
         )
         console.error(stderr)
         console.log(stdout)
