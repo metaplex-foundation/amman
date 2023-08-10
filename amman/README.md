@@ -5,7 +5,8 @@ running validator.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+**Table of Contents** _generated with [DocToc](https://github.com/thlorenz/doctoc)_
 
 - [API](#api)
 - [CLI](#cli)
@@ -45,7 +46,7 @@ Commands:
 Options:
   --help     Show help                                                 [boolean]
   --version  Show version number                                       [boolean]
-``` 
+```
 
 ### Commands: start
 
@@ -65,10 +66,10 @@ properties:
 - accounts: array of remote accounts to load into the test validator
 - jsonRpcUrl: the URL at which the test validator should listen for JSON RPC requests
 - websocketUrl: for the RPC websocket
+- geyserPluginConfigs: array of geyser plugins config files to plug into the test validator
 - ledgerDir: where the solana test validator writes the ledger
 - resetLedger: if true the ledger is reset to genesis at startup
 - verifyFees: if true the validator is not considered fully started up until it charges transaction fees
-
 
 ## Example Configs
 
@@ -91,10 +92,10 @@ module.exports = {
   validator: {
     killRunningValidators: true,
     programs: [
-      { 
+      {
         label: 'Token Metadata Program',
         programId: programIds.metadata,
-        deployPath: localDeployPath('mpl_token_metadata')
+        deployPath: localDeployPath('mpl_token_metadata'),
       },
     ],
     jsonRpcUrl: LOCALHOST,
@@ -119,7 +120,7 @@ module.exports = {
 
 ### Config with Remote Accounts
 
-Below is an example of a config where the accounts are being pulled from a specific RPC endpoint. 
+Below is an example of a config where the accounts are being pulled from a specific RPC endpoint.
 
 ```js
 module.exports = {
@@ -127,23 +128,23 @@ module.exports = {
     // By default Amman will pull the account data from the accountsCluster (can be overridden on a per account basis)
     accountsCluster: 'https://api.metaplex.solana.com',
     accounts: [
-        {
-          label: 'Token Metadata Program',
-          accountId:'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-          // marking executable as true will cause Amman to pull the executable data account as well automatically
-          executable: true,
-        },
-        {
-          label: 'Random other account',
-          accountId:'4VLgNs1jXgdciSidxcaLKfrR9WjATkj6vmTm5yCwNwui',
-          // By default executable is false and is not required to be in the config
-          // executable: false,
-          
-          // Providing a cluster here will override the accountsCluster field
-          cluster: 'https://metaplex.devnet.rpcpool.com'
-        }
-      ]
-  }
+      {
+        label: 'Token Metadata Program',
+        accountId: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+        // marking executable as true will cause Amman to pull the executable data account as well automatically
+        executable: true,
+      },
+      {
+        label: 'Random other account',
+        accountId: '4VLgNs1jXgdciSidxcaLKfrR9WjATkj6vmTm5yCwNwui',
+        // By default executable is false and is not required to be in the config
+        // executable: false,
+
+        // Providing a cluster here will override the accountsCluster field
+        cluster: 'https://metaplex.devnet.rpcpool.com',
+      },
+    ],
+  },
 }
 ```
 
@@ -151,11 +152,10 @@ module.exports = {
 
 For the different clusters like _devnet_ some features are disabled. By default the locally
 running solana-test-validator does not disable any features and thus behaves differently than
-the provided clusters. 
+the provided clusters.
 
 In order to run tests in a scenario that is closer to how they would run against a specific
 cluster you can match the features of it via the _matchFeatures_ config property:
-
 
 ```js
 module.exports = {

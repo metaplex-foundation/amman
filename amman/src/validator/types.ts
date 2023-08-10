@@ -80,6 +80,7 @@ export type ValidatorConfig = {
   jsonRpcUrl: string
   websocketUrl: string
   commitment: Commitment
+  geyserPluginConfigs?: string[]
   ledgerDir: string
   resetLedger: boolean
   limitLedgerSize: number

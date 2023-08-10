@@ -25,6 +25,7 @@ export async function buildSolanaValidatorArgs(
     programs,
     accountsCluster,
     accounts,
+    geyserPluginConfigs,
     ledgerDir,
     resetLedger,
     limitLedgerSize,
@@ -86,6 +87,21 @@ export async function buildSolanaValidatorArgs(
     keypairs,
   } = await processSnapshot(config.snapshot)
   args = [...args, ...snapshotArgs]
+
+  // -----------------
+  // Geyser Plugins
+  // -----------------
+  if (geyserPluginConfigs) {
+    for (const geyserPluginConfig of geyserPluginConfigs) {
+      if (!canAccessSync(geyserPluginConfig)) {
+        throw new Error(
+          `Cannot access geyser plugin config at path of ${geyserPluginConfig}`
+        )
+      }
+      args.push('--geyser-plugin-config')
+      args.push(geyserPluginConfig)
+    }
+  }
 
   return {
     args,
