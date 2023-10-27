@@ -125,7 +125,7 @@ Below is an example of a config where the accounts are being pulled from a speci
 module.exports = {
   validator: {
     // By default Amman will pull the account data from the accountsCluster (can be overridden on a per account basis)
-    accountsCluster: 'https://api.metaplex.solana.com',
+    accountsCluster: 'https://api.mainnet-beta.solana.com',
     accounts: [
         {
           label: 'Token Metadata Program',
@@ -140,7 +140,7 @@ module.exports = {
           // executable: false,
           
           // Providing a cluster here will override the accountsCluster field
-          cluster: 'https://metaplex.devnet.rpcpool.com'
+          cluster: 'https://api.devnet.solana.com'
         }
       ]
   }
